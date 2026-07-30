@@ -3,9 +3,10 @@ import { Link } from 'react-router-dom'
 import { FiX, FiShoppingCart } from 'react-icons/fi'
 import { useCart } from '../../../hooks/useCart.js'
 import { formatCurrency } from '../../../../shared/helpers/index.js'
+import { getImageUrl } from '../../../utils/image.js'
 
 interface CartSidebarProps {
-  isOpen:  boolean
+  isOpen: boolean
   onClose: () => void
 }
 
@@ -15,7 +16,9 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
 
   // Close on Escape
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
     if (isOpen) document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [isOpen, onClose])
@@ -23,7 +26,9 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
   // Lock body scroll
   useEffect(() => {
     document.body.style.overflow = isOpen ? 'hidden' : ''
-    return () => { document.body.style.overflow = '' }
+    return () => {
+      document.body.style.overflow = ''
+    }
   }, [isOpen])
 
   return (
@@ -74,16 +79,28 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
                   key={`${item.productId}-${item.selectedVariant ?? ''}`}
                   className="cart-sidebar__item"
                 >
-                  <Link to={`/products/${item.productId}`} onClick={onClose} className="cart-sidebar__item-img-wrap">
-                    {item.product.images?.[0] ? (
-                      <img src={item.product.images[0]} alt={item.product.title} className="cart-sidebar__item-img" />
+                  <Link
+                    to={`/products/${item.productId}`}
+                    onClick={onClose}
+                    className="cart-sidebar__item-img-wrap"
+                  >
+                    {getImageUrl(item.product.images?.[0]) ? (
+                      <img
+                        src={getImageUrl(item.product.images[0])}
+                        alt={item.product.title}
+                        className="cart-sidebar__item-img"
+                      />
                     ) : (
                       <div className="cart-sidebar__item-img-placeholder">🛍️</div>
                     )}
                   </Link>
 
                   <div className="cart-sidebar__item-info">
-                    <Link to={`/products/${item.productId}`} onClick={onClose} className="cart-sidebar__item-title">
+                    <Link
+                      to={`/products/${item.productId}`}
+                      onClick={onClose}
+                      className="cart-sidebar__item-title"
+                    >
                       {item.product.title}
                     </Link>
                     <div className="cart-sidebar__item-row">
@@ -104,7 +121,9 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
                           +
                         </button>
                       </div>
-                      <span className="cart-sidebar__item-price">{formatCurrency(item.lineTotal)}</span>
+                      <span className="cart-sidebar__item-price">
+                        {formatCurrency(item.lineTotal)}
+                      </span>
                     </div>
                   </div>
 

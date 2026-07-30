@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { getImageUrl } from '../../../utils/image.js'
 
 interface ImageGalleryProps {
   images: string[]
@@ -7,7 +8,7 @@ interface ImageGalleryProps {
 
 export default function ImageGallery({ images, title }: ImageGalleryProps) {
   const [active, setActive] = useState(0)
-  const imgs = images.length > 0 ? images : ['']
+  const imgs = (images.length > 0 ? images : ['']).map((s) => getImageUrl(s) ?? '')
 
   return (
     <div className="product-gallery">

@@ -1,26 +1,37 @@
-import { useState }   from 'react'
-import { Link }        from 'react-router-dom'
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { getImageUrl } from '../../../utils/image.js'
 import {
-  FiPackage, FiNavigation, FiRefreshCw, FiXCircle,
-  FiEye, FiStar, FiCalendar, FiHash,
+  FiPackage,
+  FiNavigation,
+  FiRefreshCw,
+  FiXCircle,
+  FiEye,
+  FiStar,
+  FiCalendar,
+  FiHash,
 } from 'react-icons/fi'
-import { formatCurrency, formatDate }       from '../../../../shared/helpers/index.js'
-import { CANCELLABLE_STATUSES, RETURNABLE_STATUSES, RETURN_WINDOW_DAYS } from '../../../../shared/constants/index.js'
+import { formatCurrency, formatDate } from '../../../../shared/helpers/index.js'
+import {
+  CANCELLABLE_STATUSES,
+  RETURNABLE_STATUSES,
+  RETURN_WINDOW_DAYS,
+} from '../../../../shared/constants/index.js'
 import { OrderStatusBadge, PaymentStatusBadge } from '../OrderStatus/index.js'
-import { useCancelOrder }    from '../../../hooks/useOrders.js'
-import ReturnRequestForm     from '../ReturnRequestForm/index.js'
-import type { IOrder }       from '../../../../shared/types/index.js'
+import { useCancelOrder } from '../../../hooks/useOrders.js'
+import ReturnRequestForm from '../ReturnRequestForm/index.js'
+import type { IOrder } from '../../../../shared/types/index.js'
 
 const STATUS_ACCENT: Record<string, string> = {
-  pending:          '#FF9900',
-  confirmed:        '#007185',
-  processing:       '#0066c0',
-  shipped:          '#8956FF',
-  outForDelivery:   '#067D62',
-  delivered:        '#067D62',
-  cancelled:        '#CC0C39',
-  returned:         '#CC0C39',
-  refunded:         '#565959',
+  pending: '#FF9900',
+  confirmed: '#007185',
+  processing: '#0066c0',
+  shipped: '#8956FF',
+  outForDelivery: '#067D62',
+  delivered: '#067D62',
+  cancelled: '#CC0C39',
+  returned: '#CC0C39',
+  refunded: '#565959',
 }
 
 function isWithinReturnWindow(createdAt: string) {
@@ -31,15 +42,16 @@ export default function OrderCard({ order }: { order: IOrder }) {
   const [showReturn, setShowReturn] = useState(false)
   const { mutate: cancelOrder, isPending: cancelling } = useCancelOrder()
 
-  const accent     = STATUS_ACCENT[order.orderStatus] ?? '#232F3E'
-  const canCancel  = (CANCELLABLE_STATUSES as readonly string[]).includes(order.orderStatus)
-  const canReturn  = (RETURNABLE_STATUSES  as readonly string[]).includes(order.orderStatus)
-    && isWithinReturnWindow(order.createdAt)
-    && !order.returnRequest
-  const canTrack   = !['pending', 'confirmed'].includes(order.orderStatus)
-  const canReview  = order.orderStatus === 'delivered'
+  const accent = STATUS_ACCENT[order.orderStatus] ?? '#232F3E'
+  const canCancel = (CANCELLABLE_STATUSES as readonly string[]).includes(order.orderStatus)
+  const canReturn =
+    (RETURNABLE_STATUSES as readonly string[]).includes(order.orderStatus) &&
+    isWithinReturnWindow(order.createdAt) &&
+    !order.returnRequest
+  const canTrack = !['pending', 'confirmed'].includes(order.orderStatus)
+  const canReview = order.orderStatus === 'delivered'
 
-  const thumbs     = order.items.slice(0, 4)
+  const thumbs = order.items.slice(0, 4)
   const extraCount = order.items.length - thumbs.length
 
   const handleCancel = () => {
@@ -49,10 +61,7 @@ export default function OrderCard({ order }: { order: IOrder }) {
 
   return (
     <>
-      <article
-        className="oc-card"
-        style={{ '--oc-accent': accent } as React.CSSProperties}
-      >
+      <article className="oc-card" style={{ '--oc-accent': accent } as React.CSSProperties}>
         {/* Status accent rail */}
         <div className="oc-rail" />
 
@@ -80,13 +89,15 @@ export default function OrderCard({ order }: { order: IOrder }) {
           <div className="oc-thumbs">
             {thumbs.map((item, i) => (
               <div className="oc-thumb" key={i}>
-                {item.image ? (
+                {getImageUrl(item.image) ? (
                   <img
-                    src={item.image}
+                    src={getImageUrl(item.image)}
                     alt={item.title}
                     className="oc-thumb__img"
                     loading="lazy"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                    onError={(e) => {
+                      ;(e.target as HTMLImageElement).style.display = 'none'
+                    }}
                   />
                 ) : (
                   <div className="oc-thumb__placeholder">
@@ -95,9 +106,7 @@ export default function OrderCard({ order }: { order: IOrder }) {
                 )}
               </div>
             ))}
-            {extraCount > 0 && (
-              <div className="oc-thumb oc-thumb--more">+{extraCount}</div>
-            )}
+            {extraCount > 0 && <div className="oc-thumb oc-thumb--more">+{extraCount}</div>}
           </div>
 
           {/* Item summary */}
@@ -112,7 +121,7 @@ export default function OrderCard({ order }: { order: IOrder }) {
             </p>
             {(order.items[0]?.selectedSize || order.items[0]?.selectedColor) && (
               <div className="oc-preview__chips">
-                {order.items[0].selectedSize  && (
+                {order.items[0].selectedSize && (
                   <span className="oc-chip">Size: {order.items[0].selectedSize}</span>
                 )}
                 {order.items[0].selectedColor && (

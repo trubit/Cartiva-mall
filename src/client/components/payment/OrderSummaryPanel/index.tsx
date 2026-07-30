@@ -1,18 +1,24 @@
 import { FiPackage } from 'react-icons/fi'
 import { formatCurrency } from '../../../../shared/helpers/index.js'
 import type { IOrder } from '../../../../shared/types/index.js'
+import { getImageUrl } from '../../../utils/image.js'
 
 interface OrderSummaryPanelProps {
-  order?:      IOrder | null
-  amount?:     number
-  currency?:   string
+  order?: IOrder | null
+  amount?: number
+  currency?: string
   orderNumber?: string
 }
 
-export default function OrderSummaryPanel({ order, amount, currency = 'USD', orderNumber }: OrderSummaryPanelProps) {
+export default function OrderSummaryPanel({
+  order,
+  amount,
+  currency = 'USD',
+  orderNumber,
+}: OrderSummaryPanelProps) {
   // Can render from a full IOrder or just amount + orderNumber (at create time)
   const grandTotal = order?.grandTotal ?? amount ?? 0
-  const num        = order?.orderNumber ?? orderNumber
+  const num = order?.orderNumber ?? orderNumber
 
   return (
     <aside className="order-summary-panel">
@@ -33,17 +39,24 @@ export default function OrderSummaryPanel({ order, amount, currency = 'USD', ord
             {order.items.map((item, i) => (
               <li key={`${item.productId}-${i}`} className="order-summary-panel__item">
                 <div className="order-summary-panel__item-img-wrap">
-                  {item.image
-                    ? <img src={item.image} alt={item.title} className="order-summary-panel__item-img" />
-                    : <span className="order-summary-panel__item-placeholder">🛍️</span>
-                  }
+                  {getImageUrl(item.image) ? (
+                    <img
+                      src={getImageUrl(item.image)}
+                      alt={item.title}
+                      className="order-summary-panel__item-img"
+                    />
+                  ) : (
+                    <span className="order-summary-panel__item-placeholder">🛍️</span>
+                  )}
                   <span className="order-summary-panel__item-qty">{item.quantity}</span>
                 </div>
                 <div className="order-summary-panel__item-info">
                   <span className="order-summary-panel__item-title">{item.title}</span>
                   <span className="order-summary-panel__item-sku">{item.sku}</span>
                 </div>
-                <span className="order-summary-panel__item-total">{formatCurrency(item.lineTotal)}</span>
+                <span className="order-summary-panel__item-total">
+                  {formatCurrency(item.lineTotal)}
+                </span>
               </li>
             ))}
           </ul>

@@ -3,9 +3,10 @@ import AddressCard from '../AddressCard/index.js'
 import ShippingCard from '../ShippingCard/index.js'
 import { useCheckoutStore } from '../../../store/checkoutStore.js'
 import { formatCurrency } from '../../../../shared/helpers/index.js'
+import { getImageUrl } from '../../../utils/image.js'
 
 interface OrderReviewProps {
-  onPlaceOrder:  () => void
+  onPlaceOrder: () => void
   isSubmitting?: boolean
 }
 
@@ -54,9 +55,7 @@ export default function OrderReview({ onPlaceOrder, isSubmitting }: OrderReviewP
             <FiEdit2 size={14} /> Edit
           </button>
         </div>
-        {selectedOption && (
-          <ShippingCard option={selectedOption} selected onSelect={() => {}} />
-        )}
+        {selectedOption && <ShippingCard option={selectedOption} selected onSelect={() => {}} />}
       </section>
 
       {/* Items */}
@@ -66,11 +65,13 @@ export default function OrderReview({ onPlaceOrder, isSubmitting }: OrderReviewP
           {session.items.map((item, i) => (
             <li key={`${item.productId}-${i}`} className="order-review__item">
               {item.image && (
-                <img src={item.image} alt={item.title} className="order-review__item-img" />
+                <img src={getImageUrl(item.image)} alt={item.title} className="order-review__item-img" />
               )}
               <div className="order-review__item-info">
                 <span className="order-review__item-title">{item.title}</span>
-                <span className="order-review__item-meta">Qty: {item.quantity} · {formatCurrency(item.itemPrice)} each</span>
+                <span className="order-review__item-meta">
+                  Qty: {item.quantity} · {formatCurrency(item.itemPrice)} each
+                </span>
               </div>
               <span className="order-review__item-total">{formatCurrency(item.lineTotal)}</span>
             </li>
@@ -84,14 +85,21 @@ export default function OrderReview({ onPlaceOrder, isSubmitting }: OrderReviewP
         onClick={onPlaceOrder}
         disabled={isSubmitting}
       >
-        {isSubmitting ? 'Placing Order…' : `Place Order · ${formatCurrency(session.pricing.grandTotal)}`}
+        {isSubmitting
+          ? 'Placing Order…'
+          : `Place Order · ${formatCurrency(session.pricing.grandTotal)}`}
       </button>
 
       <p className="order-review__terms">
         By placing your order you agree to our{' '}
-        <a href="/terms" target="_blank" rel="noopener noreferrer">Terms of Service</a>
-        {' '}and{' '}
-        <a href="/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
+        <a href="/terms" target="_blank" rel="noopener noreferrer">
+          Terms of Service
+        </a>{' '}
+        and{' '}
+        <a href="/privacy" target="_blank" rel="noopener noreferrer">
+          Privacy Policy
+        </a>
+        .
       </p>
     </div>
   )

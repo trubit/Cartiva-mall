@@ -1,8 +1,17 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  FiSearch, FiShoppingCart, FiChevronDown, FiMenu, FiX,
-  FiUser, FiPackage, FiLogOut, FiSettings, FiGlobe, FiCheck,
+  FiSearch,
+  FiShoppingCart,
+  FiChevronDown,
+  FiMenu,
+  FiX,
+  FiUser,
+  FiPackage,
+  FiLogOut,
+  FiSettings,
+  FiGlobe,
+  FiCheck,
 } from 'react-icons/fi'
 import { useAuthStore } from '../../store/authStore.js'
 import { useCartStore } from '../../store/cartStore.js'
@@ -10,18 +19,30 @@ import { useLanguageStore, LANGUAGES } from '../../store/languageStore.js'
 import { useT } from '../../i18n/useT.js'
 import { PRODUCT_CATEGORIES, ROLES } from '../../../shared/constants/index.js'
 import Logo from '../ui/Logo/index.js'
+import { useLogout } from '../../hooks/useAuth.js'
 
 const CATEGORY_ICONS: Record<string, string> = {
-  'Electronics': '💻', 'Clothing & Fashion': '👗', 'Home & Garden': '🏡',
-  'Sports & Outdoors': '⚽', 'Books & Media': '📚', 'Health & Beauty': '💄',
-  'Toys & Games': '🎮', 'Automotive': '🚗', 'Food & Grocery': '🛒',
+  Electronics: '💻',
+  'Clothing & Fashion': '👗',
+  'Home & Garden': '🏡',
+  'Sports & Outdoors': '⚽',
+  'Books & Media': '📚',
+  'Health & Beauty': '💄',
+  'Toys & Games': '🎮',
+  Automotive: '🚗',
+  'Food & Grocery': '🛒',
   'Jewelry & Accessories': '💍',
 }
 
 function UserAvatar({ src, name, size = 28 }: { src?: string; name?: string; size?: number }) {
   const [imgErr, setImgErr] = useState(false)
   const initials = name
-    ? name.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+    ? name
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase()
     : '?'
 
   if (src && !imgErr) {
@@ -31,46 +52,60 @@ function UserAvatar({ src, name, size = 28 }: { src?: string; name?: string; siz
         alt={name ?? 'avatar'}
         onError={() => setImgErr(true)}
         style={{
-          width: size, height: size, borderRadius: '50%',
-          objectFit: 'cover', border: '2px solid rgba(255,153,0,.7)',
-          flexShrink: 0, display: 'block',
+          width: size,
+          height: size,
+          borderRadius: '50%',
+          objectFit: 'cover',
+          border: '2px solid rgba(255,153,0,.7)',
+          flexShrink: 0,
+          display: 'block',
         }}
       />
     )
   }
   return (
-    <div style={{
-      width: size, height: size, borderRadius: '50%',
-      background: 'linear-gradient(135deg,#f0c14b,#FF9900)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: size * 0.36, fontWeight: 700, color: '#0F1111',
-      border: '2px solid rgba(255,153,0,.7)', flexShrink: 0,
-      letterSpacing: '0.5px',
-    }}>
+    <div
+      style={{
+        width: size,
+        height: size,
+        borderRadius: '50%',
+        background: 'linear-gradient(135deg,#f0c14b,#FF9900)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: size * 0.36,
+        fontWeight: 700,
+        color: '#0F1111',
+        border: '2px solid rgba(255,153,0,.7)',
+        flexShrink: 0,
+        letterSpacing: '0.5px',
+      }}
+    >
       {initials}
     </div>
   )
 }
 
 export default function Navbar() {
-  const { isAuthenticated, user, clearAuth } = useAuthStore()
+  const { isAuthenticated, user } = useAuthStore()
   const totalItems = useCartStore((s) => s.totalItems())
   const { currentLang, setLanguage, getLang } = useLanguageStore()
   const t = useT()
   const navigate = useNavigate()
+  const logoutMutation = useLogout()
 
-  const [searchQuery, setSearchQuery]     = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [accountMenuOpen, setAccountMenuOpen] = useState(false)
-  const [langMenuOpen, setLangMenuOpen]   = useState(false)
+  const [langMenuOpen, setLangMenuOpen] = useState(false)
   const [searchCategory, setSearchCategory] = useState('All')
+  const [scrolled, setScrolled] = useState(false)
   const accountRef = useRef<HTMLDivElement>(null)
-  const langRef    = useRef<HTMLDivElement>(null)
+  const langRef = useRef<HTMLDivElement>(null)
 
   const handleLogout = () => {
-    clearAuth()
-    navigate('/login')
     setAccountMenuOpen(false)
+    logoutMutation.mutate()
   }
 
   const handleSearch = (e: React.FormEvent) => {
@@ -93,16 +128,21 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
   const currentLangObj = getLang()
   const fullName = user ? `${user.firstName} ${user.lastName}` : ''
 
   return (
     <>
-      <header className="amz-header">
+      <header className={`amz-header${scrolled ? ' amz-header--scrolled' : ''}`}>
         {/* ── Top Bar ──────────────────────────────────── */}
         <div className="amz-header__top">
           <div className="amz-header__inner">
-
             {/* Logo */}
             <Link to="/" className="amz-logo">
               <Logo size="md" theme="dark" />
@@ -144,7 +184,6 @@ export default function Navbar() {
 
             {/* Right side actions */}
             <div className="amz-header__actions">
-
               {/* ── Language Switcher ── */}
               <div className="amz-lang hide-mobile" ref={langRef} style={{ position: 'relative' }}>
                 <button
@@ -168,7 +207,10 @@ export default function Navbar() {
                       <button
                         key={lang.code}
                         className={`amz-lang__option${lang.code === currentLang ? ' amz-lang__option--active' : ''}`}
-                        onClick={() => { setLanguage(lang.code); setLangMenuOpen(false) }}
+                        onClick={() => {
+                          setLanguage(lang.code)
+                          setLangMenuOpen(false)
+                        }}
                         role="menuitem"
                       >
                         <span className="amz-lang__opt-flag">{lang.flag}</span>
@@ -176,7 +218,9 @@ export default function Navbar() {
                           <span className="amz-lang__opt-native">{lang.nativeName}</span>
                           <span className="amz-lang__opt-en">{lang.name}</span>
                         </span>
-                        {lang.code === currentLang && <FiCheck size={13} style={{ marginLeft: 'auto', color: '#FF9900' }} />}
+                        {lang.code === currentLang && (
+                          <FiCheck size={13} style={{ marginLeft: 'auto', color: '#FF9900' }} />
+                        )}
                       </button>
                     ))}
                   </div>
@@ -191,15 +235,13 @@ export default function Navbar() {
                   aria-expanded={accountMenuOpen}
                 >
                   {isAuthenticated && (
-                    <UserAvatar
-                      src={user?.profileImage}
-                      name={fullName}
-                      size={30}
-                    />
+                    <UserAvatar src={user?.profileImage} name={fullName} size={30} />
                   )}
                   <div className="amz-account-btn__text">
                     <span className="amz-action-link__top">
-                      {isAuthenticated ? `${t.nav_hello}, ${user?.firstName}` : `${t.nav_hello}, ${t.nav_signin}`}
+                      {isAuthenticated
+                        ? `${t.nav_hello}, ${user?.firstName}`
+                        : `${t.nav_hello}, ${t.nav_signin}`}
                     </span>
                     <span className="amz-action-link__bottom">
                       {t.nav_account} <FiChevronDown size={11} />
@@ -247,19 +289,35 @@ export default function Navbar() {
                         <p className="amz-account-dropdown__col-title">{t.acc_your_account}</p>
                         {isAuthenticated ? (
                           <>
-                            <Link to="/profile" className="amz-account-dropdown__link" onClick={() => setAccountMenuOpen(false)}>
+                            <Link
+                              to="/profile"
+                              className="amz-account-dropdown__link"
+                              onClick={() => setAccountMenuOpen(false)}
+                            >
                               <FiUser size={13} /> {t.acc_profile}
                             </Link>
-                            <Link to="/orders" className="amz-account-dropdown__link" onClick={() => setAccountMenuOpen(false)}>
+                            <Link
+                              to="/orders"
+                              className="amz-account-dropdown__link"
+                              onClick={() => setAccountMenuOpen(false)}
+                            >
                               <FiPackage size={13} /> {t.acc_orders}
                             </Link>
                             {user?.role === ROLES.ADMIN && (
-                              <Link to="/admin" className="amz-account-dropdown__link" onClick={() => setAccountMenuOpen(false)}>
+                              <Link
+                                to="/admin"
+                                className="amz-account-dropdown__link"
+                                onClick={() => setAccountMenuOpen(false)}
+                              >
                                 <FiSettings size={13} /> {t.acc_admin}
                               </Link>
                             )}
                             {(user?.role === ROLES.SELLER || user?.role === ROLES.ADMIN) && (
-                              <Link to="/seller/products" className="amz-account-dropdown__link" onClick={() => setAccountMenuOpen(false)}>
+                              <Link
+                                to="/seller/products"
+                                className="amz-account-dropdown__link"
+                                onClick={() => setAccountMenuOpen(false)}
+                              >
                                 <FiPackage size={13} /> {t.acc_seller_hub}
                               </Link>
                             )}
@@ -272,8 +330,20 @@ export default function Navbar() {
                           </>
                         ) : (
                           <>
-                            <Link to="/login"    className="amz-account-dropdown__link" onClick={() => setAccountMenuOpen(false)}>{t.acc_sign_in}</Link>
-                            <Link to="/register" className="amz-account-dropdown__link" onClick={() => setAccountMenuOpen(false)}>{t.acc_register}</Link>
+                            <Link
+                              to="/login"
+                              className="amz-account-dropdown__link"
+                              onClick={() => setAccountMenuOpen(false)}
+                            >
+                              {t.acc_sign_in}
+                            </Link>
+                            <Link
+                              to="/register"
+                              className="amz-account-dropdown__link"
+                              onClick={() => setAccountMenuOpen(false)}
+                            >
+                              {t.acc_register}
+                            </Link>
                           </>
                         )}
                       </div>
@@ -283,7 +353,11 @@ export default function Navbar() {
               </div>
 
               {/* Orders */}
-              <Link to="/orders" className="amz-action-link hide-mobile" style={{ textDecoration: 'none' }}>
+              <Link
+                to="/orders"
+                className="amz-action-link hide-mobile"
+                style={{ textDecoration: 'none' }}
+              >
                 <span className="amz-action-link__top">{t.nav_returns}</span>
                 <span className="amz-action-link__bottom">{t.nav_orders}</span>
               </Link>
@@ -316,16 +390,15 @@ export default function Navbar() {
         {/* ── Category Bar ─────────────────────────────── */}
         <nav className="amz-nav hide-mobile" aria-label="Shop by category">
           <div className="amz-nav__inner">
-            <button className="amz-nav__item amz-nav__item--menu" onClick={() => setMobileMenuOpen((o) => !o)}>
+            <button
+              className="amz-nav__item amz-nav__item--menu"
+              onClick={() => setMobileMenuOpen((o) => !o)}
+            >
               <FiMenu size={16} style={{ marginRight: 4 }} />
               {t.nav_all}
             </button>
             {PRODUCT_CATEGORIES.slice(0, 9).map((cat) => (
-              <Link
-                key={cat}
-                to={`/category/${encodeURIComponent(cat)}`}
-                className="amz-nav__item"
-              >
+              <Link key={cat} to={`/category/${encodeURIComponent(cat)}`} className="amz-nav__item">
                 {CATEGORY_ICONS[cat]} {cat}
               </Link>
             ))}
@@ -352,7 +425,15 @@ export default function Navbar() {
                   {isAuthenticated ? fullName : `${t.nav_hello}, ${t.nav_signin}`}
                 </div>
                 {isAuthenticated && (
-                  <div style={{ fontSize: 'var(--text-xs)', opacity: 0.7, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <div
+                    style={{
+                      fontSize: 'var(--text-xs)',
+                      opacity: 0.7,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
                     {user?.email}
                   </div>
                 )}
@@ -371,11 +452,16 @@ export default function Navbar() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="amz-mobile-menu__search-input"
               />
-              <button type="submit" className="amz-mobile-menu__search-btn"><FiSearch size={18} /></button>
+              <button type="submit" className="amz-mobile-menu__search-btn">
+                <FiSearch size={18} />
+              </button>
             </form>
 
             {/* Language selector in mobile */}
-            <div className="amz-mobile-menu__section-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div
+              className="amz-mobile-menu__section-title"
+              style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+            >
               <FiGlobe size={14} /> {t.nav_language}
             </div>
             <div className="amz-mobile-lang-grid">
@@ -405,28 +491,61 @@ export default function Navbar() {
 
             <div className="amz-mobile-menu__divider" />
             <div className="amz-mobile-menu__section-title">{t.mob_help}</div>
-            <Link to="/products?isFeatured=true" className="amz-mobile-menu__link" onClick={() => setMobileMenuOpen(false)}>
+            <Link
+              to="/products?isFeatured=true"
+              className="amz-mobile-menu__link"
+              onClick={() => setMobileMenuOpen(false)}
+            >
               {t.nav_todays_deals}
             </Link>
-            <Link to="/orders" className="amz-mobile-menu__link" onClick={() => setMobileMenuOpen(false)}>
+            <Link
+              to="/orders"
+              className="amz-mobile-menu__link"
+              onClick={() => setMobileMenuOpen(false)}
+            >
               {t.acc_orders}
             </Link>
             {isAuthenticated ? (
               <>
-                <Link to="/profile" className="amz-mobile-menu__link" onClick={() => setMobileMenuOpen(false)}>
+                <Link
+                  to="/profile"
+                  className="amz-mobile-menu__link"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
                   {t.acc_profile}
                 </Link>
                 {user?.role === ROLES.ADMIN && (
-                  <Link to="/admin" className="amz-mobile-menu__link" onClick={() => setMobileMenuOpen(false)}>{t.acc_admin}</Link>
+                  <Link
+                    to="/admin"
+                    className="amz-mobile-menu__link"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    {t.acc_admin}
+                  </Link>
                 )}
-                <button className="amz-mobile-menu__link amz-mobile-menu__link--btn" onClick={handleLogout}>
+                <button
+                  className="amz-mobile-menu__link amz-mobile-menu__link--btn"
+                  onClick={handleLogout}
+                >
                   {t.acc_sign_out}
                 </button>
               </>
             ) : (
               <>
-                <Link to="/login"    className="amz-mobile-menu__link" onClick={() => setMobileMenuOpen(false)}>{t.acc_sign_in}</Link>
-                <Link to="/register" className="amz-mobile-menu__link" onClick={() => setMobileMenuOpen(false)}>{t.acc_register}</Link>
+                <Link
+                  to="/login"
+                  className="amz-mobile-menu__link"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {t.acc_sign_in}
+                </Link>
+                <Link
+                  to="/register"
+                  className="amz-mobile-menu__link"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {t.acc_register}
+                </Link>
               </>
             )}
           </div>

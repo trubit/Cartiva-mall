@@ -1,11 +1,12 @@
-import { useState }        from 'react'
+import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import Alert               from 'react-bootstrap/Alert'
-import Button              from 'react-bootstrap/Button'
-import { FiArrowLeft }     from 'react-icons/fi'
-import { useOrder }        from '../../../hooks/useOrders.js'
+import { getImageUrl } from '../../../utils/image.js'
+import Alert from 'react-bootstrap/Alert'
+import Button from 'react-bootstrap/Button'
+import { FiArrowLeft } from 'react-icons/fi'
+import { useOrder } from '../../../hooks/useOrders.js'
 import { OrderStatusBadge } from '../../../components/order/OrderStatus/index.js'
-import ReturnRequestForm   from '../../../components/order/ReturnRequestForm/index.js'
+import ReturnRequestForm from '../../../components/order/ReturnRequestForm/index.js'
 import { formatDate, formatCurrency } from '../../../../shared/helpers/index.js'
 import {
   RETURNABLE_STATUSES,
@@ -18,7 +19,7 @@ function isWithinReturnWindow(createdAt: string) {
 }
 
 export default function ReturnOrder() {
-  const { id }   = useParams<{ id: string }>()
+  const { id } = useParams<{ id: string }>()
   const [showModal, setShowModal] = useState(false)
 
   const { data: order, isLoading, isError } = useOrder(id ?? '')
@@ -55,7 +56,9 @@ export default function ReturnOrder() {
           <FiArrowLeft size={14} className="me-1" /> Order Details
         </Link>
         <h1 className="return-order__title">Return Request</h1>
-        <p className="return-order__subtitle">Order #{order.orderNumber} · {formatDate(order.createdAt)}</p>
+        <p className="return-order__subtitle">
+          Order #{order.orderNumber} · {formatDate(order.createdAt)}
+        </p>
       </div>
 
       <div className="return-order__content">
@@ -69,13 +72,13 @@ export default function ReturnOrder() {
             {order.items.map((item, i) => (
               <li key={i} className="return-order__item">
                 {item.image && (
-                  <img src={item.image} alt={item.title} className="return-order__item-img" />
+                  <img src={getImageUrl(item.image)} alt={item.title} className="return-order__item-img" />
                 )}
                 <div className="return-order__item-info">
                   <span className="return-order__item-title">{item.title}</span>
                   <span className="return-order__item-meta">
                     ×{item.quantity} · {formatCurrency(item.lineTotal)}
-                    {item.selectedSize  && ` · Size: ${item.selectedSize}`}
+                    {item.selectedSize && ` · Size: ${item.selectedSize}`}
                     {item.selectedColor && ` · Color: ${item.selectedColor}`}
                   </span>
                 </div>
@@ -91,10 +94,15 @@ export default function ReturnOrder() {
             <div className="return-order__status-grid">
               <div className="return-order__status-row">
                 <span>Status</span>
-                <span className={`badge badge-${
-                  order.returnRequest.status === 'approved'  ? 'success' :
-                  order.returnRequest.status === 'rejected'  ? 'danger'  : 'warning'
-                }`}>
+                <span
+                  className={`badge badge-${
+                    order.returnRequest.status === 'approved'
+                      ? 'success'
+                      : order.returnRequest.status === 'rejected'
+                        ? 'danger'
+                        : 'warning'
+                  }`}
+                >
                   {order.returnRequest.status}
                 </span>
               </div>
@@ -139,8 +147,8 @@ export default function ReturnOrder() {
           <div className="return-order__card">
             <h3 className="return-order__section-title">Submit Return Request</h3>
             <p className="text-muted mb-3" style={{ fontSize: 'var(--text-sm)' }}>
-              You have {RETURN_WINDOW_DAYS} days from delivery to request a return. Our team
-              reviews each request within 1–2 business days.
+              You have {RETURN_WINDOW_DAYS} days from delivery to request a return. Our team reviews
+              each request within 1–2 business days.
             </p>
             <Button variant="danger" onClick={() => setShowModal(true)}>
               Start Return Request
@@ -150,11 +158,7 @@ export default function ReturnOrder() {
       </div>
 
       {/* Return form modal — rendered here so it can open on this page */}
-      <ReturnRequestForm
-        orderId={order._id}
-        show={showModal}
-        onHide={() => setShowModal(false)}
-      />
+      <ReturnRequestForm orderId={order._id} show={showModal} onHide={() => setShowModal(false)} />
     </div>
   )
 }

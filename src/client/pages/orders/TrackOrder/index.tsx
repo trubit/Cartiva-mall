@@ -1,24 +1,22 @@
-import { useParams, Link }          from 'react-router-dom'
-import {
-  FiArrowLeft, FiPackage, FiAlertCircle,
-  FiCalendar, FiClock, FiHash,
-} from 'react-icons/fi'
-import { useTrackOrder, useOrder }   from '../../../hooks/useOrders.js'
-import { OrderStatusBadge }          from '../../../components/order/OrderStatus/index.js'
-import { formatDate }                from '../../../../shared/helpers/index.js'
-import PremiumTimeline               from '../../../components/order/OrderTimeline/index.js'
-import PremiumTrackingInfo           from '../../../components/order/TrackingInfo/index.js'
+import { useParams, Link } from 'react-router-dom'
+import { FiArrowLeft, FiPackage, FiAlertCircle, FiCalendar, FiClock, FiHash } from 'react-icons/fi'
+import { useTrackOrder, useOrder } from '../../../hooks/useOrders.js'
+import { OrderStatusBadge } from '../../../components/order/OrderStatus/index.js'
+import { formatDate } from '../../../../shared/helpers/index.js'
+import PremiumTimeline from '../../../components/order/OrderTimeline/index.js'
+import PremiumTrackingInfo from '../../../components/order/TrackingInfo/index.js'
+import { getImageUrl } from '../../../utils/image.js'
 
 const STATUS_ACCENT: Record<string, string> = {
-  pending:        '#FF9900',
-  confirmed:      '#007185',
-  processing:     '#0066c0',
-  shipped:        '#8956FF',
+  pending: '#FF9900',
+  confirmed: '#007185',
+  processing: '#0066c0',
+  shipped: '#8956FF',
   outForDelivery: '#067D62',
-  delivered:      '#067D62',
-  cancelled:      '#CC0C39',
-  returned:       '#CC0C39',
-  refunded:       '#565959',
+  delivered: '#067D62',
+  cancelled: '#CC0C39',
+  returned: '#CC0C39',
+  refunded: '#565959',
 }
 
 function TrackSkeleton() {
@@ -43,7 +41,7 @@ export default function TrackOrder() {
   const { id } = useParams<{ id: string }>()
 
   const { data: trackData, isLoading: trackLoading, isError: trackError } = useTrackOrder(id ?? '')
-  const { data: order,     isLoading: orderLoading }                      = useOrder(id ?? '')
+  const { data: order, isLoading: orderLoading } = useOrder(id ?? '')
 
   if (trackLoading || orderLoading) return <TrackSkeleton />
 
@@ -65,16 +63,14 @@ export default function TrackOrder() {
   }
 
   const tracking = trackData.tracking ?? { events: [] }
-  const accent   = STATUS_ACCENT[order?.orderStatus ?? ''] ?? '#232F3E'
+  const accent = STATUS_ACCENT[order?.orderStatus ?? ''] ?? '#232F3E'
 
   return (
     <div className="to-page">
-
       {/* ══════════ HERO ══════════ */}
       <div className="to-hero" style={{ '--to-accent': accent } as React.CSSProperties}>
         <div className="to-hero__accent-bar" />
         <div className="container">
-
           <Link to={`/orders/${id}`} className="to-back">
             <FiArrowLeft size={14} /> Order Details
           </Link>
@@ -83,9 +79,7 @@ export default function TrackOrder() {
             <div className="to-hero__info">
               <h1 className="to-hero__title">
                 Track Order
-                {order?.orderNumber && (
-                  <span className="to-hero__num"> #{order.orderNumber}</span>
-                )}
+                {order?.orderNumber && <span className="to-hero__num"> #{order.orderNumber}</span>}
               </h1>
               <div className="to-hero__meta">
                 {order && <OrderStatusBadge status={order.orderStatus} showIcon />}
@@ -110,17 +104,13 @@ export default function TrackOrder() {
       {/* ══════════ BODY ══════════ */}
       <div className="container to-body">
         <div className="to-grid">
-
           {/* Shipping / carrier card */}
           <div className="to-card to-card--shipping">
             <div className="to-card__head">
               <span className="to-card__dot" style={{ background: accent }} />
               <h2 className="to-card__title">Shipping Details</h2>
             </div>
-            <PremiumTrackingInfo
-              tracking={tracking}
-              shippingMethod={trackData.shippingMethod}
-            />
+            <PremiumTrackingInfo tracking={tracking} shippingMethod={trackData.shippingMethod} />
           </div>
 
           {/* Items being tracked */}
@@ -139,11 +129,7 @@ export default function TrackOrder() {
                   <div className="to-shipment-item" key={i}>
                     <div className="to-shipment-item__img-wrap">
                       {item.image ? (
-                        <img
-                          src={item.image}
-                          alt={item.title}
-                          className="to-shipment-item__img"
-                        />
+                        <img src={getImageUrl(item.image)} alt={item.title} className="to-shipment-item__img" />
                       ) : (
                         <div className="to-shipment-item__img-placeholder">
                           <FiPackage size={16} />
@@ -154,7 +140,7 @@ export default function TrackOrder() {
                       <p className="to-shipment-item__name">{item.title}</p>
                       <p className="to-shipment-item__meta">
                         <span>Qty: {item.quantity}</span>
-                        {item.selectedSize  && <span>· Size: {item.selectedSize}</span>}
+                        {item.selectedSize && <span>· Size: {item.selectedSize}</span>}
                         {item.selectedColor && <span>· {item.selectedColor}</span>}
                       </p>
                     </div>
@@ -171,7 +157,10 @@ export default function TrackOrder() {
 
         {/* Full-width Timeline */}
         {order && (
-          <div className="to-card to-card--timeline" style={{ '--to-accent': accent } as React.CSSProperties}>
+          <div
+            className="to-card to-card--timeline"
+            style={{ '--to-accent': accent } as React.CSSProperties}
+          >
             <div className="to-card__head">
               <span className="to-card__dot" style={{ background: accent }} />
               <h2 className="to-card__title">
@@ -179,10 +168,7 @@ export default function TrackOrder() {
                 Order Progress
               </h2>
             </div>
-            <PremiumTimeline
-              events={tracking.events ?? []}
-              orderStatus={order.orderStatus}
-            />
+            <PremiumTimeline events={tracking.events ?? []} orderStatus={order.orderStatus} />
           </div>
         )}
       </div>

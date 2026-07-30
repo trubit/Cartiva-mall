@@ -3,17 +3,19 @@ import { FiTrash2 } from 'react-icons/fi'
 import QuantitySelector from '../QuantitySelector/index.js'
 import { formatCurrency } from '../../../../shared/helpers/index.js'
 import type { ICartDisplayItem } from '../../../../shared/types/cart.types.js'
+import { getImageUrl } from '../../../utils/image.js'
 
 interface CartItemProps {
-  item:           ICartDisplayItem
-  onRemove:       (productId: string) => void
-  onUpdateQty:    (productId: string, qty: number) => void
-  isMutating?:    boolean
+  item: ICartDisplayItem
+  onRemove: (productId: string) => void
+  onUpdateQty: (productId: string, qty: number) => void
+  isMutating?: boolean
 }
 
 export default function CartItem({ item, onRemove, onUpdateQty, isMutating }: CartItemProps) {
-  const { product, quantity, itemPrice, lineTotal, selectedVariant, selectedSize, selectedColor } = item
-  const thumb = product.images?.[0]
+  const { product, quantity, itemPrice, lineTotal, selectedVariant, selectedSize, selectedColor } =
+    item
+  const thumb = getImageUrl(product.images?.[0])
 
   return (
     <div className="cart-item">
@@ -36,8 +38,10 @@ export default function CartItem({ item, onRemove, onUpdateQty, isMutating }: Ca
         {(selectedVariant || selectedSize || selectedColor) && (
           <div className="cart-item__variants">
             {selectedVariant && <span className="cart-item__variant-tag">{selectedVariant}</span>}
-            {selectedSize    && <span className="cart-item__variant-tag">Size: {selectedSize}</span>}
-            {selectedColor   && <span className="cart-item__variant-tag">Color: {selectedColor}</span>}
+            {selectedSize && <span className="cart-item__variant-tag">Size: {selectedSize}</span>}
+            {selectedColor && (
+              <span className="cart-item__variant-tag">Color: {selectedColor}</span>
+            )}
           </div>
         )}
 
@@ -65,9 +69,7 @@ export default function CartItem({ item, onRemove, onUpdateQty, isMutating }: Ca
           size="md"
         />
 
-        <div className="cart-item__line-total">
-          {formatCurrency(lineTotal)}
-        </div>
+        <div className="cart-item__line-total">{formatCurrency(lineTotal)}</div>
 
         <button
           className="cart-item__remove-btn"

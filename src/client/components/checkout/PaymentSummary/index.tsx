@@ -2,6 +2,7 @@ import { FiShield, FiLock } from 'react-icons/fi'
 import PriceBreakdown from '../PriceBreakdown/index.js'
 import CheckoutCouponBox from '../CouponBox/index.js'
 import { useCheckoutStore } from '../../../store/checkoutStore.js'
+import { getImageUrl } from '../../../utils/image.js'
 
 interface PaymentSummaryProps {
   showCoupon?: boolean
@@ -28,7 +29,7 @@ export default function PaymentSummary({ showCoupon = true }: PaymentSummaryProp
           <li key={`${item.productId}-${idx}`} className="payment-summary__item">
             <div className="payment-summary__item-img-wrap">
               {item.image ? (
-                <img src={item.image} alt={item.title} className="payment-summary__item-img" />
+                <img src={getImageUrl(item.image)} alt={item.title} className="payment-summary__item-img" />
               ) : (
                 <div className="payment-summary__item-img-placeholder">🛍️</div>
               )}
@@ -65,8 +66,12 @@ export default function PaymentSummary({ showCoupon = true }: PaymentSummaryProp
 
       {/* Trust signals */}
       <div className="payment-summary__trust">
-        <span className="payment-summary__trust-item"><FiLock   size={13} /> SSL Secured</span>
-        <span className="payment-summary__trust-item"><FiShield size={13} /> Buyer Protected</span>
+        <span className="payment-summary__trust-item">
+          <FiLock size={13} /> SSL Secured
+        </span>
+        <span className="payment-summary__trust-item">
+          <FiShield size={13} /> Buyer Protected
+        </span>
       </div>
     </aside>
   )

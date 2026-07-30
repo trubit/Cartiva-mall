@@ -5,6 +5,7 @@ import PriceTag from '../PriceTag/index.js'
 import ProductBadges from '../Badge/index.js'
 import { useCart } from '../../../hooks/useCart.js'
 import type { IProduct } from '../../../../shared/types/product.types.js'
+import { getImageUrl } from '../../../utils/image.js'
 
 interface ProductCardProps {
   product: IProduct
@@ -33,9 +34,9 @@ export default function ProductCard({ product, onQuickView }: ProductCardProps) 
       <div className="product-card__img-wrap">
         <ProductBadges product={product} />
 
-        {product.images[0] ? (
+        {getImageUrl(product.images[0]) ? (
           <img
-            src={product.images[0]}
+            src={getImageUrl(product.images[0])}
             alt={product.title}
             className="product-card__img"
             loading="lazy"
@@ -84,11 +85,7 @@ export default function ProductCard({ product, onQuickView }: ProductCardProps) 
         </div>
 
         <div className="product-card__actions">
-          <button
-            className="product-card__add-btn"
-            onClick={handleAddToCart}
-            disabled={!inStock}
-          >
+          <button className="product-card__add-btn" onClick={handleAddToCart} disabled={!inStock}>
             <FiShoppingCart size={14} />
             {inStock ? 'Add to Cart' : 'Out of Stock'}
           </button>

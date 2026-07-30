@@ -6,6 +6,7 @@ import PriceTag from '../PriceTag/index.js'
 import ProductBadges from '../Badge/index.js'
 import { useCart } from '../../../hooks/useCart.js'
 import type { IProduct } from '../../../../shared/types/product.types.js'
+import { getImageUrl } from '../../../utils/image.js'
 
 interface QuickViewModalProps {
   product: IProduct
@@ -14,11 +15,13 @@ interface QuickViewModalProps {
 
 export default function QuickViewModal({ product, onClose }: QuickViewModalProps) {
   const { addToCart } = useCart()
-  const inStock   = product.stockQuantity > 0
+  const inStock = product.stockQuantity > 0
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
     window.addEventListener('keydown', onKey)
     return () => {
       document.body.style.overflow = ''
@@ -28,14 +31,20 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
 
   return (
     <div className="quick-view-backdrop" onClick={onClose}>
-      <div className="quick-view-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal aria-label={product.title}>
+      <div
+        className="quick-view-modal"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal
+        aria-label={product.title}
+      >
         <button className="quick-view-modal__close" onClick={onClose} aria-label="Close">
           <FiX size={16} />
         </button>
 
         {/* Image */}
-        {product.images[0] ? (
-          <img src={product.images[0]} alt={product.title} className="quick-view-modal__img" />
+        {getImageUrl(product.images[0]) ? (
+          <img src={getImageUrl(product.images[0])} alt={product.title} className="quick-view-modal__img" />
         ) : (
           <div
             className="quick-view-modal__img"
@@ -67,18 +76,28 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
             </div>
           )}
 
-          <PriceTag price={product.price} discountPrice={product.discountPrice} size="lg" showSave />
+          <PriceTag
+            price={product.price}
+            discountPrice={product.discountPrice}
+            size="lg"
+            showSave
+          />
 
           <p className="quick-view-modal__description">{product.description}</p>
 
-          <p className={`quick-view-modal__stock quick-view-modal__stock--${inStock ? 'in' : 'out'}`}>
+          <p
+            className={`quick-view-modal__stock quick-view-modal__stock--${inStock ? 'in' : 'out'}`}
+          >
             {inStock ? `✓ ${product.stockQuantity} in stock` : '✗ Out of stock'}
           </p>
 
           <div style={{ display: 'flex', gap: '0.625rem', marginTop: 'auto' }}>
             <button
               className="product-detail__add-btn"
-              onClick={() => { addToCart(product, 1); onClose() }}
+              onClick={() => {
+                addToCart(product, 1)
+                onClose()
+              }}
               disabled={!inStock}
               style={{ flex: 1 }}
             >

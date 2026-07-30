@@ -1,19 +1,15 @@
 import { Outlet } from 'react-router-dom'
 import Navbar from '../components/layout/Navbar.js'
-import Footer from '../components/layout/Footer.js'
 import EmailVerificationBanner from '../components/layout/EmailVerificationBanner/index.js'
 import BottomNav from '../components/layout/BottomNav.js'
 import { useMe } from '../hooks/useAuth.js'
-import { useAuthStore } from '../store/authStore.js'
 
 function AuthSync() {
   useMe()
   return null
 }
 
-export default function MainLayout() {
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
-
+export default function NavbarLayout() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <AuthSync />
@@ -22,7 +18,6 @@ export default function MainLayout() {
       <main style={{ flex: 1 }}>
         <Outlet />
       </main>
-      {!isAuthenticated && <Footer />}
       <BottomNav />
     </div>
   )
