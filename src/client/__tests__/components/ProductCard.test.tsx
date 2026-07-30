@@ -40,7 +40,7 @@ function renderCard(product: IProduct, onQuickView?: (p: IProduct) => void) {
   return render(
     <MemoryRouter>
       <ProductCard product={product} onQuickView={onQuickView} />
-    </MemoryRouter>
+    </MemoryRouter>,
   )
 }
 

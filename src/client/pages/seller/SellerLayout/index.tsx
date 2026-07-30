@@ -1,5 +1,5 @@
-import { Outlet }        from 'react-router-dom'
-import { useIsMobile }   from '../../../hooks/useBreakpoint.js'
+import { Outlet } from 'react-router-dom'
+import { useIsMobile } from '../../../hooks/useBreakpoint.js'
 import SellerSidebar, { SellerMobileNav } from '../../../components/seller/SellerSidebar/index.js'
 
 export default function SellerLayout() {
@@ -8,7 +8,13 @@ export default function SellerLayout() {
   // ── Desktop: left sidebar ──────────────────────────────────────────────────
   if (!isMobile) {
     return (
-      <div style={{ display: 'flex', minHeight: '100%', background: 'var(--color-neutral-50, #f8f9fa)' }}>
+      <div
+        style={{
+          display: 'flex',
+          minHeight: '100%',
+          background: 'var(--color-neutral-50, #f8f9fa)',
+        }}
+      >
         <SellerSidebar />
         <main style={{ flex: 1, minWidth: 0, overflowX: 'hidden' }}>
           <Outlet />
@@ -19,7 +25,14 @@ export default function SellerLayout() {
 
   // ── Mobile / Tablet: top tab strip ────────────────────────────────────────
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', background: 'var(--color-neutral-50, #f8f9fa)' }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: '100%',
+        background: 'var(--color-neutral-50, #f8f9fa)',
+      }}
+    >
       <SellerMobileNav />
       <main style={{ flex: 1, minWidth: 0, overflowX: 'hidden' }}>
         <Outlet />

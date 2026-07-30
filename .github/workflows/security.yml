@@ -1,0 +1,74 @@
+name: Security
+
+# Run on push/PR to main and weekly on Monday mornings so new CVEs
+# are caught even when there are no code changes.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 9 * * 1' # Every Monday at 09:00 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  # ── Dependency vulnerability audit ────────────────────────────────────────
+  # Blocks on critical-severity CVEs in production dependencies.
+  # (devDependencies are omitted — they never reach production.)
+  # Upgrade to --audit-level=high once the initial triage is done.
+  audit:
+    name: Dependency Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      # --ignore-scripts prevents malicious postinstall hooks from running
+      # during the audit-only install.
+      - name: Install dependencies (scripts disabled)
+        run: npm ci --ignore-scripts
+
+      - name: npm audit (critical, production only)
+        run: npm audit --audit-level=critical --omit=dev
+
+  # ── CodeQL static analysis ─────────────────────────────────────────────────
+  # Scans both TypeScript source trees (client + server) for security
+  # vulnerabilities and quality issues using GitHub's built-in engine.
+  # Results appear in the Security → Code Scanning tab of the repository.
+  codeql:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          # Runs both the security-extended query suite and quality checks.
+          queries: security-and-quality
+
+      # CodeQL handles JS/TS without a compile step, but autobuild is still
+      # recommended to capture any generated files.
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: /language:javascript-typescript

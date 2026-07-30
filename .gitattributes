@@ -1,0 +1,19 @@
+# Normalize all text files to LF in the repository.
+# Git will convert to CRLF on Windows checkout when core.autocrlf=true,
+# but the repo and CI always see LF — matching prettier's endOfLine: lf.
+* text=auto eol=lf
+
+# Explicitly mark binary files so Git never touches their bytes.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.webp binary
+*.ico  binary
+*.svg  binary
+*.ttf  binary
+*.woff binary
+*.woff2 binary
+*.eot  binary
+*.pdf  binary
+*.zip  binary

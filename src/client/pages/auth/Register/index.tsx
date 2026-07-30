@@ -9,7 +9,10 @@ import AuthInput from '../../../../client/components/auth/AuthInput/index.js'
 import AuthButton from '../../../../client/components/auth/AuthButton/index.js'
 import SocialLogin from '../../../../client/components/auth/SocialLogin/index.js'
 import { useRegister } from '../../../hooks/useAuth.js'
-import { registerSchema, type RegisterInput } from '../../../../shared/validators/auth.validators.js'
+import {
+  registerSchema,
+  type RegisterInput,
+} from '../../../../shared/validators/auth.validators.js'
 
 const getPasswordStrength = (pwd: string) => {
   if (!pwd) return { level: 0, label: '', cls: '' }
@@ -20,9 +23,9 @@ const getPasswordStrength = (pwd: string) => {
   if (/[^A-Za-z0-9]/.test(pwd)) score++
   const map = [
     { label: '', cls: '' },
-    { label: 'Weak',   cls: 'strength-weak' },
-    { label: 'Fair',   cls: 'strength-fair' },
-    { label: 'Good',   cls: 'strength-good' },
+    { label: 'Weak', cls: 'strength-weak' },
+    { label: 'Fair', cls: 'strength-fair' },
+    { label: 'Good', cls: 'strength-good' },
     { label: 'Strong', cls: 'strength-strong' },
   ]
   return { level: score, ...map[score] }
@@ -31,7 +34,8 @@ const getPasswordStrength = (pwd: string) => {
 export default function RegisterPage() {
   const [pwdValue, setPwdValue] = useState('')
   const { mutate: register, isPending, error, isError } = useRegister()
-  const errorMsg = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
+  const errorMsg = (error as { response?: { data?: { message?: string } } })?.response?.data
+    ?.message
 
   const {
     register: rhf,
@@ -47,9 +51,7 @@ export default function RegisterPage() {
   return (
     <AuthFormCard title="Create Account" wide>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
-        {isError && errorMsg && (
-          <div className="auth-alert auth-alert-error">{errorMsg}</div>
-        )}
+        {isError && errorMsg && <div className="auth-alert auth-alert-error">{errorMsg}</div>}
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
           {/* Name Row */}
@@ -108,9 +110,13 @@ export default function RegisterPage() {
           />
 
           <div className="auth-input-group">
-            <label className="auth-label" htmlFor="password">Password</label>
+            <label className="auth-label" htmlFor="password">
+              Password
+            </label>
             <div className="auth-input-wrapper">
-              <span className="auth-input-icon"><FiLock /></span>
+              <span className="auth-input-icon">
+                <FiLock />
+              </span>
               <input
                 id="password"
                 type="password"
@@ -132,35 +138,44 @@ export default function RegisterPage() {
                 <span className="password-strength-label">Strength: {strength.label}</span>
               </div>
             )}
-            {errors.password && (
-              <span className="auth-error-msg">{errors.password.message}</span>
-            )}
+            {errors.password && <span className="auth-error-msg">{errors.password.message}</span>}
           </div>
 
           {/* Account Type */}
           <div className="auth-input-group">
-            <label className="auth-label" htmlFor="role">Account Type</label>
-            <select id="role" className="auth-input no-icon" {...rhf('role')}
-              style={{ height: 40, cursor: 'pointer' }}>
+            <label className="auth-label" htmlFor="role">
+              Account Type
+            </label>
+            <select
+              id="role"
+              className="auth-input no-icon"
+              {...rhf('role')}
+              style={{ height: 40, cursor: 'pointer' }}
+            >
               <option value="user">Buyer — Shop products</option>
               <option value="seller">Seller — List and sell products</option>
             </select>
           </div>
 
           <div style={{ marginTop: 'var(--space-2)' }}>
-            <AuthButton type="submit" loading={isPending}>Create Account</AuthButton>
+            <AuthButton type="submit" loading={isPending}>
+              Create Account
+            </AuthButton>
           </div>
         </form>
 
         <SocialLogin />
 
         <p className="auth-terms">
-          By creating an account, you agree to Cartiva&apos;s{' '}
-          <a href="#">Conditions of Use</a> and <a href="#">Privacy Notice</a>.
+          By creating an account, you agree to Cartiva&apos;s <a href="#">Conditions of Use</a> and{' '}
+          <a href="#">Privacy Notice</a>.
         </p>
 
         <div className="auth-footer">
-          Already have an account? <Link to="/login" className="auth-link">Sign in</Link>
+          Already have an account?{' '}
+          <Link to="/login" className="auth-link">
+            Sign in
+          </Link>
         </div>
       </motion.div>
     </AuthFormCard>

@@ -17,7 +17,9 @@ const AuthInput = forwardRef<HTMLInputElement, AuthInputProps>(
 
     return (
       <div className="auth-input-group">
-        <label className="auth-label" htmlFor={id}>{label}</label>
+        <label className="auth-label" htmlFor={id}>
+          {label}
+        </label>
         <div className="auth-input-wrapper">
           {icon && <span className="auth-input-icon">{icon}</span>}
           <input
@@ -48,7 +50,9 @@ const AuthInput = forwardRef<HTMLInputElement, AuthInputProps>(
           </span>
         )}
         {hint && !error && (
-          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-neutral-400)' }}>{hint}</span>
+          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-neutral-400)' }}>
+            {hint}
+          </span>
         )}
       </div>
     )

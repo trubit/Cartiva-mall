@@ -4,40 +4,40 @@ import request from 'supertest'
 // ── Mocks MUST be declared before any server imports ─────────────────────────
 vi.mock('ioredis', () => {
   class Redis {
-    get        = vi.fn().mockResolvedValue(null)
-    set        = vi.fn().mockResolvedValue('OK')
-    setex      = vi.fn().mockResolvedValue('OK')
-    del        = vi.fn().mockResolvedValue(1)
-    exists     = vi.fn().mockResolvedValue(0)
-    expire     = vi.fn().mockResolvedValue(1)
-    sadd       = vi.fn().mockResolvedValue(0)
-    scan       = vi.fn().mockResolvedValue(['0', []])
-    incr       = vi.fn().mockResolvedValue(1)
-    call       = vi.fn().mockResolvedValue(null)
-    connect    = vi.fn().mockResolvedValue(undefined)
-    quit       = vi.fn().mockResolvedValue('OK')
-    on         = vi.fn()
+    get = vi.fn().mockResolvedValue(null)
+    set = vi.fn().mockResolvedValue('OK')
+    setex = vi.fn().mockResolvedValue('OK')
+    del = vi.fn().mockResolvedValue(1)
+    exists = vi.fn().mockResolvedValue(0)
+    expire = vi.fn().mockResolvedValue(1)
+    sadd = vi.fn().mockResolvedValue(0)
+    scan = vi.fn().mockResolvedValue(['0', []])
+    incr = vi.fn().mockResolvedValue(1)
+    call = vi.fn().mockResolvedValue(null)
+    connect = vi.fn().mockResolvedValue(undefined)
+    quit = vi.fn().mockResolvedValue('OK')
+    on = vi.fn()
     disconnect = vi.fn()
-    status     = 'ready'
+    status = 'ready'
   }
   return { default: Redis, Redis }
 })
 
 vi.mock('../../utils/email.js', () => ({
-  sendVerificationEmail:  vi.fn().mockResolvedValue(undefined),
+  sendVerificationEmail: vi.fn().mockResolvedValue(undefined),
   sendPasswordResetEmail: vi.fn().mockResolvedValue(undefined),
 }))
 
 vi.mock('../../middlewares/rateLimiter.middleware.js', () => {
   const pass = (_req: unknown, _res: unknown, next: () => void) => next()
   return {
-    globalLimiter:    pass,
-    authLimiter:      pass,
-    searchLimiter:    pass,
-    uploadLimiter:    pass,
+    globalLimiter: pass,
+    authLimiter: pass,
+    searchLimiter: pass,
+    uploadLimiter: pass,
     dashboardLimiter: pass,
-    checkoutLimiter:  pass,
-    paymentLimiter:   pass,
+    checkoutLimiter: pass,
+    paymentLimiter: pass,
   }
 })
 
@@ -76,9 +76,7 @@ async function createVerifiedUser(seed: string) {
 // ── Tests ─────────────────────────────────────────────────────────────────────
 describe('POST /auth/register', () => {
   it('returns 201 and success:true for valid payload', async () => {
-    const res = await request(app)
-      .post(`${AUTH}/register`)
-      .send(validRegistration('reg01'))
+    const res = await request(app).post(`${AUTH}/register`).send(validRegistration('reg01'))
 
     expect(res.status).toBe(201)
     expect(res.body.success).toBe(true)
@@ -177,9 +175,7 @@ describe('GET /auth/me', () => {
   })
 
   it('returns 200 with user data using Bearer token', async () => {
-    const res = await request(app)
-      .get(`${AUTH}/me`)
-      .set('Authorization', `Bearer ${accessToken}`)
+    const res = await request(app).get(`${AUTH}/me`).set('Authorization', `Bearer ${accessToken}`)
 
     expect(res.status).toBe(200)
     expect(res.body.success).toBe(true)

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { FiAlertCircle, FiCreditCard } from 'react-icons/fi'
 import { usePaystackInitialize, usePaystackVerify } from '../../../hooks/usePayment.js'
 import { usePaymentStore } from '../../../store/paymentStore.js'
-import { useAuthStore }    from '../../../store/authStore.js'
+import { useAuthStore } from '../../../store/authStore.js'
 import type { PaystackInitResponse } from '../../../services/paymentService.js'
 
 declare global {
@@ -14,19 +14,19 @@ declare global {
 }
 
 interface PaystackTransactionOptions {
-  key:       string
-  email:     string
-  amount:    number
+  key: string
+  email: string
+  amount: number
   currency?: string
-  ref?:      string
+  ref?: string
   metadata?: Record<string, unknown>
   onSuccess: (t: { reference: string }) => void
-  onCancel:  () => void
+  onCancel: () => void
 }
 
 interface Props {
   orderId: string
-  amount:  number
+  amount: number
 }
 
 const PAYSTACK_INLINE_URL = 'https://js.paystack.co/v2/inline.js'
@@ -35,27 +35,30 @@ function loadPaystackScript(): Promise<void> {
   return new Promise((resolve, reject) => {
     if (document.querySelector(`script[src="${PAYSTACK_INLINE_URL}"]`)) {
       if (window.PaystackPop) resolve()
-      else document.querySelector(`script[src="${PAYSTACK_INLINE_URL}"]`)!.addEventListener('load', () => resolve())
+      else
+        document
+          .querySelector(`script[src="${PAYSTACK_INLINE_URL}"]`)!
+          .addEventListener('load', () => resolve())
       return
     }
-    const s    = document.createElement('script')
-    s.src      = PAYSTACK_INLINE_URL
-    s.async    = true
-    s.onload   = () => resolve()
-    s.onerror  = () => reject(new Error('Failed to load Paystack script'))
+    const s = document.createElement('script')
+    s.src = PAYSTACK_INLINE_URL
+    s.async = true
+    s.onload = () => resolve()
+    s.onerror = () => reject(new Error('Failed to load Paystack script'))
     document.head.appendChild(s)
   })
 }
 
 export default function PaystackPayment({ orderId, amount }: Props) {
-  const user        = useAuthStore((s) => s.user)
-  const step        = usePaymentStore((s) => s.step)
+  const user = useAuthStore((s) => s.user)
+  const step = usePaymentStore((s) => s.step)
   const errorMessage = usePaymentStore((s) => s.errorMessage)
-  const setStep     = usePaymentStore((s) => s.setStep)
-  const setError    = usePaymentStore((s) => s.setError)
+  const setStep = usePaymentStore((s) => s.setStep)
+  const setError = usePaymentStore((s) => s.setError)
 
-  const initialize  = usePaystackInitialize()
-  const verify      = usePaystackVerify()
+  const initialize = usePaystackInitialize()
+  const verify = usePaystackVerify()
 
   const [scriptReady, setScriptReady] = useState(false)
   const paystackDataRef = useRef<PaystackInitResponse | null>(null)
@@ -75,14 +78,16 @@ export default function PaystackPayment({ orderId, amount }: Props) {
 
     const popup = new window.PaystackPop()
     popup.newTransaction({
-      key:      data.publicKey,
-      email:    user?.email ?? '',
-      amount:   data.amount,
+      key: data.publicKey,
+      email: user?.email ?? '',
+      amount: data.amount,
       currency: data.currency,
-      ref:      data.reference,
+      ref: data.reference,
       metadata: { orderId, custom_fields: [] },
-      onSuccess: (tx) => { verify.mutate(tx.reference) },
-      onCancel:  () => {
+      onSuccess: (tx) => {
+        verify.mutate(tx.reference)
+      },
+      onCancel: () => {
         setStep('form')
         setError('Payment was cancelled. You can try again.')
       },
@@ -90,7 +95,10 @@ export default function PaystackPayment({ orderId, amount }: Props) {
   }
 
   const handlePay = async () => {
-    if (!user?.email) { setError('No email on account — please update your profile.'); return }
+    if (!user?.email) {
+      setError('No email on account — please update your profile.')
+      return
+    }
 
     const data = await initialize.mutateAsync({ orderId, email: user.email })
     paystackDataRef.current = data
@@ -107,20 +115,24 @@ export default function PaystackPayment({ orderId, amount }: Props) {
           src="https://website-v3-assets.s3.amazonaws.com/assets/img/hero/Paystack-mark-white-twitter.png"
           alt="Paystack"
           className="paystack-panel__logo"
-          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+          onError={(e) => {
+            ;(e.target as HTMLImageElement).style.display = 'none'
+          }}
         />
         <span className="paystack-panel__title">Pay with Paystack</span>
       </div>
 
       <div className="paystack-panel__methods">
         {METHODS.map((m) => (
-          <span key={m} className="paystack-panel__method-badge">{m}</span>
+          <span key={m} className="paystack-panel__method-badge">
+            {m}
+          </span>
         ))}
       </div>
 
       <p className="paystack-panel__note">
-        Secure payments for Nigeria, Ghana, Kenya, South Africa and more.
-        You'll be redirected to a secure Paystack checkout popup.
+        Secure payments for Nigeria, Ghana, Kenya, South Africa and more. You'll be redirected to a
+        secure Paystack checkout popup.
       </p>
 
       {errorMessage && step === 'form' && (
@@ -142,13 +154,15 @@ export default function PaystackPayment({ orderId, amount }: Props) {
           disabled={!scriptReady || initialize.isPending || verify.isPending}
         >
           <FiCreditCard size={16} />
-          Pay {new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN' }).format(amount)}
+          Pay{' '}
+          {new Intl.NumberFormat(undefined, {
+            style: 'currency',
+            currency: paystackDataRef.current?.currency ?? 'NGN',
+          }).format(amount)}
         </button>
       )}
 
-      <p className="paystack-panel__secured">
-        🔒 Secured by Paystack · PCI DSS Level 1 certified
-      </p>
+      <p className="paystack-panel__secured">🔒 Secured by Paystack · PCI DSS Level 1 certified</p>
     </div>
   )
 }

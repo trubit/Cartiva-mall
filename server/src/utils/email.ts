@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer'
 import { env } from '../config/env.js'
 import { logger } from './logger.js'
+import { callBrevo } from './circuit-breakers.js'
 
 interface MailOptions {
   to: string
@@ -10,26 +11,37 @@ interface MailOptions {
 }
 
 // ─── Brevo REST API (no IP restriction, works from any machine) ────────────────
-const sendViaBrevoAPI = async (options: MailOptions & { from: string; fromName: string }): Promise<void> => {
-  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
-    method:  'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'api-key':      env.BREVO_API_KEY,
-    },
-    body: JSON.stringify({
-      sender:      { name: options.fromName, email: options.from },
-      to:          [{ email: options.to }],
-      subject:     options.subject,
-      htmlContent: options.html,
-      textContent: options.text ?? options.html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(),
-    }),
-  })
+const sendViaBrevoAPI = async (
+  options: MailOptions & { from: string; fromName: string },
+): Promise<void> => {
+  await callBrevo(async () => {
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'api-key': env.BREVO_API_KEY,
+      },
+      body: JSON.stringify({
+        sender: { name: options.fromName, email: options.from },
+        to: [{ email: options.to }],
+        subject: options.subject,
+        htmlContent: options.html,
+        textContent:
+          options.text ??
+          options.html
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim(),
+      }),
+    })
 
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}))
-    throw new Error(`Brevo API error ${res.status}: ${(body as { message?: string }).message ?? res.statusText}`)
-  }
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}))
+      throw new Error(
+        `Brevo API error ${res.status}: ${(body as { message?: string }).message ?? res.statusText}`,
+      )
+    }
+  })
 }
 
 // ─── Ethereal fallback (dev preview, no real delivery) ────────────────────────
@@ -38,18 +50,22 @@ let _ethereal: nodemailer.Transporter | null = null
 const sendViaEthereal = async (options: MailOptions): Promise<void> => {
   if (!_ethereal) {
     const acc = await nodemailer.createTestAccount()
-    logger.warn('No BREVO_API_KEY set — using Ethereal preview (emails NOT delivered to real inboxes)')
+    logger.warn(
+      'No BREVO_API_KEY set — using Ethereal preview (emails NOT delivered to real inboxes)',
+    )
     _ethereal = nodemailer.createTransport({
-      host: 'smtp.ethereal.email', port: 587, secure: false,
+      host: 'smtp.ethereal.email',
+      port: 587,
+      secure: false,
       auth: { user: acc.user, pass: acc.pass },
     })
   }
   const info = await _ethereal.sendMail({
-    from:    '"Cartiva" <noreply@cartiva.com>',
-    to:      options.to,
+    from: '"Cartiva" <noreply@cartiva.com>',
+    to: options.to,
     subject: options.subject,
-    html:    options.html,
-    text:    options.text,
+    html: options.html,
+    text: options.text,
   })
   const url = nodemailer.getTestMessageUrl(info)
   logger.info('─── EMAIL PREVIEW ────────────────────────────────────')

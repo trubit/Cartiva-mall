@@ -7,9 +7,9 @@ import type { ICheckoutAddress } from '../../../../shared/types/checkout.types.j
 
 interface CheckoutFormProps {
   defaultValues?: Partial<ICheckoutAddress>
-  onSubmit:       (data: CheckoutAddressInput) => void
-  isSubmitting?:  boolean
-  submitLabel?:   string
+  onSubmit: (data: CheckoutAddressInput) => void
+  isSubmitting?: boolean
+  submitLabel?: string
 }
 
 const Field = ({
@@ -40,7 +40,7 @@ export default function CheckoutForm({
     reset,
     formState: { errors },
   } = useForm<CheckoutAddressInput>({
-    resolver:      zodResolver(checkoutAddressSchema),
+    resolver: zodResolver(checkoutAddressSchema),
     defaultValues: defaultValues ?? {},
   })
 

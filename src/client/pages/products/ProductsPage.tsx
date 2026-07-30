@@ -18,11 +18,11 @@ const SORT_LABELS: Record<string, string> = {
 
 export default function ProductsPage() {
   const { filters, setFilters } = useProductStore()
-  const { data, isLoading }     = useProducts(filters)
-  const [quickView, setQuickView]       = useState<IProduct | null>(null)
+  const { data, isLoading } = useProducts(filters)
+  const [quickView, setQuickView] = useState<IProduct | null>(null)
   const [showMobileFilter, setShowMobileFilter] = useState(false)
 
-  const products   = data?.data ?? []
+  const products = data?.data ?? []
   const pagination = data?.pagination
 
   const handlePage = (page: number) => {
@@ -36,7 +36,15 @@ export default function ProductsPage() {
   return (
     <div className="container section">
       {/* Top bar */}
-      <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+      <div
+        style={{
+          display: 'flex',
+          gap: '1rem',
+          alignItems: 'center',
+          marginBottom: '1.5rem',
+          flexWrap: 'wrap',
+        }}
+      >
         <div style={{ flex: 1, minWidth: 240 }}>
           <ProductSearch
             defaultValue={filters.search ?? ''}
@@ -44,10 +52,7 @@ export default function ProductsPage() {
           />
         </div>
 
-        <button
-          className="btn btn-outline hide-desktop"
-          onClick={() => setShowMobileFilter(true)}
-        >
+        <button className="btn btn-outline hide-desktop" onClick={() => setShowMobileFilter(true)}>
           <FiFilter size={15} /> Filters
         </button>
       </div>
@@ -68,13 +73,17 @@ export default function ProductsPage() {
             </span>
 
             <div className="products-main__sort">
-              <span style={{ color: 'var(--color-neutral-500)', fontSize: 'var(--text-sm)' }}>Sort:</span>
+              <span style={{ color: 'var(--color-neutral-500)', fontSize: 'var(--text-sm)' }}>
+                Sort:
+              </span>
               <select
                 value={filters.sort ?? 'newest'}
                 onChange={(e) => setFilters({ sort: e.target.value as typeof filters.sort })}
               >
                 {Object.entries(SORT_LABELS).map(([val, label]) => (
-                  <option key={val} value={val}>{label}</option>
+                  <option key={val} value={val}>
+                    {label}
+                  </option>
                 ))}
               </select>
             </div>
@@ -108,7 +117,12 @@ export default function ProductsPage() {
                 }, [])
                 .map((p, i) =>
                   p === '…' ? (
-                    <span key={`e${i}`} style={{ padding: '0 4px', color: 'var(--color-neutral-400)' }}>…</span>
+                    <span
+                      key={`e${i}`}
+                      style={{ padding: '0 4px', color: 'var(--color-neutral-400)' }}
+                    >
+                      …
+                    </span>
                   ) : (
                     <button
                       key={p}
@@ -143,9 +157,7 @@ export default function ProductsPage() {
         </div>
       )}
 
-      {quickView && (
-        <QuickViewModal product={quickView} onClose={() => setQuickView(null)} />
-      )}
+      {quickView && <QuickViewModal product={quickView} onClose={() => setQuickView(null)} />}
     </div>
   )
 }

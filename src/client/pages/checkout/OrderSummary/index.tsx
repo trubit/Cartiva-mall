@@ -1,6 +1,6 @@
 import { useCheckoutStore } from '../../../store/checkoutStore.js'
-import { useCreateOrder }   from '../../../hooks/usePayment.js'
-import OrderReview          from '../../../components/checkout/OrderReview/index.js'
+import { useCreateOrder } from '../../../hooks/usePayment.js'
+import OrderReview from '../../../components/checkout/OrderReview/index.js'
 
 export default function OrderSummaryStep() {
   const { session, prevStep } = useCheckoutStore()
@@ -10,7 +10,9 @@ export default function OrderSummaryStep() {
     return (
       <div className="checkout-step">
         <p className="checkout-step__error">Missing shipping details. Please go back.</p>
-        <button className="btn btn-outline" onClick={prevStep}>← Back</button>
+        <button className="btn btn-outline" onClick={prevStep}>
+          ← Back
+        </button>
       </div>
     )
   }

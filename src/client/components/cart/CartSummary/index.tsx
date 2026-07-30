@@ -6,13 +6,13 @@ import { formatCurrency } from '../../../../shared/helpers/index.js'
 import type { ICartTotals } from '../../../../shared/types/cart.types.js'
 
 interface CartSummaryProps {
-  totals:        ICartTotals
+  totals: ICartTotals
   onCouponApply: (code: string) => void
   onCouponRemove: () => void
   appliedCoupon?: string
   couponLoading?: boolean
-  couponError?:   string
-  onClearCart:   () => void
+  couponError?: string
+  onClearCart: () => void
   isCheckoutEnabled: boolean
 }
 
@@ -50,7 +50,9 @@ export default function CartSummary({
       {/* Line items */}
       <div className="cart-summary__lines">
         <div className="cart-summary__line">
-          <span>Subtotal ({totals.totalItems} item{totals.totalItems !== 1 ? 's' : ''})</span>
+          <span>
+            Subtotal ({totals.totalItems} item{totals.totalItems !== 1 ? 's' : ''})
+          </span>
           <span>{formatCurrency(totals.subtotal)}</span>
         </div>
 
@@ -87,7 +89,9 @@ export default function CartSummary({
         to="/checkout"
         className={`btn btn-primary btn-lg cart-summary__checkout-btn ${!isCheckoutEnabled ? 'disabled' : ''}`}
         aria-disabled={!isCheckoutEnabled}
-        onClick={(e) => { if (!isCheckoutEnabled) e.preventDefault() }}
+        onClick={(e) => {
+          if (!isCheckoutEnabled) e.preventDefault()
+        }}
       >
         Proceed to Checkout
       </Link>

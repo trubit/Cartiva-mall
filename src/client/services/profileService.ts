@@ -1,5 +1,10 @@
 import api from './api.js'
-import type { IUser, ProfileUpdatePayload, AddressPayload, NotificationPayload } from '../../shared/types/user.types.js'
+import type {
+  IUser,
+  ProfileUpdatePayload,
+  AddressPayload,
+  NotificationPayload,
+} from '../../shared/types/user.types.js'
 
 interface ProfileResponse {
   success: boolean

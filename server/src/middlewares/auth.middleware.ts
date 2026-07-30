@@ -7,6 +7,7 @@ import { cacheGet, cacheSet } from '../utils/cache.js'
 import type { TokenPayload, UserRole } from '../../../src/shared/types/auth.types.js'
 
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       user?: TokenPayload
@@ -32,23 +33,33 @@ async function verifyWithCache(token: string): Promise<TokenPayload> {
   // TTL = min(60 s, remaining token lifetime).
   // Without this cap a token expiring in 5 s would be cached as "valid" for 60 s after
   // jwt.verify already rejected the next call — closing the post-expiry grace window.
-  const nowSecs       = Math.floor(Date.now() / 1000)
+  const nowSecs = Math.floor(Date.now() / 1000)
   const remainingSecs = payload.exp ? Math.max(1, payload.exp - nowSecs) : 60
-  const cacheTtl      = Math.min(60, remainingSecs)
+  const cacheTtl = Math.min(60, remainingSecs)
   await cacheSet(cacheKey, payload, cacheTtl)
   return payload
 }
 
-export const authenticate = async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
+export const authenticate = async (
+  req: Request,
+  _res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
-    const authHeader      = req.headers.authorization
+    const authHeader = req.headers.authorization
     const tokenFromHeader = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
-    const tokenFromCookie = req.cookies?.access_token as string | undefined
 
-    const token = tokenFromHeader ?? tokenFromCookie
+    const token = tokenFromHeader
     if (!token) throw new AppError('Authentication required', 401)
 
-    req.user = await verifyWithCache(token)
+    const payload = await verifyWithCache(token)
+
+    // Reject tokens belonging to deactivated accounts without waiting for
+    // the token to expire. The blocklist is written by admin.toggleUserActive.
+    const isBlocked = await cacheGet<boolean>(`blocklist:user:${payload.userId}`)
+    if (isBlocked) throw new AppError('Account has been deactivated', 401)
+
+    req.user = payload
     next()
   } catch (err) {
     if (err instanceof AppError) return next(err)
@@ -56,7 +67,8 @@ export const authenticate = async (req: Request, _res: Response, next: NextFunct
   }
 }
 
-export const authorize = (...roles: UserRole[]) =>
+export const authorize =
+  (...roles: UserRole[]) =>
   (req: Request, _res: Response, next: NextFunction): void => {
     if (!req.user) return next(new AppError('Authentication required', 401))
     if (!roles.includes(req.user.role)) return next(new AppError('Access denied', 403))

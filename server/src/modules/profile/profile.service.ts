@@ -22,7 +22,10 @@ export const getProfile = async (userId: string) => {
 
 export const updateProfile = async (userId: string, data: UpdateProfileData) => {
   if (data.username) {
-    const existing = await User.findOne({ username: data.username.toLowerCase(), _id: { $ne: userId } })
+    const existing = await User.findOne({
+      username: data.username.toLowerCase(),
+      _id: { $ne: userId },
+    })
     if (existing) throw new AppError('Username already taken', 409)
   }
 

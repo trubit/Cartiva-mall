@@ -1,7 +1,13 @@
 import { NavLink } from 'react-router-dom'
 import {
-  FiGrid, FiHeart, FiBell, FiCreditCard, FiEye,
-  FiUser, FiShield, FiShoppingBag,
+  FiGrid,
+  FiHeart,
+  FiBell,
+  FiCreditCard,
+  FiEye,
+  FiUser,
+  FiShield,
+  FiShoppingBag,
 } from 'react-icons/fi'
 import { useDashboardStore } from '../../../store/dashboardStore.js'
 import type { IUser } from '../../../../shared/types/user.types.js'
@@ -11,16 +17,16 @@ interface DashboardSidebarProps {
 }
 
 const NAV_ITEMS = [
-  { label: 'Overview',       icon: FiGrid,       to: '/dashboard' },
-  { label: 'My Orders',      icon: FiShoppingBag, to: '/orders' },
-  { label: 'Wishlist',       icon: FiHeart,       to: '/dashboard/wishlist' },
-  { label: 'Notifications',  icon: FiBell,        to: '/dashboard/notifications', badge: true },
-  { label: 'Payments',       icon: FiCreditCard,  to: '/dashboard/payments' },
-  { label: 'Recently Viewed',icon: FiEye,         to: '/dashboard/recently-viewed' },
+  { label: 'Overview', icon: FiGrid, to: '/dashboard' },
+  { label: 'My Orders', icon: FiShoppingBag, to: '/orders' },
+  { label: 'Wishlist', icon: FiHeart, to: '/dashboard/wishlist' },
+  { label: 'Notifications', icon: FiBell, to: '/dashboard/notifications', badge: true },
+  { label: 'Payments', icon: FiCreditCard, to: '/dashboard/payments' },
+  { label: 'Recently Viewed', icon: FiEye, to: '/dashboard/recently-viewed' },
 ]
 
 const SETTINGS_ITEMS = [
-  { label: 'Account',  icon: FiUser,   to: '/dashboard/account' },
+  { label: 'Account', icon: FiUser, to: '/dashboard/account' },
   { label: 'Security', icon: FiShield, to: '/dashboard/security' },
 ]
 
@@ -60,9 +66,7 @@ export default function DashboardSidebar({ user }: DashboardSidebarProps) {
             <NavLink
               to={to}
               end={to === '/dashboard'}
-              className={({ isActive }) =>
-                `dashboard-sidebar__link${isActive ? ' active' : ''}`
-              }
+              className={({ isActive }) => `dashboard-sidebar__link${isActive ? ' active' : ''}`}
             >
               <Icon className="dashboard-sidebar__link-icon" />
               {label}
@@ -82,9 +86,7 @@ export default function DashboardSidebar({ user }: DashboardSidebarProps) {
           <li key={to}>
             <NavLink
               to={to}
-              className={({ isActive }) =>
-                `dashboard-sidebar__link${isActive ? ' active' : ''}`
-              }
+              className={({ isActive }) => `dashboard-sidebar__link${isActive ? ' active' : ''}`}
             >
               <Icon className="dashboard-sidebar__link-icon" />
               {label}

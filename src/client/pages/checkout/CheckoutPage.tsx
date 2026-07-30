@@ -9,14 +9,13 @@ import PaymentSummary from '../../components/checkout/PaymentSummary/index.js'
 import AddressSelection from './AddressSelection/index.js'
 import ShippingSelection from './ShippingSelection/index.js'
 import OrderSummaryStep from './OrderSummary/index.js'
-import '../../styles/checkout.css'
 
 const STEPS = ['Address', 'Shipping', 'Review'] as const
 
 export default function CheckoutPage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
-  const { step }        = useCheckoutStore()
-  const { items }       = useCart()
+  const { step } = useCheckoutStore()
+  const { items } = useCart()
   const { isLoading, isError, error } = useCheckoutSession()
 
   // Scroll to top on step change
@@ -44,18 +43,16 @@ export default function CheckoutPage() {
         {/* Step progress */}
         <div className="checkout-progress" role="list">
           {STEPS.map((label, idx) => {
-            const stepNum  = (idx + 1) as 1 | 2 | 3
+            const stepNum = (idx + 1) as 1 | 2 | 3
             const isActive = step === stepNum
-            const isDone   = step > stepNum
+            const isDone = step > stepNum
             return (
               <div
                 key={label}
                 className={`checkout-progress__step ${isActive ? 'checkout-progress__step--active' : ''} ${isDone ? 'checkout-progress__step--done' : ''}`}
                 role="listitem"
               >
-                <div className="checkout-progress__dot">
-                  {isDone ? '✓' : stepNum}
-                </div>
+                <div className="checkout-progress__dot">{isDone ? '✓' : stepNum}</div>
                 <span className="checkout-progress__label">{label}</span>
                 {idx < STEPS.length - 1 && <div className="checkout-progress__line" />}
               </div>
@@ -68,14 +65,19 @@ export default function CheckoutPage() {
           <main className="checkout-page__main">
             {isLoading && (
               <div className="checkout-page__loading">
-                <div className="skeleton" style={{ height: 400, borderRadius: 'var(--radius-xl)' }} />
+                <div
+                  className="skeleton"
+                  style={{ height: 400, borderRadius: 'var(--radius-xl)' }}
+                />
               </div>
             )}
 
             {isError && (
               <div className="checkout-page__error-banner">
                 <p>{errMsg ?? 'Failed to load checkout. Your cart may be empty.'}</p>
-                <a href="/cart" className="btn btn-outline btn-sm">Return to Cart</a>
+                <a href="/cart" className="btn btn-outline btn-sm">
+                  Return to Cart
+                </a>
               </div>
             )}
 

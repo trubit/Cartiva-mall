@@ -86,14 +86,18 @@ export default function Footer() {
               <Logo size="sm" theme="dark" />
             </Link>
             <div className="amz-footer__bottom-links">
-              <a href="#" className="amz-footer__bottom-link">Conditions of Use</a>
-              <a href="#" className="amz-footer__bottom-link">Privacy Notice</a>
-              <a href="#" className="amz-footer__bottom-link">Your Ads Privacy Choices</a>
+              <a href="#" className="amz-footer__bottom-link">
+                Conditions of Use
+              </a>
+              <a href="#" className="amz-footer__bottom-link">
+                Privacy Notice
+              </a>
+              <a href="#" className="amz-footer__bottom-link">
+                Your Ads Privacy Choices
+              </a>
             </div>
           </div>
-          <p className="amz-footer__copy">
-            &copy; 1996–{year}, Cartiva, Inc. or its affiliates
-          </p>
+          <p className="amz-footer__copy">&copy; {year}, Cartiva, Inc. or its affiliates</p>
         </div>
       </div>
     </footer>

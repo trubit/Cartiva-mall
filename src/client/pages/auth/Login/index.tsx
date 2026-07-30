@@ -13,12 +13,13 @@ import { loginSchema, type LoginInput } from '../../../../shared/validators/auth
 export default function LoginPage() {
   const [params] = useSearchParams()
   const registered = params.get('registered') === 'true'
-  const reset      = params.get('reset')      === 'true'
+  const reset = params.get('reset') === 'true'
 
   const { mutate: login, isPending, error, isError } = useLogin()
   const { mutate: resend, isPending: resending, isSuccess: resent } = useResendVerification()
 
-  const errorMsg = (error as { response?: { data?: { message?: string } } })?.response?.data?.message
+  const errorMsg = (error as { response?: { data?: { message?: string } } })?.response?.data
+    ?.message
   const isUnverified = isError && !!errorMsg?.toLowerCase().includes('not verified')
 
   const {
@@ -54,13 +55,27 @@ export default function LoginPage() {
         )}
 
         {isUnverified && (
-          <div className="auth-alert auth-alert-error" style={{ flexDirection: 'column', gap: 'var(--space-3)' }}>
+          <div
+            className="auth-alert auth-alert-error"
+            style={{ flexDirection: 'column', gap: 'var(--space-3)' }}
+          >
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-2)' }}>
               <FiAlertCircle style={{ flexShrink: 0, marginTop: 2 }} />
               <span>{errorMsg}</span>
             </div>
             {resent ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: '#065f46', background: 'var(--color-success-50)', padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-xs)' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 'var(--space-2)',
+                  color: '#065f46',
+                  background: 'var(--color-success-50)',
+                  padding: 'var(--space-2) var(--space-3)',
+                  borderRadius: 'var(--radius-sm)',
+                  fontSize: 'var(--text-xs)',
+                }}
+              >
                 <FiCheckCircle />
                 Verification email sent — check your Gmail inbox and spam folder.
               </div>
@@ -70,10 +85,17 @@ export default function LoginPage() {
                 onClick={handleResend}
                 disabled={resending}
                 style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 'var(--space-2)',
-                  background: 'none', border: '1px solid #fca5a5', borderRadius: 'var(--radius-sm)',
-                  color: '#991b1b', fontSize: 'var(--text-xs)', fontWeight: 600,
-                  padding: 'var(--space-1-5) var(--space-3)', cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 'var(--space-2)',
+                  background: 'none',
+                  border: '1px solid #fca5a5',
+                  borderRadius: 'var(--radius-sm)',
+                  color: '#991b1b',
+                  fontSize: 'var(--text-xs)',
+                  fontWeight: 600,
+                  padding: 'var(--space-1-5) var(--space-3)',
+                  cursor: 'pointer',
                   opacity: resending ? 0.65 : 1,
                 }}
               >
@@ -108,19 +130,25 @@ export default function LoginPage() {
           />
 
           <div style={{ textAlign: 'right', marginTop: '-8px', marginBottom: 'var(--space-4)' }}>
-            <Link to="/forgot-password" className="auth-link" style={{ fontSize: 'var(--text-xs)' }}>
+            <Link
+              to="/forgot-password"
+              className="auth-link"
+              style={{ fontSize: 'var(--text-xs)' }}
+            >
               Forgot password?
             </Link>
           </div>
 
-          <AuthButton type="submit" loading={isPending}>Sign In</AuthButton>
+          <AuthButton type="submit" loading={isPending}>
+            Sign In
+          </AuthButton>
         </form>
 
         <SocialLogin />
 
         <p className="auth-terms">
-          By signing in, you agree to Cartiva&apos;s{' '}
-          <a href="#">Conditions of Use</a> and <a href="#">Privacy Notice</a>.
+          By signing in, you agree to Cartiva&apos;s <a href="#">Conditions of Use</a> and{' '}
+          <a href="#">Privacy Notice</a>.
         </p>
 
         <div className="auth-divider">New to Cartiva?</div>

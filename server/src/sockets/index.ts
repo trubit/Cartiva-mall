@@ -1,22 +1,22 @@
 import type { Server as HttpServer } from 'http'
-import { Server as SocketServer }   from 'socket.io'
-import { createAdapter }             from '@socket.io/redis-adapter'
-import { redis, redisSub }           from '../database/redis.js'
-import { verifyAccessToken }         from '../utils/jwt.js'
-import { env }                       from '../config/env.js'
-import { logger }                    from '../utils/logger.js'
+import { Server as SocketServer } from 'socket.io'
+import { createAdapter } from '@socket.io/redis-adapter'
+import { redis, redisSub } from '../database/redis.js'
+import { verifyAccessToken } from '../utils/jwt.js'
+import { env } from '../config/env.js'
+import { logger } from '../utils/logger.js'
 
 let io: SocketServer | null = null
 
 export const initSockets = (httpServer: HttpServer): SocketServer => {
   io = new SocketServer(httpServer, {
     cors: {
-      origin:      env.CLIENT_URL,
-      methods:     ['GET', 'POST'],
+      origin: env.CLIENT_URL,
+      methods: ['GET', 'POST'],
       credentials: true,
     },
     // Increase ping timeout so mobile clients on slow connections stay connected
-    pingTimeout:  60_000,
+    pingTimeout: 60_000,
     pingInterval: 25_000,
   })
 
@@ -40,7 +40,8 @@ export const initSockets = (httpServer: HttpServer): SocketServer => {
 
       try {
         const payload = verifyAccessToken(token)
-        const userId  = payload.userId ?? (payload as unknown as Record<string, unknown>).id as string
+        const userId =
+          payload.userId ?? ((payload as unknown as Record<string, unknown>).id as string)
         if (!userId) return
 
         socket.join(`user:${userId}`)

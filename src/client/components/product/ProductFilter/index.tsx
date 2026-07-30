@@ -6,11 +6,11 @@ import { useProductStore } from '../../../store/productStore.js'
 import type { ProductFilters } from '../../../../shared/types/product.types.js'
 
 const SORT_OPTIONS: { value: ProductFilters['sort']; label: string }[] = [
-  { value: 'newest',     label: 'Newest First' },
-  { value: 'price_asc',  label: 'Price: Low → High' },
+  { value: 'newest', label: 'Newest First' },
+  { value: 'price_asc', label: 'Price: Low → High' },
   { value: 'price_desc', label: 'Price: High → Low' },
-  { value: 'rating',     label: 'Top Rated' },
-  { value: 'popular',    label: 'Most Popular' },
+  { value: 'rating', label: 'Top Rated' },
+  { value: 'popular', label: 'Most Popular' },
 ]
 
 interface ProductFilterProps {
@@ -44,10 +44,20 @@ export default function ProductFilter({ onChange }: ProductFilterProps) {
   return (
     <aside className="product-filter">
       <div className="product-filter__title">
-        <span><FiSliders size={16} style={{ marginRight: 6 }} />Filters</span>
+        <span>
+          <FiSliders size={16} style={{ marginRight: 6 }} />
+          Filters
+        </span>
         <button
           onClick={handleReset}
-          style={{ background: 'none', border: 'none', fontSize: 'var(--text-xs)', color: 'var(--color-brand-accent)', cursor: 'pointer', fontWeight: 600 }}
+          style={{
+            background: 'none',
+            border: 'none',
+            fontSize: 'var(--text-xs)',
+            color: 'var(--color-brand-accent)',
+            cursor: 'pointer',
+            fontWeight: 600,
+          }}
         >
           Reset all
         </button>
@@ -136,13 +146,22 @@ export default function ProductFilter({ onChange }: ProductFilterProps) {
               onChange={() => update({ rating: r })}
             />
             <RatingStars value={r} size="sm" />
-            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-neutral-500)' }}>& up</span>
+            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-neutral-500)' }}>
+              & up
+            </span>
           </label>
         ))}
         {filters.rating && (
           <button
             onClick={() => update({ rating: undefined })}
-            style={{ background: 'none', border: 'none', fontSize: 'var(--text-xs)', color: 'var(--color-neutral-500)', cursor: 'pointer', padding: '2px 0' }}
+            style={{
+              background: 'none',
+              border: 'none',
+              fontSize: 'var(--text-xs)',
+              color: 'var(--color-neutral-500)',
+              cursor: 'pointer',
+              padding: '2px 0',
+            }}
           >
             Clear rating filter
           </button>

@@ -36,13 +36,16 @@ export const addOrUpdateReview = async (
   if (!product) throw new AppError('Product not found', 404)
 
   const review = await Review.findOneAndUpdate(
-    { productId: new mongoose.Types.ObjectId(productId), userId: new mongoose.Types.ObjectId(userId) },
     {
-      rating:     data.rating,
-      title:      data.title,
-      body:       data.body,
-      productId:  new mongoose.Types.ObjectId(productId),
-      userId:     new mongoose.Types.ObjectId(userId),
+      productId: new mongoose.Types.ObjectId(productId),
+      userId: new mongoose.Types.ObjectId(userId),
+    },
+    {
+      rating: data.rating,
+      title: data.title,
+      body: data.body,
+      productId: new mongoose.Types.ObjectId(productId),
+      userId: new mongoose.Types.ObjectId(userId),
     },
     { upsert: true, new: true, runValidators: true },
   )
@@ -85,10 +88,16 @@ export const getProductReviews = async (
 }
 
 // ─── Delete review ────────────────────────────────────────────────────────────
-export const deleteReview = async (reviewId: string, userId: string, isAdmin = false): Promise<void> => {
+export const deleteReview = async (
+  reviewId: string,
+  userId: string,
+  isAdmin = false,
+): Promise<void> => {
   if (!mongoose.isValidObjectId(reviewId)) throw new AppError('Invalid review ID', 400)
 
-  const filter = isAdmin ? { _id: reviewId } : { _id: reviewId, userId: new mongoose.Types.ObjectId(userId) }
+  const filter = isAdmin
+    ? { _id: reviewId }
+    : { _id: reviewId, userId: new mongoose.Types.ObjectId(userId) }
   const review = await Review.findOneAndDelete(filter)
   if (!review) throw new AppError('Review not found or access denied', 404)
 

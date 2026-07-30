@@ -57,11 +57,7 @@ export default function ProductGrid({
   return (
     <div className={`product-grid product-grid--${cols}col`}>
       {products.map((product) => (
-        <ProductCard
-          key={product._id}
-          product={product}
-          onQuickView={handleQuickView}
-        />
+        <ProductCard key={product._id} product={product} onQuickView={handleQuickView} />
       ))}
     </div>
   )

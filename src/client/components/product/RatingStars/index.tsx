@@ -17,7 +17,7 @@ export default function RatingStars({
     <span className={`rating-stars rating-stars--${size} ${className}`}>
       {Array.from({ length: max }, (_, i) => {
         const filled = i < Math.floor(value)
-        const half   = !filled && i < value
+        const half = !filled && i < value
         return (
           <span
             key={i}
@@ -28,7 +28,9 @@ export default function RatingStars({
         )
       })}
       {showValue && (
-        <span style={{ marginLeft: '4px', fontSize: '0.8em', opacity: 0.8 }}>{value.toFixed(1)}</span>
+        <span style={{ marginLeft: '4px', fontSize: '0.8em', opacity: 0.8 }}>
+          {value.toFixed(1)}
+        </span>
       )}
     </span>
   )

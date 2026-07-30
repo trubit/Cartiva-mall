@@ -1,26 +1,30 @@
 import { useState, useEffect } from 'react'
-import Modal           from 'react-bootstrap/Modal'
-import Button          from 'react-bootstrap/Button'
-import Form            from 'react-bootstrap/Form'
-import Alert           from 'react-bootstrap/Alert'
-import { RETURN_REASONS, RETURN_REASON_LABELS, type ReturnReason } from '../../../../shared/constants/index.js'
-import { useRequestReturn }   from '../../../hooks/useOrders.js'
-import { useOrderStore }      from '../../../store/orderStore.js'
+import Modal from 'react-bootstrap/Modal'
+import Button from 'react-bootstrap/Button'
+import Form from 'react-bootstrap/Form'
+import Alert from 'react-bootstrap/Alert'
+import {
+  RETURN_REASONS,
+  RETURN_REASON_LABELS,
+  type ReturnReason,
+} from '../../../../shared/constants/index.js'
+import { useRequestReturn } from '../../../hooks/useOrders.js'
+import { useOrderStore } from '../../../store/orderStore.js'
 
 interface ReturnRequestFormProps {
   orderId: string
-  show:    boolean
-  onHide:  () => void
+  show: boolean
+  onHide: () => void
 }
 
 export default function ReturnRequestForm({ orderId, show, onHide }: ReturnRequestFormProps) {
-  const [reason, setReason]           = useState<ReturnReason | ''>('')
+  const [reason, setReason] = useState<ReturnReason | ''>('')
   const [description, setDescription] = useState('')
 
-  const returnStatus    = useOrderStore((s) => s.returnStatus)
-  const returnError     = useOrderStore((s) => s.returnError)
+  const returnStatus = useOrderStore((s) => s.returnStatus)
+  const returnError = useOrderStore((s) => s.returnError)
   const setReturnStatus = useOrderStore((s) => s.setReturnStatus)
-  const setReturnError  = useOrderStore((s) => s.setReturnError)
+  const setReturnError = useOrderStore((s) => s.setReturnError)
   const { mutate: requestReturn } = useRequestReturn()
 
   // Reset stale state every time the modal is opened (different orders, re-opens)
@@ -41,7 +45,11 @@ export default function ReturnRequestForm({ orderId, show, onHide }: ReturnReque
     if (!reason) return
     requestReturn(
       { orderId, reason, description: description || undefined },
-      { onSuccess: () => { setTimeout(onHide, 1500) } },
+      {
+        onSuccess: () => {
+          setTimeout(onHide, 1500)
+        },
+      },
     )
   }
 
@@ -61,7 +69,8 @@ export default function ReturnRequestForm({ orderId, show, onHide }: ReturnReque
       <Modal.Body>
         {returnStatus === 'success' ? (
           <Alert variant="success" className="mb-0">
-            <strong>Return request submitted!</strong> Our team will review it within 1–2 business days.
+            <strong>Return request submitted!</strong> Our team will review it within 1–2 business
+            days.
           </Alert>
         ) : (
           <Form id="return-form" onSubmit={handleSubmit} noValidate>
@@ -70,7 +79,9 @@ export default function ReturnRequestForm({ orderId, show, onHide }: ReturnReque
             )}
 
             <Form.Group className="mb-3" controlId="return-reason">
-              <Form.Label>Reason for return <span className="text-danger">*</span></Form.Label>
+              <Form.Label>
+                Reason for return <span className="text-danger">*</span>
+              </Form.Label>
               <Form.Select
                 value={reason}
                 onChange={(e) => setReason(e.target.value as ReturnReason)}
@@ -78,13 +89,17 @@ export default function ReturnRequestForm({ orderId, show, onHide }: ReturnReque
               >
                 <option value="">Select a reason…</option>
                 {RETURN_REASONS.map((r) => (
-                  <option key={r} value={r}>{RETURN_REASON_LABELS[r]}</option>
+                  <option key={r} value={r}>
+                    {RETURN_REASON_LABELS[r]}
+                  </option>
                 ))}
               </Form.Select>
             </Form.Group>
 
             <Form.Group className="mb-1" controlId="return-description">
-              <Form.Label>Additional details <span className="text-muted">(optional)</span></Form.Label>
+              <Form.Label>
+                Additional details <span className="text-muted">(optional)</span>
+              </Form.Label>
               <Form.Control
                 as="textarea"
                 rows={4}
@@ -104,15 +119,14 @@ export default function ReturnRequestForm({ orderId, show, onHide }: ReturnReque
 
       {returnStatus !== 'success' && (
         <Modal.Footer>
-          <Button variant="outline-secondary" onClick={handleClose} disabled={returnStatus === 'submitting'}>
+          <Button
+            variant="outline-secondary"
+            onClick={handleClose}
+            disabled={returnStatus === 'submitting'}
+          >
             Cancel
           </Button>
-          <Button
-            variant="danger"
-            type="submit"
-            form="return-form"
-            disabled={!canSubmit}
-          >
+          <Button variant="danger" type="submit" form="return-form" disabled={!canSubmit}>
             {returnStatus === 'submitting' ? 'Submitting…' : 'Submit Return Request'}
           </Button>
         </Modal.Footer>

@@ -4,33 +4,45 @@ import { formatCurrency } from '../../../../shared/helpers/index.js'
 import type { IProduct } from '../../../../shared/types/index.js'
 
 interface ProductTableProps {
-  products:    IProduct[]
-  loading:     boolean
-  onDelete?:   (id: string, title: string) => void
+  products: IProduct[]
+  loading: boolean
+  onDelete?: (id: string, title: string) => void
   deletingId?: string | null
-  compact?:    boolean
+  compact?: boolean
 }
 
 const PLACEHOLDER = 'https://placehold.co/44x44/eee/999?text=img'
 
 function StockBadge({ qty }: { qty: number }) {
-  const color = qty <= 5 ? 'var(--pm-danger-text)' : qty <= 15 ? '#D97706' : 'var(--pm-success-text)'
-  const bg    = qty <= 5 ? 'rgba(255,77,109,0.1)' : qty <= 15 ? 'rgba(217,119,6,0.1)' : 'rgba(34,197,94,0.1)'
+  const color =
+    qty <= 5 ? 'var(--pm-danger-text)' : qty <= 15 ? '#D97706' : 'var(--pm-success-text)'
+  const bg =
+    qty <= 5 ? 'rgba(255,77,109,0.1)' : qty <= 15 ? 'rgba(217,119,6,0.1)' : 'rgba(34,197,94,0.1)'
   return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center',
-      padding: '2px 8px', borderRadius: 999,
-      fontSize: '0.72rem', fontWeight: 700,
-      color, background: bg,
-      fontVariantNumeric: 'tabular-nums',
-    }}>
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        padding: '2px 8px',
+        borderRadius: 999,
+        fontSize: '0.72rem',
+        fontWeight: 700,
+        color,
+        background: bg,
+        fontVariantNumeric: 'tabular-nums',
+      }}
+    >
       {qty}
     </span>
   )
 }
 
 export default function ProductTable({
-  products, loading, onDelete, deletingId, compact = false,
+  products,
+  loading,
+  onDelete,
+  deletingId,
+  compact = false,
 }: ProductTableProps) {
   if (loading) {
     return (
@@ -46,8 +58,14 @@ export default function ProductTable({
     return (
       <div className="sl-empty">
         <FiPlus size={32} style={{ marginBottom: 8, color: 'var(--pm-teal)', opacity: 0.5 }} />
-        <p style={{ color: 'var(--color-neutral-500)', margin: 0, fontSize: '0.84rem' }}>No products yet.</p>
-        <Link to="/seller/products/create" className="sl-btn sl-btn--primary" style={{ marginTop: 12 }}>
+        <p style={{ color: 'var(--color-neutral-500)', margin: 0, fontSize: '0.84rem' }}>
+          No products yet.
+        </p>
+        <Link
+          to="/seller/products/create"
+          className="sl-btn sl-btn--primary"
+          style={{ marginTop: 12 }}
+        >
           Add Your First Product
         </Link>
       </div>
@@ -77,14 +95,23 @@ export default function ProductTable({
                     src={p.images[0] ?? PLACEHOLDER}
                     alt={p.title}
                     className="seller-table__img"
-                    onError={(e) => { (e.target as HTMLImageElement).src = PLACEHOLDER }}
+                    onError={(e) => {
+                      ;(e.target as HTMLImageElement).src = PLACEHOLDER
+                    }}
                   />
                   <span style={{ fontWeight: 600, fontSize: '0.855rem' }}>
                     {compact ? p.title.slice(0, 40) + (p.title.length > 40 ? '…' : '') : p.title}
                   </span>
                 </div>
               </td>
-              <td style={{ fontFamily: 'SF Mono, Fira Code, Consolas, monospace', fontSize: '0.75rem', letterSpacing: '0.04em', color: 'var(--color-neutral-500)' }}>
+              <td
+                style={{
+                  fontFamily: 'SF Mono, Fira Code, Consolas, monospace',
+                  fontSize: '0.75rem',
+                  letterSpacing: '0.04em',
+                  color: 'var(--color-neutral-500)',
+                }}
+              >
                 {p.sku}
               </td>
               {!compact && (
@@ -95,12 +122,21 @@ export default function ProductTable({
               <td style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
                 {formatCurrency(p.discountPrice ?? p.price)}
                 {p.discountPrice && (
-                  <span style={{ textDecoration: 'line-through', color: 'var(--color-neutral-400)', fontSize: '0.72rem', marginLeft: 5 }}>
+                  <span
+                    style={{
+                      textDecoration: 'line-through',
+                      color: 'var(--color-neutral-400)',
+                      fontSize: '0.72rem',
+                      marginLeft: 5,
+                    }}
+                  >
                     {formatCurrency(p.price)}
                   </span>
                 )}
               </td>
-              <td><StockBadge qty={p.stockQuantity} /></td>
+              <td>
+                <StockBadge qty={p.stockQuantity} />
+              </td>
               <td>
                 <span className={`status-pill status-pill--${p.status}`}>{p.status}</span>
               </td>

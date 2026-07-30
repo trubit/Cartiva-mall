@@ -25,7 +25,9 @@ export default function RecommendedProducts() {
     <section className="recommended-products">
       <div className="recommended-products__hd">
         <h3 className="recommended-products__title">You Might Also Like</h3>
-        <Link to="/products" className="btn btn-ghost btn-sm">View all</Link>
+        <Link to="/products" className="btn btn-ghost btn-sm">
+          View all
+        </Link>
       </div>
 
       <div className="recommended-products__grid">

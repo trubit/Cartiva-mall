@@ -5,13 +5,12 @@ import CartList from '../../components/cart/CartList/index.js'
 import CartSummary from '../../components/cart/CartSummary/index.js'
 import EmptyCart from '../../components/cart/EmptyCart/index.js'
 import RecommendedProducts from '../../components/cart/RecommendedProducts/index.js'
-import '../../styles/cart.css'
 
 interface CouponState {
-  code:     string | undefined
+  code: string | undefined
   discount: number
-  error:    string | undefined
-  loading:  boolean
+  error: string | undefined
+  loading: boolean
 }
 
 export default function CartPage() {
@@ -29,11 +28,19 @@ export default function CartPage() {
   } = useCart()
 
   const [coupon, setCoupon] = useState<CouponState>({
-    code: undefined, discount: 0, error: undefined, loading: false,
+    code: undefined,
+    discount: 0,
+    error: undefined,
+    loading: false,
   })
 
   const handleCouponApply = (code: string) => {
-    setCoupon({ code: undefined, discount: 0, error: 'Invalid or expired coupon code', loading: false })
+    setCoupon({
+      code: undefined,
+      discount: 0,
+      error: 'Invalid or expired coupon code',
+      loading: false,
+    })
     void code
   }
 
@@ -56,8 +63,15 @@ export default function CartPage() {
   // Show a friendly error if the fetch failed AND there's no cached cart to display
   if (isFetchError && items.length === 0 && !isGuest) {
     return (
-      <div className="cart-page container section" style={{ textAlign: 'center', paddingTop: 'var(--space-16)' }}>
-        <FiAlertCircle size={48} color="var(--color-danger)" style={{ marginBottom: 'var(--space-4)' }} />
+      <div
+        className="cart-page container section"
+        style={{ textAlign: 'center', paddingTop: 'var(--space-16)' }}
+      >
+        <FiAlertCircle
+          size={48}
+          color="var(--color-danger)"
+          style={{ marginBottom: 'var(--space-4)' }}
+        />
         <h2 style={{ marginBottom: 'var(--space-2)' }}>Could not load your cart</h2>
         <p style={{ color: 'var(--color-neutral-500)', marginBottom: 'var(--space-6)' }}>
           There was a problem reaching the server. Please try again.
@@ -81,7 +95,15 @@ export default function CartPage() {
               </span>
             )}
             {isFetching && !isMutating && (
-              <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-neutral-400)', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span
+                style={{
+                  fontSize: 'var(--text-xs)',
+                  color: 'var(--color-neutral-400)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                }}
+              >
                 <FiRefreshCw size={11} style={{ animation: 'spin 1s linear infinite' }} />
                 Syncing…
               </span>

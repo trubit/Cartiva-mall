@@ -14,11 +14,15 @@ const router = Router()
 
 router.use(authenticate)
 
-router.get('/me',      profileController.getMe)
-router.put('/update',  validate(updateProfileSchema),      profileController.updateProfile)
-router.put('/address', validate(updateAddressSchema),      profileController.updateAddress)
-router.put('/avatar',  multerUpload,                       profileController.uploadAvatar)
-router.put('/notifications', validate(updateNotificationsSchema), profileController.updateNotifications)
-router.delete('/delete-account', validate(deleteAccountSchema),   profileController.deleteAccount)
+router.get('/me', profileController.getMe)
+router.put('/update', validate(updateProfileSchema), profileController.updateProfile)
+router.put('/address', validate(updateAddressSchema), profileController.updateAddress)
+router.put('/avatar', multerUpload, profileController.uploadAvatar)
+router.put(
+  '/notifications',
+  validate(updateNotificationsSchema),
+  profileController.updateNotifications,
+)
+router.delete('/delete-account', validate(deleteAccountSchema), profileController.deleteAccount)
 
 export default router

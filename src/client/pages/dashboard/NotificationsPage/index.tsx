@@ -10,21 +10,21 @@ import LoadingSpinner from '../../../components/ui/LoadingSpinner.js'
 import type { NotificationType } from '../../../../shared/types/dashboard.types.js'
 
 const ICON_MAP: Record<NotificationType, string> = {
-  order:     '📦',
-  system:    '⚙️',
+  order: '📦',
+  system: '⚙️',
   promotion: '🎉',
-  wishlist:  '❤️',
-  security:  '🔒',
+  wishlist: '❤️',
+  security: '🔒',
 }
 
 const formatTime = (iso: string) => {
-  const d    = new Date(iso)
-  const now  = new Date()
+  const d = new Date(iso)
+  const now = new Date()
   const diff = Math.floor((now.getTime() - d.getTime()) / 1000)
-  if (diff < 60)      return 'Just now'
-  if (diff < 3600)    return `${Math.floor(diff / 60)}m ago`
-  if (diff < 86400)   return `${Math.floor(diff / 3600)}h ago`
-  if (diff < 604800)  return `${Math.floor(diff / 86400)}d ago`
+  if (diff < 60) return 'Just now'
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
+  if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
@@ -32,20 +32,20 @@ const PAGE_LIMIT = 20
 
 export default function NotificationsPage() {
   const [page, setPage] = useState(1)
-  const navigate        = useNavigate()
+  const navigate = useNavigate()
 
   const { data, isLoading } = useNotifications({ page, limit: PAGE_LIMIT })
-  const markRead            = useMarkNotificationRead()
-  const markAllRead         = useMarkAllNotificationsRead()
+  const markRead = useMarkNotificationRead()
+  const markAllRead = useMarkAllNotificationsRead()
 
   const notifications = data?.data.notifications ?? []
-  const total         = data?.data.total ?? 0
-  const unread        = data?.data.unread ?? 0
-  const totalPages    = Math.ceil(total / PAGE_LIMIT)
+  const total = data?.data.total ?? 0
+  const unread = data?.data.unread ?? 0
+  const totalPages = Math.ceil(total / PAGE_LIMIT)
 
   const handleClick = (id: string, link?: string, read?: boolean) => {
     if (!read) markRead.mutate(id)
-    if (link)  navigate(link)
+    if (link) navigate(link)
   }
 
   if (isLoading) return <LoadingSpinner />

@@ -3,15 +3,15 @@ import type { ICheckoutPricing, ShippingMethod } from '../../../../shared/types/
 
 const SHIPPING_LABELS: Record<ShippingMethod, string> = {
   standard: 'Standard Shipping',
-  express:  'Express Shipping',
-  sameDay:  'Same Day Delivery',
+  express: 'Express Shipping',
+  sameDay: 'Same Day Delivery',
 }
 
 interface PriceBreakdownProps {
-  pricing:        ICheckoutPricing
+  pricing: ICheckoutPricing
   shippingMethod: ShippingMethod
-  couponCode?:    string
-  compact?:       boolean
+  couponCode?: string
+  compact?: boolean
 }
 
 export default function PriceBreakdown({
@@ -31,9 +31,7 @@ export default function PriceBreakdown({
 
       {pricing.discountAmount > 0 && (
         <div className="price-breakdown__line price-breakdown__line--discount">
-          <span>
-            Coupon{couponCode ? ` (${couponCode})` : ''} discount
-          </span>
+          <span>Coupon{couponCode ? ` (${couponCode})` : ''} discount</span>
           <span>–{formatCurrency(pricing.discountAmount)}</span>
         </div>
       )}

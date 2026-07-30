@@ -5,17 +5,17 @@ import type { Request, Response, NextFunction } from 'express'
 // Must be a class (not an arrow function) so `new Redis(...)` works.
 vi.mock('ioredis', () => {
   class Redis {
-    get     = vi.fn().mockResolvedValue(null)
-    set     = vi.fn().mockResolvedValue('OK')
-    del     = vi.fn().mockResolvedValue(1)
-    expire  = vi.fn().mockResolvedValue(1)
-    sadd    = vi.fn().mockResolvedValue(0)
-    scan    = vi.fn().mockResolvedValue(['0', []])
-    incr    = vi.fn().mockResolvedValue(1)
+    get = vi.fn().mockResolvedValue(null)
+    set = vi.fn().mockResolvedValue('OK')
+    del = vi.fn().mockResolvedValue(1)
+    expire = vi.fn().mockResolvedValue(1)
+    sadd = vi.fn().mockResolvedValue(0)
+    scan = vi.fn().mockResolvedValue(['0', []])
+    incr = vi.fn().mockResolvedValue(1)
     connect = vi.fn().mockResolvedValue(undefined)
-    quit    = vi.fn().mockResolvedValue('OK')
-    on      = vi.fn()
-    status  = 'ready'
+    quit = vi.fn().mockResolvedValue('OK')
+    on = vi.fn()
+    status = 'ready'
   }
   return { default: Redis, Redis }
 })

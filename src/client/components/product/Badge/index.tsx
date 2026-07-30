@@ -1,7 +1,10 @@
 import type { IProduct } from '../../../../shared/types/product.types.js'
 
 interface BadgeProps {
-  product: Pick<IProduct, 'discountPercent' | 'createdAt' | 'isFeatured' | 'stockQuantity' | 'ratingsCount'>
+  product: Pick<
+    IProduct,
+    'discountPercent' | 'createdAt' | 'isFeatured' | 'stockQuantity' | 'ratingsCount'
+  >
 }
 
 const isNew = (createdAt: string) => {

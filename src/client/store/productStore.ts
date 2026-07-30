@@ -21,7 +21,6 @@ export const useProductStore = create<ProductStore>()((set) => ({
   setSelectedProduct: (product) => set({ selectedProduct: product }),
 
   filters: defaultFilters,
-  setFilters: (partial) =>
-    set((state) => ({ filters: { ...state.filters, ...partial, page: 1 } })),
+  setFilters: (partial) => set((state) => ({ filters: { ...state.filters, ...partial, page: 1 } })),
   resetFilters: () => set({ filters: defaultFilters }),
 }))

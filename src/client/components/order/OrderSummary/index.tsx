@@ -1,8 +1,11 @@
 import { formatCurrency } from '../../../../shared/helpers/index.js'
-import type { IOrder }    from '../../../../shared/types/index.js'
+import type { IOrder } from '../../../../shared/types/index.js'
 
 interface OrderSummaryProps {
-  order: Pick<IOrder, 'subtotal' | 'discountAmount' | 'shippingFee' | 'taxAmount' | 'grandTotal' | 'couponCode'>
+  order: Pick<
+    IOrder,
+    'subtotal' | 'discountAmount' | 'shippingFee' | 'taxAmount' | 'grandTotal' | 'couponCode'
+  >
   compact?: boolean
 }
 
@@ -26,7 +29,13 @@ export default function OrderSummary({ order, compact = false }: OrderSummaryPro
 
         <div className="order-summary__row">
           <span>Shipping</span>
-          <span>{order.shippingFee === 0 ? <span className="order-summary__free">FREE</span> : formatCurrency(order.shippingFee)}</span>
+          <span>
+            {order.shippingFee === 0 ? (
+              <span className="order-summary__free">FREE</span>
+            ) : (
+              formatCurrency(order.shippingFee)
+            )}
+          </span>
         </div>
 
         <div className="order-summary__row">

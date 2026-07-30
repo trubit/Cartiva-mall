@@ -40,7 +40,10 @@ describe('authStore — setAuth', () => {
   it('sets user in state', () => {
     const user = makeMockUser()
     useAuthStore.getState().setAuth(user, 'token-abc')
-    expect(useAuthStore.getState().user).toMatchObject({ _id: 'user-123', email: 'alice@example.com' })
+    expect(useAuthStore.getState().user).toMatchObject({
+      _id: 'user-123',
+      email: 'alice@example.com',
+    })
   })
 
   it('sets accessToken in state', () => {
@@ -53,9 +56,9 @@ describe('authStore — setAuth', () => {
     expect(useAuthStore.getState().isAuthenticated).toBe(true)
   })
 
-  it('persists token to localStorage', () => {
+  it('does not persist token to localStorage (XSS protection)', () => {
     useAuthStore.getState().setAuth(makeMockUser(), 'token-stored')
-    expect(localStorage.getItem('accessToken')).toBe('token-stored')
+    expect(localStorage.getItem('accessToken')).toBeNull()
   })
 })
 

@@ -1,31 +1,22 @@
 import api from './api.js'
-import type { IPaymentStatusResponse, IRefundRequest, IRefundResponse } from '../../shared/types/index.js'
+import type { IRefundRequest, IRefundResponse } from '../../shared/types/index.js'
 
 const unwrap = <T>(res: { data: { data: T } }): T => res.data.data
 
 export interface PaymentProviders {
-  stripe:   { enabled: boolean; methods: string[]; currencies: string[] }
   paystack: { enabled: boolean; methods: string[]; currencies: string[] }
 }
 
 export interface PaystackInitResponse {
-  reference:        string
-  accessCode:       string
+  reference: string
+  accessCode: string
   authorizationUrl: string
-  publicKey:        string
-  currency:         string
-  amount:           number
+  publicKey: string
+  currency: string
+  amount: number
 }
 
 export const paymentService = {
-  getPaymentStatus(paymentIntentId: string): Promise<IPaymentStatusResponse> {
-    return api.get(`/payment/status/${paymentIntentId}`).then(unwrap<IPaymentStatusResponse>)
-  },
-
-  confirmPayment(paymentIntentId: string): Promise<void> {
-    return api.post('/payment/confirm', { paymentIntentId }).then(() => undefined)
-  },
-
   refundPayment(input: IRefundRequest): Promise<IRefundResponse> {
     return api.post('/payment/refund', input).then(unwrap<IRefundResponse>)
   },
@@ -35,7 +26,9 @@ export const paymentService = {
   },
 
   paystackInitialize(orderId: string, email: string): Promise<PaystackInitResponse> {
-    return api.post('/payment/paystack/initialize', { orderId, email }).then(unwrap<PaystackInitResponse>)
+    return api
+      .post('/payment/paystack/initialize', { orderId, email })
+      .then(unwrap<PaystackInitResponse>)
   },
 
   paystackVerify(reference: string): Promise<void> {

@@ -1,39 +1,45 @@
-import { useState }    from 'react'
-import Modal            from 'react-bootstrap/Modal'
-import Form             from 'react-bootstrap/Form'
-import Alert            from 'react-bootstrap/Alert'
+import { useState } from 'react'
+import Modal from 'react-bootstrap/Modal'
+import Form from 'react-bootstrap/Form'
+import Alert from 'react-bootstrap/Alert'
 import { FiPackage, FiTruck, FiRefreshCw } from 'react-icons/fi'
 import { useSellerOrders, useUpdateOrderStatus } from '../../../hooks/useOrders.js'
-import { OrderStatusBadge, PaymentStatusBadge }  from '../../../components/order/OrderStatus/index.js'
-import { formatCurrency, formatDate }            from '../../../../shared/helpers/index.js'
-import { ORDER_STATUS }                          from '../../../../shared/constants/index.js'
-import type { IOrder, OrderStatus }              from '../../../../shared/types/index.js'
+import {
+  OrderStatusBadge,
+  PaymentStatusBadge,
+} from '../../../components/order/OrderStatus/index.js'
+import { formatCurrency, formatDate } from '../../../../shared/helpers/index.js'
+import { ORDER_STATUS } from '../../../../shared/constants/index.js'
+import type { IOrder, OrderStatus } from '../../../../shared/types/index.js'
 
 const SELLER_ALLOWED_STATUSES: OrderStatus[] = [
-  ORDER_STATUS.PROCESSING, ORDER_STATUS.SHIPPED, ORDER_STATUS.OUT_FOR_DELIVERY, ORDER_STATUS.DELIVERED,
+  ORDER_STATUS.PROCESSING,
+  ORDER_STATUS.SHIPPED,
+  ORDER_STATUS.OUT_FOR_DELIVERY,
+  ORDER_STATUS.DELIVERED,
 ] as OrderStatus[]
 
 const STATUS_LABELS: Record<string, string> = {
-  pending:         'Pending',
-  processing:      'Processing',
-  shipped:         'Shipped',
-  outForDelivery:  'Out for Delivery',
-  delivered:       'Delivered',
-  cancelled:       'Cancelled',
-  returned:        'Returned',
+  pending: 'Pending',
+  processing: 'Processing',
+  shipped: 'Shipped',
+  outForDelivery: 'Out for Delivery',
+  delivered: 'Delivered',
+  cancelled: 'Cancelled',
+  returned: 'Returned',
 }
 
 interface StatusModalProps {
-  order:  IOrder
-  show:   boolean
+  order: IOrder
+  show: boolean
   onHide: () => void
 }
 
 function StatusUpdateModal({ order, show, onHide }: StatusModalProps) {
-  const [newStatus,      setNewStatus]      = useState<OrderStatus>(order.orderStatus as OrderStatus)
+  const [newStatus, setNewStatus] = useState<OrderStatus>(order.orderStatus as OrderStatus)
   const [trackingNumber, setTrackingNumber] = useState(order.tracking?.trackingNumber ?? '')
-  const [carrier,        setCarrier]        = useState(order.tracking?.carrier ?? '')
-  const [note,           setNote]           = useState('')
+  const [carrier, setCarrier] = useState(order.tracking?.carrier ?? '')
+  const [note, setNote] = useState('')
 
   const { mutate: updateStatus, isPending, error } = useUpdateOrderStatus()
 
@@ -45,8 +51,8 @@ function StatusUpdateModal({ order, show, onHide }: StatusModalProps) {
         orderStatus: newStatus,
         tracking: {
           trackingNumber: trackingNumber || undefined,
-          carrier:        carrier        || undefined,
-          note:           note           || undefined,
+          carrier: carrier || undefined,
+          note: note || undefined,
         },
       },
       { onSuccess: onHide },
@@ -75,9 +81,14 @@ function StatusUpdateModal({ order, show, onHide }: StatusModalProps) {
             <p className="pm-section-label">Fulfillment Status</p>
             <Form.Group className="mb-3" controlId="status-select">
               <Form.Label>New Status</Form.Label>
-              <Form.Select value={newStatus} onChange={(e) => setNewStatus(e.target.value as OrderStatus)}>
+              <Form.Select
+                value={newStatus}
+                onChange={(e) => setNewStatus(e.target.value as OrderStatus)}
+              >
                 {SELLER_ALLOWED_STATUSES.map((s) => (
-                  <option key={s} value={s}>{STATUS_LABELS[s] ?? s}</option>
+                  <option key={s} value={s}>
+                    {STATUS_LABELS[s] ?? s}
+                  </option>
                 ))}
               </Form.Select>
             </Form.Group>
@@ -86,7 +97,18 @@ function StatusUpdateModal({ order, show, onHide }: StatusModalProps) {
           <div className="pm-section">
             <p className="pm-section-label">Tracking Info</p>
             <Form.Group className="mb-3" controlId="carrier-input">
-              <Form.Label>Carrier <span style={{ color: 'var(--pm-modal-text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></Form.Label>
+              <Form.Label>
+                Carrier{' '}
+                <span
+                  style={{
+                    color: 'var(--pm-modal-text-muted)',
+                    fontWeight: 400,
+                    textTransform: 'none',
+                  }}
+                >
+                  (optional)
+                </span>
+              </Form.Label>
               <Form.Control
                 placeholder="e.g. UPS, FedEx, USPS"
                 value={carrier}
@@ -94,7 +116,18 @@ function StatusUpdateModal({ order, show, onHide }: StatusModalProps) {
               />
             </Form.Group>
             <Form.Group className="mb-3" controlId="tracking-input">
-              <Form.Label>Tracking Number <span style={{ color: 'var(--pm-modal-text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></Form.Label>
+              <Form.Label>
+                Tracking Number{' '}
+                <span
+                  style={{
+                    color: 'var(--pm-modal-text-muted)',
+                    fontWeight: 400,
+                    textTransform: 'none',
+                  }}
+                >
+                  (optional)
+                </span>
+              </Form.Label>
               <Form.Control
                 placeholder="e.g. 1Z999AA1012345678"
                 value={trackingNumber}
@@ -103,7 +136,18 @@ function StatusUpdateModal({ order, show, onHide }: StatusModalProps) {
               />
             </Form.Group>
             <Form.Group controlId="note-input">
-              <Form.Label>Note <span style={{ color: 'var(--pm-modal-text-muted)', fontWeight: 400, textTransform: 'none' }}>(optional)</span></Form.Label>
+              <Form.Label>
+                Note{' '}
+                <span
+                  style={{
+                    color: 'var(--pm-modal-text-muted)',
+                    fontWeight: 400,
+                    textTransform: 'none',
+                  }}
+                >
+                  (optional)
+                </span>
+              </Form.Label>
               <Form.Control
                 as="textarea"
                 rows={2}
@@ -117,11 +161,27 @@ function StatusUpdateModal({ order, show, onHide }: StatusModalProps) {
       </Modal.Body>
 
       <Modal.Footer>
-        <button type="button" className="pm-btn pm-btn--cancel" onClick={onHide} disabled={isPending}>
+        <button
+          type="button"
+          className="pm-btn pm-btn--cancel"
+          onClick={onHide}
+          disabled={isPending}
+        >
           Cancel
         </button>
-        <button type="submit" form="seller-status-form" className="pm-btn pm-btn--submit" disabled={isPending}>
-          {isPending ? <><span className="pm-spinner" /> Saving…</> : 'Update Status'}
+        <button
+          type="submit"
+          form="seller-status-form"
+          className="pm-btn pm-btn--submit"
+          disabled={isPending}
+        >
+          {isPending ? (
+            <>
+              <span className="pm-spinner" /> Saving…
+            </>
+          ) : (
+            'Update Status'
+          )}
         </button>
       </Modal.Footer>
     </Modal>
@@ -129,13 +189,13 @@ function StatusUpdateModal({ order, show, onHide }: StatusModalProps) {
 }
 
 export default function SellerOrders() {
-  const [page,         setPage]         = useState(1)
+  const [page, setPage] = useState(1)
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined)
   const [editingOrder, setEditingOrder] = useState<IOrder | null>(null)
 
   const { data, isLoading, isError } = useSellerOrders({ status: statusFilter, page, limit: 20 })
-  const orders     = data?.orders      ?? []
-  const total      = data?.pagination?.total ?? orders.length
+  const orders = data?.orders ?? []
+  const total = data?.pagination?.total ?? orders.length
   const totalPages = data?.pagination?.totalPages ?? 1
 
   const allStatuses = Object.values(ORDER_STATUS)
@@ -154,7 +214,10 @@ export default function SellerOrders() {
       <div className="so-filter-bar">
         <button
           className={`so-filter-btn${!statusFilter ? ' so-filter-btn--active' : ''}`}
-          onClick={() => { setStatusFilter(undefined); setPage(1) }}
+          onClick={() => {
+            setStatusFilter(undefined)
+            setPage(1)
+          }}
         >
           All
         </button>
@@ -162,12 +225,17 @@ export default function SellerOrders() {
           <button
             key={s}
             className={`so-filter-btn${statusFilter === s ? ' so-filter-btn--active' : ''}`}
-            onClick={() => { setStatusFilter(s); setPage(1) }}
+            onClick={() => {
+              setStatusFilter(s)
+              setPage(1)
+            }}
           >
             {STATUS_LABELS[s] ?? s}
           </button>
         ))}
-        <span className="so-count">{total} order{total !== 1 ? 's' : ''}</span>
+        <span className="so-count">
+          {total} order{total !== 1 ? 's' : ''}
+        </span>
       </div>
 
       {/* ── Loading skeletons ────────────────────────────────── */}
@@ -184,10 +252,15 @@ export default function SellerOrders() {
       {/* ── Empty state ──────────────────────────────────────── */}
       {!isLoading && !isError && orders.length === 0 && (
         <div className="seller-orders__empty">
-          <FiPackage size={44} style={{ color: 'var(--pm-teal)', opacity: 0.45, marginBottom: 12 }} />
+          <FiPackage
+            size={44}
+            style={{ color: 'var(--pm-teal)', opacity: 0.45, marginBottom: 12 }}
+          />
           <p style={{ fontWeight: 600, marginBottom: 4 }}>No orders found</p>
           <p style={{ fontSize: '0.84rem', opacity: 0.55, margin: 0 }}>
-            {statusFilter ? 'Try a different status filter.' : 'Orders for your products will appear here.'}
+            {statusFilter
+              ? 'Try a different status filter.'
+              : 'Orders for your products will appear here.'}
           </p>
         </div>
       )}
@@ -214,10 +287,18 @@ export default function SellerOrders() {
                     <span className="so-order-num">#{order.orderNumber}</span>
                   </td>
                   <td className="so-date">{formatDate(order.createdAt)}</td>
-                  <td className="so-items">{order.items.length} item{order.items.length !== 1 ? 's' : ''}</td>
-                  <td><span className="so-total">{formatCurrency(order.grandTotal)}</span></td>
-                  <td><OrderStatusBadge status={order.orderStatus} showIcon size="sm" /></td>
-                  <td><PaymentStatusBadge status={order.paymentStatus} size="sm" /></td>
+                  <td className="so-items">
+                    {order.items.length} item{order.items.length !== 1 ? 's' : ''}
+                  </td>
+                  <td>
+                    <span className="so-total">{formatCurrency(order.grandTotal)}</span>
+                  </td>
+                  <td>
+                    <OrderStatusBadge status={order.orderStatus} showIcon size="sm" />
+                  </td>
+                  <td>
+                    <PaymentStatusBadge status={order.paymentStatus} size="sm" />
+                  </td>
                   <td>
                     <button
                       className="so-action-btn"
@@ -237,7 +318,13 @@ export default function SellerOrders() {
       {/* ── Pagination ───────────────────────────────────────── */}
       {totalPages > 1 && (
         <nav className="pagination mt-3">
-          <button className="pagination__btn" onClick={() => setPage((p) => p - 1)} disabled={page <= 1}>‹</button>
+          <button
+            className="pagination__btn"
+            onClick={() => setPage((p) => p - 1)}
+            disabled={page <= 1}
+          >
+            ‹
+          </button>
           {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
             <button
               key={p}
@@ -247,17 +334,19 @@ export default function SellerOrders() {
               {p}
             </button>
           ))}
-          <button className="pagination__btn" onClick={() => setPage((p) => p + 1)} disabled={page >= totalPages}>›</button>
+          <button
+            className="pagination__btn"
+            onClick={() => setPage((p) => p + 1)}
+            disabled={page >= totalPages}
+          >
+            ›
+          </button>
         </nav>
       )}
 
       {/* ── Status update modal ──────────────────────────────── */}
       {editingOrder && (
-        <StatusUpdateModal
-          order={editingOrder}
-          show={true}
-          onHide={() => setEditingOrder(null)}
-        />
+        <StatusUpdateModal order={editingOrder} show={true} onHide={() => setEditingOrder(null)} />
       )}
     </div>
   )

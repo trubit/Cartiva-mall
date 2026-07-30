@@ -12,11 +12,11 @@ const router = Router()
 
 router.use(authenticate)
 
-router.get   ('/',                           cartController.getCart)
-router.post  ('/add',    validate(addToCartSchema),         cartController.addToCart)
-router.put   ('/update/:productId', validate(updateCartItemSchema), cartController.updateCartItem)
-router.delete('/remove/:productId',          cartController.removeFromCart)
-router.delete('/clear',                      cartController.clearCart)
-router.post  ('/sync',   validate(syncCartSchema),          cartController.syncCart)
+router.get('/', cartController.getCart)
+router.post('/add', validate(addToCartSchema), cartController.addToCart)
+router.put('/update/:productId', validate(updateCartItemSchema), cartController.updateCartItem)
+router.delete('/remove/:productId', cartController.removeFromCart)
+router.delete('/clear', cartController.clearCart)
+router.post('/sync', validate(syncCartSchema), cartController.syncCart)
 
 export default router

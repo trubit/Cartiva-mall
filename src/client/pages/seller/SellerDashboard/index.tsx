@@ -1,16 +1,20 @@
-import { useState }      from 'react'
-import { Link }          from 'react-router-dom'
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
-  FiDollarSign, FiShoppingBag, FiPackage, FiTrendingUp,
-  FiAlertCircle, FiPlus, FiArrowRight,
+  FiDollarSign,
+  FiShoppingBag,
+  FiPackage,
+  FiTrendingUp,
+  FiAlertCircle,
+  FiPlus,
+  FiArrowRight,
 } from 'react-icons/fi'
 import { useSellerDashboard } from '../../../hooks/useSeller.js'
-import SellerStatsCard        from '../../../components/seller/SellerStatsCard/index.js'
+import SellerStatsCard from '../../../components/seller/SellerStatsCard/index.js'
 import { RevenueAreaChart, OrderStatusPie } from '../../../components/seller/RevenueChart/index.js'
-import OrderTable             from '../../../components/seller/OrderTable/index.js'
-import AddProductModal        from '../../../components/seller/AddProductModal/index.js'
+import AddProductModal from '../../../components/seller/AddProductModal/index.js'
 import { formatCurrency, formatDate } from '../../../../shared/helpers/index.js'
-import type { ISellerRecentOrder }    from '../../../../shared/types/index.js'
+import type { ISellerRecentOrder } from '../../../../shared/types/index.js'
 
 const PLACEHOLDER = 'https://placehold.co/40x40/eee/999?text=P'
 
@@ -18,7 +22,7 @@ export default function SellerDashboard() {
   const { data, isLoading, isError } = useSellerDashboard()
   const [showAddProduct, setShowAddProduct] = useState(false)
 
-  const stats       = data?.stats
+  const stats = data?.stats
   const recentOrders = (data?.recentOrders ?? []) as unknown as ISellerRecentOrder[]
 
   return (
@@ -46,14 +50,16 @@ export default function SellerDashboard() {
           icon={<FiDollarSign size={22} />}
           label="Total Revenue"
           value={isLoading ? '—' : formatCurrency(stats?.totalRevenue ?? 0)}
-          sub={isLoading ? undefined : `This month: ${formatCurrency(stats?.thisMonthRevenue ?? 0)}`}
+          sub={
+            isLoading ? undefined : `This month: ${formatCurrency(stats?.thisMonthRevenue ?? 0)}`
+          }
           accent="teal"
           loading={isLoading}
         />
         <SellerStatsCard
           icon={<FiShoppingBag size={22} />}
           label="Total Orders"
-          value={isLoading ? '—' : stats?.totalOrders ?? 0}
+          value={isLoading ? '—' : (stats?.totalOrders ?? 0)}
           sub={isLoading ? undefined : `${stats?.pendingOrders ?? 0} pending`}
           accent="orange"
           loading={isLoading}
@@ -61,7 +67,7 @@ export default function SellerDashboard() {
         <SellerStatsCard
           icon={<FiPackage size={22} />}
           label="Active Products"
-          value={isLoading ? '—' : stats?.activeProducts ?? 0}
+          value={isLoading ? '—' : (stats?.activeProducts ?? 0)}
           sub={isLoading ? undefined : `${data?.products.pending ?? 0} pending approval`}
           accent="green"
           loading={isLoading}
@@ -69,7 +75,7 @@ export default function SellerDashboard() {
         <SellerStatsCard
           icon={<FiTrendingUp size={22} />}
           label="Total Products"
-          value={isLoading ? '—' : stats?.totalProducts ?? 0}
+          value={isLoading ? '—' : (stats?.totalProducts ?? 0)}
           sub={isLoading ? undefined : `${data?.products.blocked ?? 0} blocked`}
           accent="purple"
           loading={isLoading}
@@ -81,9 +87,20 @@ export default function SellerDashboard() {
         <div className="sl-alert sl-alert--warn">
           <FiAlertCircle size={16} />
           <span>
-            <strong>{data!.products.pending}</strong> product{data!.products.pending > 1 ? 's' : ''} awaiting admin approval.
+            <strong>{data!.products.pending}</strong> product{data!.products.pending > 1 ? 's' : ''}{' '}
+            awaiting admin approval.
           </span>
-          <Link to="/seller/products" style={{ marginLeft: 'auto', fontWeight: 600, color: '#b45309', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <Link
+            to="/seller/products"
+            style={{
+              marginLeft: 'auto',
+              fontWeight: 600,
+              color: '#b45309',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
             View <FiArrowRight size={13} />
           </Link>
         </div>
@@ -95,11 +112,7 @@ export default function SellerDashboard() {
           <div className="sl-chart-card__header">
             <p className="sl-chart-card__title">Revenue — Last 30 Days</p>
           </div>
-          <RevenueAreaChart
-            data={data?.revenueByDay ?? []}
-            loading={isLoading}
-            height={220}
-          />
+          <RevenueAreaChart data={data?.revenueByDay ?? []} loading={isLoading} height={220} />
         </div>
 
         <div className="sl-chart-card">
@@ -120,16 +133,24 @@ export default function SellerDashboard() {
         <div className="sl-table-card">
           <div className="sl-table-card__header">
             <h3>Top Products</h3>
-            <Link to="/seller/products" className="sl-link">View all <FiArrowRight size={12} /></Link>
+            <Link to="/seller/products" className="sl-link">
+              View all <FiArrowRight size={12} />
+            </Link>
           </div>
           {isLoading ? (
             <div className="d-flex flex-column gap-2">
-              {[1, 2, 3].map((i) => <div key={i} className="skeleton" style={{ height: 52, borderRadius: 8 }} />)}
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="skeleton" style={{ height: 52, borderRadius: 8 }} />
+              ))}
             </div>
           ) : (data?.topProducts.length ?? 0) === 0 ? (
             <div className="sl-empty" style={{ padding: '2rem 0' }}>
               <FiPackage size={32} style={{ color: 'var(--color-neutral-400)', marginBottom: 8 }} />
-              <p style={{ color: 'var(--color-neutral-500)', margin: 0, fontSize: 'var(--text-sm)' }}>No sales data yet</p>
+              <p
+                style={{ color: 'var(--color-neutral-500)', margin: 0, fontSize: 'var(--text-sm)' }}
+              >
+                No sales data yet
+              </p>
             </div>
           ) : (
             <div className="sl-top-products">
@@ -140,13 +161,30 @@ export default function SellerDashboard() {
                     src={p.image ?? PLACEHOLDER}
                     alt={p.title}
                     style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'cover' }}
-                    onError={(e) => { (e.target as HTMLImageElement).src = PLACEHOLDER }}
+                    onError={(e) => {
+                      ;(e.target as HTMLImageElement).src = PLACEHOLDER
+                    }}
                   />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontWeight: 600, fontSize: 'var(--text-sm)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <p
+                      style={{
+                        fontWeight: 600,
+                        fontSize: 'var(--text-sm)',
+                        margin: 0,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
                       {p.title}
                     </p>
-                    <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-neutral-500)', margin: 0 }}>
+                    <p
+                      style={{
+                        fontSize: 'var(--text-xs)',
+                        color: 'var(--color-neutral-500)',
+                        margin: 0,
+                      }}
+                    >
                       {p.totalSold} sold
                     </p>
                   </div>
@@ -163,16 +201,27 @@ export default function SellerDashboard() {
         <div className="sl-table-card">
           <div className="sl-table-card__header">
             <h3>Recent Orders</h3>
-            <Link to="/seller/orders" className="sl-link">View all <FiArrowRight size={12} /></Link>
+            <Link to="/seller/orders" className="sl-link">
+              View all <FiArrowRight size={12} />
+            </Link>
           </div>
           {isLoading ? (
             <div className="d-flex flex-column gap-2">
-              {[1, 2, 3].map((i) => <div key={i} className="skeleton" style={{ height: 52, borderRadius: 8 }} />)}
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="skeleton" style={{ height: 52, borderRadius: 8 }} />
+              ))}
             </div>
           ) : recentOrders.length === 0 ? (
             <div className="sl-empty" style={{ padding: '2rem 0' }}>
-              <FiShoppingBag size={32} style={{ color: 'var(--color-neutral-400)', marginBottom: 8 }} />
-              <p style={{ color: 'var(--color-neutral-500)', margin: 0, fontSize: 'var(--text-sm)' }}>No orders yet</p>
+              <FiShoppingBag
+                size={32}
+                style={{ color: 'var(--color-neutral-400)', marginBottom: 8 }}
+              />
+              <p
+                style={{ color: 'var(--color-neutral-500)', margin: 0, fontSize: 'var(--text-sm)' }}
+              >
+                No orders yet
+              </p>
             </div>
           ) : (
             <table className="seller-table">
@@ -187,10 +236,20 @@ export default function SellerDashboard() {
               <tbody>
                 {recentOrders.map((o) => (
                   <tr key={o._id}>
-                    <td style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>#{o.orderNumber}</td>
-                    <td style={{ fontSize: 'var(--text-sm)', color: 'var(--color-neutral-500)' }}>{formatDate(o.createdAt)}</td>
+                    <td style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>
+                      #{o.orderNumber}
+                    </td>
+                    <td style={{ fontSize: 'var(--text-sm)', color: 'var(--color-neutral-500)' }}>
+                      {formatDate(o.createdAt)}
+                    </td>
                     <td style={{ fontWeight: 700 }}>{formatCurrency(o.grandTotal)}</td>
-                    <td><span className={`status-pill status-pill--${o.orderStatus === 'delivered' ? 'active' : o.orderStatus === 'cancelled' ? 'blocked' : 'pending'}`}>{o.orderStatus}</span></td>
+                    <td>
+                      <span
+                        className={`status-pill status-pill--${o.orderStatus === 'delivered' ? 'active' : o.orderStatus === 'cancelled' ? 'blocked' : 'pending'}`}
+                      >
+                        {o.orderStatus}
+                      </span>
+                    </td>
                   </tr>
                 ))}
               </tbody>

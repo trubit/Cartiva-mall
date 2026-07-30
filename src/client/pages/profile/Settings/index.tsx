@@ -10,9 +10,8 @@ export default function Settings() {
   const { data: user, isLoading } = useProfile()
   const [tab, setTab] = useState<Tab>('notifications')
 
-  if (isLoading || !user) return (
-    <div className="profile-skeleton" style={{ height: 400, borderRadius: 12 }} />
-  )
+  if (isLoading || !user)
+    return <div className="profile-skeleton" style={{ height: 400, borderRadius: 12 }} />
 
   return (
     <div className="profile-card">
@@ -36,7 +35,7 @@ export default function Settings() {
       </div>
 
       {tab === 'notifications' && <NotificationPreferences user={user} />}
-      {tab === 'security'      && <SettingsPanel />}
+      {tab === 'security' && <SettingsPanel />}
     </div>
   )
 }

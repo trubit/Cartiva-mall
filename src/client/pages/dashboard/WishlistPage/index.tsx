@@ -1,17 +1,17 @@
-import { Link }    from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { FiHeart, FiTrash2, FiShoppingCart } from 'react-icons/fi'
 import { useWishlist, useRemoveFromWishlist } from '../../../hooks/useDashboard.js'
-import { useCartStore }    from '../../../store/cartStore.js'
-import LoadingSpinner      from '../../../components/ui/LoadingSpinner.js'
-import type { IProduct }   from '../../../../shared/types/product.types.js'
+import { useCartStore } from '../../../store/cartStore.js'
+import LoadingSpinner from '../../../components/ui/LoadingSpinner.js'
+import type { IProduct } from '../../../../shared/types/product.types.js'
 
 const formatCurrency = (n: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n)
 
 export default function WishlistPage() {
   const { data, isLoading } = useWishlist()
-  const removeFromWishlist  = useRemoveFromWishlist()
-  const addGuestItem        = useCartStore((s) => s.addGuestItem)
+  const removeFromWishlist = useRemoveFromWishlist()
+  const addGuestItem = useCartStore((s) => s.addGuestItem)
 
   if (isLoading) return <LoadingSpinner />
 
@@ -48,8 +48,7 @@ export default function WishlistPage() {
             const product = item.productId as IProduct
             if (!product?._id) return null
 
-            const hasDiscount =
-              product.discountPrice && product.discountPrice < product.price
+            const hasDiscount = product.discountPrice && product.discountPrice < product.price
 
             return (
               <div className="dashboard-wishlist-card" key={item._id}>
@@ -58,7 +57,9 @@ export default function WishlistPage() {
                     src={product.images?.[0] ?? '/placeholder.png'}
                     alt={product.title}
                     className="dashboard-wishlist-card__img"
-                    onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.png' }}
+                    onError={(e) => {
+                      ;(e.target as HTMLImageElement).src = '/placeholder.png'
+                    }}
                   />
                 </Link>
 
@@ -72,10 +73,7 @@ export default function WishlistPage() {
                 </button>
 
                 <div className="dashboard-wishlist-card__body">
-                  <Link
-                    to={`/products/${product._id}`}
-                    style={{ textDecoration: 'none' }}
-                  >
+                  <Link to={`/products/${product._id}`} style={{ textDecoration: 'none' }}>
                     <p className="dashboard-wishlist-card__name">{product.title}</p>
                   </Link>
 
@@ -85,7 +83,13 @@ export default function WishlistPage() {
                         <span className="dashboard-wishlist-card__price-sale">
                           {formatCurrency(product.discountPrice!)}
                         </span>{' '}
-                        <span style={{ textDecoration: 'line-through', color: 'var(--color-neutral-400)', fontSize: 'var(--text-xs)' }}>
+                        <span
+                          style={{
+                            textDecoration: 'line-through',
+                            color: 'var(--color-neutral-400)',
+                            fontSize: 'var(--text-xs)',
+                          }}
+                        >
                           {formatCurrency(product.price)}
                         </span>
                       </>

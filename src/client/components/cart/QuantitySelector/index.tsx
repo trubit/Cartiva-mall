@@ -1,13 +1,13 @@
 import { FiMinus, FiPlus } from 'react-icons/fi'
 
 interface QuantitySelectorProps {
-  quantity:    number
+  quantity: number
   maxQuantity: number
-  onDecrease:  () => void
-  onIncrease:  () => void
-  onChange?:   (qty: number) => void
-  disabled?:   boolean
-  size?:       'sm' | 'md' | 'lg'
+  onDecrease: () => void
+  onIncrease: () => void
+  onChange?: (qty: number) => void
+  disabled?: boolean
+  size?: 'sm' | 'md' | 'lg'
 }
 
 export default function QuantitySelector({

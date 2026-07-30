@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useAuthStore }  from '../store/authStore.js'
-import { useCartStore }  from '../store/cartStore.js'
-import { cartService }   from '../services/cartService.js'
+import { useAuthStore } from '../store/authStore.js'
+import { useCartStore } from '../store/cartStore.js'
+import { cartService } from '../services/cartService.js'
 import type { IServerCart, ICartDisplayItem, ICartTotals } from '../../shared/types/cart.types.js'
-import type { IProduct }  from '../../shared/types/product.types.js'
+import type { IProduct } from '../../shared/types/product.types.js'
 import type { AddToCartInput } from '../../shared/validators/cart.validators.js'
 import { FREE_SHIPPING_THRESHOLD_CLIENT } from '../config/cart.constants.js'
 
@@ -16,23 +16,23 @@ export const useServerCart = () => {
 
   return useQuery({
     queryKey: CART_KEY,
-    queryFn:  async () => {
+    queryFn: async () => {
       const cart = await cartService.getCart()
       setServerCart(cart)
       return cart
     },
-    enabled:              isAuthenticated,
-    staleTime:            30_000,
+    enabled: isAuthenticated,
+    staleTime: 30_000,
     // Use the Zustand-persisted cart as initial data so the cart shows
     // immediately on page refresh, while a background refetch updates it.
-    initialData:          persistedCart ?? undefined,
-    initialDataUpdatedAt: 0,   // Always treat as stale → always background-refetch
+    initialData: persistedCart ?? undefined,
+    initialDataUpdatedAt: 0, // Always treat as stale → always background-refetch
   })
 }
 
 // ─── Mutations ────────────────────────────────────────────────────────────────
 export const useAddToCartMutation = () => {
-  const qc           = useQueryClient()
+  const qc = useQueryClient()
   const setServerCart = useCartStore((s) => s.setServerCart)
 
   return useMutation({
@@ -45,7 +45,7 @@ export const useAddToCartMutation = () => {
 }
 
 export const useUpdateCartItemMutation = () => {
-  const qc           = useQueryClient()
+  const qc = useQueryClient()
   const setServerCart = useCartStore((s) => s.setServerCart)
 
   return useMutation({
@@ -59,7 +59,7 @@ export const useUpdateCartItemMutation = () => {
 }
 
 export const useRemoveFromCartMutation = () => {
-  const qc           = useQueryClient()
+  const qc = useQueryClient()
   const setServerCart = useCartStore((s) => s.setServerCart)
 
   return useMutation({
@@ -72,7 +72,7 @@ export const useRemoveFromCartMutation = () => {
 }
 
 export const useClearCartMutation = () => {
-  const qc            = useQueryClient()
+  const qc = useQueryClient()
   const clearServerCart = useCartStore((s) => s.clearServerCart)
 
   return useMutation({
@@ -85,8 +85,8 @@ export const useClearCartMutation = () => {
 }
 
 export const useSyncCartMutation = () => {
-  const qc             = useQueryClient()
-  const setServerCart  = useCartStore((s) => s.setServerCart)
+  const qc = useQueryClient()
+  const setServerCart = useCartStore((s) => s.setServerCart)
   const clearGuestCart = useCartStore((s) => s.clearGuestCart)
 
   return useMutation({
@@ -101,19 +101,19 @@ export const useSyncCartMutation = () => {
 
 // ─── Server cart totals ───────────────────────────────────────────────────────
 const serverTotals = (cart: IServerCart): ICartTotals => {
-  const totalItems        = cart.items.reduce((s, i) => s + i.quantity, 0)
-  const afterDiscount     = Math.max(0, cart.cartTotal - cart.discountAmount)
-  const isFreeShipping    = afterDiscount >= FREE_SHIPPING_THRESHOLD_CLIENT
-  const remaining         = Math.max(0, FREE_SHIPPING_THRESHOLD_CLIENT - afterDiscount)
+  const totalItems = cart.items.reduce((s, i) => s + i.quantity, 0)
+  const afterDiscount = Math.max(0, cart.cartTotal - cart.discountAmount)
+  const isFreeShipping = afterDiscount >= FREE_SHIPPING_THRESHOLD_CLIENT
+  const remaining = Math.max(0, FREE_SHIPPING_THRESHOLD_CLIENT - afterDiscount)
   return {
-    subtotal:                 cart.cartTotal,
-    discountAmount:           cart.discountAmount,
-    shippingCost:             cart.shippingCost,
-    taxAmount:                cart.taxAmount,
-    grandTotal:               cart.grandTotal,
+    subtotal: cart.cartTotal,
+    discountAmount: cart.discountAmount,
+    shippingCost: cart.shippingCost,
+    taxAmount: cart.taxAmount,
+    grandTotal: cart.grandTotal,
     totalItems,
     isFreeShipping,
-    freeShippingThreshold:    FREE_SHIPPING_THRESHOLD_CLIENT,
+    freeShippingThreshold: FREE_SHIPPING_THRESHOLD_CLIENT,
     remainingForFreeShipping: remaining,
   }
 }
@@ -132,51 +132,56 @@ export const useCart = () => {
   } = useCartStore()
 
   const { isLoading, isFetching, isError: cartFetchError } = useServerCart()
-  const addMutation    = useAddToCartMutation()
+  const addMutation = useAddToCartMutation()
   const updateMutation = useUpdateCartItemMutation()
   const removeMutation = useRemoveFromCartMutation()
-  const clearMutation  = useClearCartMutation()
+  const clearMutation = useClearCartMutation()
 
   // ── Unified display items ──────────────────────────────
-  const displayItems: ICartDisplayItem[] = isAuthenticated && serverCart
-    ? serverCart.items
-        .filter((i) => typeof i.productId === 'object')
-        .map((i) => {
-          const product = i.productId as IProduct
+  const displayItems: ICartDisplayItem[] =
+    isAuthenticated && serverCart
+      ? serverCart.items
+          .filter((i) => typeof i.productId === 'object')
+          .map((i) => {
+            const product = i.productId as IProduct
+            return {
+              productId: product._id,
+              product,
+              quantity: i.quantity,
+              itemPrice: i.itemPrice,
+              lineTotal: Math.round(i.itemPrice * i.quantity * 100) / 100,
+              selectedVariant: i.selectedVariant,
+              selectedSize: i.selectedSize,
+              selectedColor: i.selectedColor,
+            }
+          })
+      : guestItems.map((i) => {
+          const effectivePrice =
+            i.product.discountPrice && i.product.discountPrice < i.product.price
+              ? i.product.discountPrice
+              : i.product.price
           return {
-            productId:       product._id,
-            product,
-            quantity:        i.quantity,
-            itemPrice:       i.itemPrice,
-            lineTotal:       Math.round(i.itemPrice * i.quantity * 100) / 100,
+            productId: i.product._id,
+            product: i.product,
+            quantity: i.quantity,
+            itemPrice: effectivePrice,
+            lineTotal: Math.round(effectivePrice * i.quantity * 100) / 100,
             selectedVariant: i.selectedVariant,
-            selectedSize:    i.selectedSize,
-            selectedColor:   i.selectedColor,
+            selectedSize: i.selectedSize,
+            selectedColor: i.selectedColor,
           }
         })
-    : guestItems.map((i) => {
-        const effectivePrice = (i.product.discountPrice && i.product.discountPrice < i.product.price)
-          ? i.product.discountPrice
-          : i.product.price
-        return {
-          productId:       i.product._id,
-          product:         i.product,
-          quantity:        i.quantity,
-          itemPrice:       effectivePrice,
-          lineTotal:       Math.round(effectivePrice * i.quantity * 100) / 100,
-          selectedVariant: i.selectedVariant,
-          selectedSize:    i.selectedSize,
-          selectedColor:   i.selectedColor,
-        }
-      })
 
   // ── Unified totals ─────────────────────────────────────
-  const totals: ICartTotals = isAuthenticated && serverCart
-    ? serverTotals(serverCart)
-    : guestTotals()
+  const totals: ICartTotals =
+    isAuthenticated && serverCart ? serverTotals(serverCart) : guestTotals()
 
   // ── Unified add to cart ────────────────────────────────
-  const addToCart = (product: IProduct, quantity = 1, opts?: { selectedVariant?: string; selectedSize?: string; selectedColor?: string }) => {
+  const addToCart = (
+    product: IProduct,
+    quantity = 1,
+    opts?: { selectedVariant?: string; selectedSize?: string; selectedColor?: string },
+  ) => {
     if (isAuthenticated) {
       addMutation.mutate({ productId: product._id, quantity, ...opts })
     } else {
@@ -209,19 +214,19 @@ export const useCart = () => {
   }
 
   const isMutating =
-    addMutation.isPending    ||
+    addMutation.isPending ||
     updateMutation.isPending ||
     removeMutation.isPending ||
     clearMutation.isPending
 
   return {
-    items:          displayItems,
+    items: displayItems,
     totals,
-    isLoading:      isAuthenticated ? isLoading : false,
-    isFetching:     isAuthenticated ? isFetching : false,
-    isFetchError:   isAuthenticated ? cartFetchError : false,
+    isLoading: isAuthenticated ? isLoading : false,
+    isFetching: isAuthenticated ? isFetching : false,
+    isFetchError: isAuthenticated ? cartFetchError : false,
     isMutating,
-    isGuest:        !isAuthenticated,
+    isGuest: !isAuthenticated,
     addToCart,
     removeFromCart,
     updateQuantity,

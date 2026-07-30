@@ -1,5 +1,5 @@
-import { useState }   from 'react'
-import { Link }        from 'react-router-dom'
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { FiCreditCard } from 'react-icons/fi'
 import { usePaymentHistory } from '../../../hooks/useDashboard.js'
 import LoadingSpinner from '../../../components/ui/LoadingSpinner.js'
@@ -9,7 +9,9 @@ const formatCurrency = (n: number) =>
 
 const formatDate = (iso: string) =>
   new Date(iso).toLocaleDateString('en-US', {
-    month: 'short', day: 'numeric', year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
   })
 
 const PAGE_LIMIT = 20
@@ -18,8 +20,8 @@ export default function PaymentHistoryPage() {
   const [page, setPage] = useState(1)
   const { data, isLoading } = usePaymentHistory({ page, limit: PAGE_LIMIT })
 
-  const payments   = data?.data.payments ?? []
-  const total      = data?.data.total ?? 0
+  const payments = data?.data.payments ?? []
+  const total = data?.data.total ?? 0
   const totalPages = Math.ceil(total / PAGE_LIMIT)
 
   if (isLoading) return <LoadingSpinner />
@@ -72,7 +74,9 @@ export default function PaymentHistoryPage() {
                           >
                             #{order.orderNumber}
                           </Link>
-                        ) : '—'}
+                        ) : (
+                          '—'
+                        )}
                       </td>
                       <td style={{ textTransform: 'capitalize' }}>{p.paymentMethod}</td>
                       <td style={{ fontVariantNumeric: 'tabular-nums' }}>
@@ -102,7 +106,9 @@ export default function PaymentHistoryPage() {
           >
             ‹
           </button>
-          <span className="dashboard-pagination__info">{page} / {totalPages}</span>
+          <span className="dashboard-pagination__info">
+            {page} / {totalPages}
+          </span>
           <button
             className="dashboard-pagination__btn"
             onClick={() => setPage((p) => p + 1)}

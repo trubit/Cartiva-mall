@@ -9,13 +9,16 @@ import QuickViewModal from '../../components/product/QuickViewModal/index.js'
 import type { IProduct } from '../../../shared/types/product.types.js'
 
 export default function SearchResults() {
-  const [params, setParams]     = useSearchParams()
-  const q                       = params.get('q') ?? ''
+  const [params, setParams] = useSearchParams()
+  const q = params.get('q') ?? ''
   const { filters } = useProductStore()
-  const { data, isLoading }     = useSearchProducts(q, { ...filters, page: Number(params.get('page')) || 1 })
+  const { data, isLoading } = useSearchProducts(q, {
+    ...filters,
+    page: Number(params.get('page')) || 1,
+  })
   const [quickView, setQuickView] = useState<IProduct | null>(null)
 
-  const products   = data?.data ?? []
+  const products = data?.data ?? []
   const pagination = data?.pagination
 
   const handlePage = (page: number) => {
@@ -37,7 +40,13 @@ export default function SearchResults() {
 
       {q ? (
         <>
-          <div style={{ marginBottom: '1.5rem', color: 'var(--color-neutral-600)', fontSize: 'var(--text-sm)' }}>
+          <div
+            style={{
+              marginBottom: '1.5rem',
+              color: 'var(--color-neutral-600)',
+              fontSize: 'var(--text-sm)',
+            }}
+          >
             {isLoading ? (
               'Searching…'
             ) : (
@@ -58,19 +67,41 @@ export default function SearchResults() {
 
           {(pagination?.totalPages ?? 0) > 1 && (
             <nav className="pagination">
-              <button className="pagination__btn" onClick={() => handlePage((pagination?.page ?? 1) - 1)} disabled={!pagination?.hasPrev}>‹</button>
+              <button
+                className="pagination__btn"
+                onClick={() => handlePage((pagination?.page ?? 1) - 1)}
+                disabled={!pagination?.hasPrev}
+              >
+                ‹
+              </button>
               {Array.from({ length: pagination?.totalPages ?? 0 }, (_, i) => i + 1).map((p) => (
-                <button key={p} className={`pagination__btn${p === pagination?.page ? ' pagination__btn--active' : ''}`} onClick={() => handlePage(p)}>{p}</button>
+                <button
+                  key={p}
+                  className={`pagination__btn${p === pagination?.page ? ' pagination__btn--active' : ''}`}
+                  onClick={() => handlePage(p)}
+                >
+                  {p}
+                </button>
               ))}
-              <button className="pagination__btn" onClick={() => handlePage((pagination?.page ?? 1) + 1)} disabled={!pagination?.hasNext}>›</button>
+              <button
+                className="pagination__btn"
+                onClick={() => handlePage((pagination?.page ?? 1) + 1)}
+                disabled={!pagination?.hasNext}
+              >
+                ›
+              </button>
             </nav>
           )}
         </>
       ) : (
         <div className="products-empty">
-          <div className="products-empty__icon"><FiSearch size={48} /></div>
+          <div className="products-empty__icon">
+            <FiSearch size={48} />
+          </div>
           <p className="products-empty__title">What are you looking for?</p>
-          <p style={{ fontSize: 'var(--text-sm)' }}>Type a product name, brand, or category above.</p>
+          <p style={{ fontSize: 'var(--text-sm)' }}>
+            Type a product name, brand, or category above.
+          </p>
         </div>
       )}
 

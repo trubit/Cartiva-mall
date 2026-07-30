@@ -4,13 +4,13 @@ import { useApplyCoupon, useRemoveCoupon } from '../../../hooks/useCheckout.js'
 import { useCheckoutStore } from '../../../store/checkoutStore.js'
 
 export default function CheckoutCouponBox() {
-  const session     = useCheckoutStore((s) => s.session)
+  const session = useCheckoutStore((s) => s.session)
   const couponError = useCheckoutStore((s) => s.couponError)
   const applyCoupon = useApplyCoupon()
   const removeCoupon = useRemoveCoupon()
   const [inputCode, setInputCode] = useState('')
 
-  const appliedCode    = session?.couponCode
+  const appliedCode = session?.couponCode
   const discountAmount = session?.pricing.discountAmount ?? 0
 
   const handleApply = () => {

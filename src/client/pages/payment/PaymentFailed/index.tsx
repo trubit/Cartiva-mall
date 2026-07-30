@@ -5,17 +5,15 @@ import { SUPPORT_EMAIL } from '../../../../shared/constants/index.js'
 
 export default function PaymentFailed() {
   const [params] = useSearchParams()
-  const orderId  = params.get('orderId') ?? ''
+  const orderId = params.get('orderId') ?? ''
   const navigate = useNavigate()
-  const { errorMessage, clientSecret, reset } = usePaymentStore()
+  const { errorMessage, reset } = usePaymentStore()
 
   const handleRetry = () => {
-    if (clientSecret) {
-      // clientSecret is still valid — go back to payment page
+    if (orderId) {
       usePaymentStore.getState().setStep('form')
       navigate(`/payment/${orderId}`, { replace: true })
     } else {
-      // Session expired — restart checkout
       reset()
       navigate('/checkout', { replace: true })
     }
@@ -32,7 +30,8 @@ export default function PaymentFailed() {
 
           <h1 className="payment-result__title">Payment Failed</h1>
           <p className="payment-result__subtitle">
-            {errorMessage ?? 'Your payment could not be processed. Please try again or use a different payment method.'}
+            {errorMessage ??
+              'Your payment could not be processed. Please try again or use a different payment method.'}
           </p>
 
           {/* Common reasons */}
@@ -60,7 +59,9 @@ export default function PaymentFailed() {
 
           <div className="payment-result__support">
             <FiHeadphones size={14} />
-            <span>Need help? <a href={`mailto:${SUPPORT_EMAIL}`}>Contact Support</a></span>
+            <span>
+              Need help? <a href={`mailto:${SUPPORT_EMAIL}`}>Contact Support</a>
+            </span>
           </div>
         </div>
       </div>

@@ -1,22 +1,22 @@
-import { useState }     from 'react'
-import { Link }          from 'react-router-dom'
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { FiShoppingBag, FiPackage } from 'react-icons/fi'
-import { useMyOrders }   from '../../hooks/useOrders.js'
-import OrderCard         from '../../components/order/OrderCard/index.js'
-import { ORDER_STATUS }  from '../../../shared/constants/index.js'
+import { useMyOrders } from '../../hooks/useOrders.js'
+import OrderCard from '../../components/order/OrderCard/index.js'
+import { ORDER_STATUS } from '../../../shared/constants/index.js'
 
 const FILTER_TABS = [
   { label: 'All Orders', value: '' },
-  { label: 'Pending',    value: ORDER_STATUS.PENDING    },
+  { label: 'Pending', value: ORDER_STATUS.PENDING },
   { label: 'Processing', value: ORDER_STATUS.PROCESSING },
-  { label: 'Shipped',    value: ORDER_STATUS.SHIPPED    },
-  { label: 'Delivered',  value: ORDER_STATUS.DELIVERED  },
-  { label: 'Cancelled',  value: ORDER_STATUS.CANCELLED  },
+  { label: 'Shipped', value: ORDER_STATUS.SHIPPED },
+  { label: 'Delivered', value: ORDER_STATUS.DELIVERED },
+  { label: 'Cancelled', value: ORDER_STATUS.CANCELLED },
 ]
 
 export default function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState('')
-  const [page, setPage]                 = useState(1)
+  const [page, setPage] = useState(1)
 
   const { data, isLoading, isError } = useMyOrders({
     status: statusFilter || undefined,
@@ -24,7 +24,7 @@ export default function OrdersPage() {
     limit: 10,
   })
 
-  const orders     = data?.orders      ?? []
+  const orders = data?.orders ?? []
   const totalPages = data?.pagination?.totalPages ?? 1
 
   return (
@@ -50,7 +50,10 @@ export default function OrdersPage() {
                 role="tab"
                 aria-selected={statusFilter === value}
                 className={`orp-filter-tab${statusFilter === value ? ' orp-filter-tab--active' : ''}`}
-                onClick={() => { setStatusFilter(value); setPage(1) }}
+                onClick={() => {
+                  setStatusFilter(value)
+                  setPage(1)
+                }}
               >
                 {label}
               </button>
@@ -61,7 +64,6 @@ export default function OrdersPage() {
 
       {/* ══ BODY ══ */}
       <div className="container orp-body">
-
         {/* Loading */}
         {isLoading && (
           <div className="orp-list">

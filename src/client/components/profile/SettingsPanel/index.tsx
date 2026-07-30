@@ -6,13 +6,16 @@ import { useDeleteAccount } from '../../../hooks/useProfile.js'
 
 export default function SettingsPanel() {
   const [showConfirm, setShowConfirm] = useState(false)
-  const [password,    setPassword]    = useState('')
-  const [error,       setError]       = useState('')
-  const mutation  = useDeleteAccount()
-  const navigate  = useNavigate()
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const mutation = useDeleteAccount()
+  const navigate = useNavigate()
 
   const handleDelete = async () => {
-    if (!password) { setError('Password is required.'); return }
+    if (!password) {
+      setError('Password is required.')
+      return
+    }
     setError('')
     try {
       await mutation.mutateAsync(password)
@@ -25,21 +28,27 @@ export default function SettingsPanel() {
   return (
     <div className="profile-card">
       <div className="profile-card-header">
-        <h2 className="profile-section-title"><FiLock /> Account Security</h2>
+        <h2 className="profile-section-title">
+          <FiLock /> Account Security
+        </h2>
       </div>
 
       <div className="mb-4">
         <p style={{ fontSize: '.9rem', color: '#555' }}>
           Your account is protected. To change your password, use the{' '}
-          <a href="/forgot-password" style={{ color: '#FF9900' }}>Forgot Password</a> flow —
-          we'll send a secure reset link to your email.
+          <a href="/forgot-password" style={{ color: '#FF9900' }}>
+            Forgot Password
+          </a>{' '}
+          flow — we'll send a secure reset link to your email.
         </p>
       </div>
 
       <hr style={{ borderColor: '#f0f0f0' }} />
 
       <div className="mt-4 danger-zone">
-        <p className="danger-zone-title"><FiAlertTriangle style={{ verticalAlign: 'middle' }} /> Danger Zone</p>
+        <p className="danger-zone-title">
+          <FiAlertTriangle style={{ verticalAlign: 'middle' }} /> Danger Zone
+        </p>
         <p className="danger-zone-desc">
           Permanently delete your account and all associated data. This action cannot be undone.
         </p>
@@ -51,7 +60,14 @@ export default function SettingsPanel() {
         ) : (
           <div>
             {error && <p className="profile-alert profile-alert--error mb-3">{error}</p>}
-            <p style={{ fontSize: '.85rem', fontWeight: 600, color: '#dc2626', marginBottom: '.5rem' }}>
+            <p
+              style={{
+                fontSize: '.85rem',
+                fontWeight: 600,
+                color: '#dc2626',
+                marginBottom: '.5rem',
+              }}
+            >
               Confirm your password to permanently delete this account:
             </p>
             <div className="d-flex gap-2 align-items-center flex-wrap">
@@ -68,12 +84,24 @@ export default function SettingsPanel() {
                 onClick={handleDelete}
                 disabled={mutation.isPending}
               >
-                {mutation.isPending
-                  ? <><CgSpinner className="spin" /> Deleting…</>
-                  : <><FiTrash2 /> Confirm Delete</>
-                }
+                {mutation.isPending ? (
+                  <>
+                    <CgSpinner className="spin" /> Deleting…
+                  </>
+                ) : (
+                  <>
+                    <FiTrash2 /> Confirm Delete
+                  </>
+                )}
               </button>
-              <button className="btn-profile-ghost" onClick={() => { setShowConfirm(false); setPassword(''); setError('') }}>
+              <button
+                className="btn-profile-ghost"
+                onClick={() => {
+                  setShowConfirm(false)
+                  setPassword('')
+                  setError('')
+                }}
+              >
                 Cancel
               </button>
             </div>

@@ -7,17 +7,17 @@ import { PRODUCT_CATEGORIES } from '../../../shared/constants/index.js'
 import ProductImageUploader from '../../components/product/ProductImageUploader/index.js'
 
 interface ProductFormData {
-  title:         string
-  description:   string
-  price:         number
+  title: string
+  description: string
+  price: number
   discountPrice: string
-  category:      string
-  subCategory:   string
-  brand:         string
+  category: string
+  subCategory: string
+  brand: string
   stockQuantity: number
-  sku:           string
-  tags:          string
-  isFeatured:    boolean
+  sku: string
+  tags: string
+  isFeatured: boolean
 }
 
 interface Props {
@@ -25,8 +25,8 @@ interface Props {
 }
 
 export default function SellerProductForm({ mode }: Props) {
-  const { id }    = useParams<{ id: string }>()
-  const navigate  = useNavigate()
+  const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
   const { data: existing, isLoading } = useProduct(mode === 'edit' ? (id ?? '') : '')
   const createMutation = useCreateProduct()
   const updateMutation = useUpdateProduct()
@@ -40,26 +40,34 @@ export default function SellerProductForm({ mode }: Props) {
     formState: { errors, isSubmitting },
   } = useForm<ProductFormData>({
     defaultValues: {
-      title: '', description: '', price: 0, discountPrice: '',
-      category: '', subCategory: '', brand: '',
-      stockQuantity: 0, sku: '', tags: '', isFeatured: false,
+      title: '',
+      description: '',
+      price: 0,
+      discountPrice: '',
+      category: '',
+      subCategory: '',
+      brand: '',
+      stockQuantity: 0,
+      sku: '',
+      tags: '',
+      isFeatured: false,
     },
   })
 
   useEffect(() => {
     if (mode === 'edit' && existing) {
       reset({
-        title:         existing.title,
-        description:   existing.description,
-        price:         existing.price,
+        title: existing.title,
+        description: existing.description,
+        price: existing.price,
         discountPrice: existing.discountPrice?.toString() ?? '',
-        category:      existing.category,
-        subCategory:   existing.subCategory ?? '',
-        brand:         existing.brand ?? '',
+        category: existing.category,
+        subCategory: existing.subCategory ?? '',
+        brand: existing.brand ?? '',
         stockQuantity: existing.stockQuantity,
-        sku:           existing.sku,
-        tags:          existing.tags.join(', '),
-        isFeatured:    existing.isFeatured,
+        sku: existing.sku,
+        tags: existing.tags.join(', '),
+        isFeatured: existing.isFeatured,
       })
       setImageUrls(existing.images ?? [])
     }
@@ -67,18 +75,21 @@ export default function SellerProductForm({ mode }: Props) {
 
   const onSubmit = async (data: ProductFormData) => {
     const payload = {
-      title:         data.title,
-      description:   data.description,
-      price:         Number(data.price),
+      title: data.title,
+      description: data.description,
+      price: Number(data.price),
       discountPrice: data.discountPrice ? Number(data.discountPrice) : undefined,
-      category:      data.category,
-      subCategory:   data.subCategory || undefined,
-      brand:         data.brand || undefined,
+      category: data.category,
+      subCategory: data.subCategory || undefined,
+      brand: data.brand || undefined,
       stockQuantity: Number(data.stockQuantity),
-      sku:           data.sku,
-      tags:          data.tags.split(',').map((t) => t.trim()).filter(Boolean),
-      images:        imageUrls,
-      isFeatured:    data.isFeatured,
+      sku: data.sku,
+      tags: data.tags
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean),
+      images: imageUrls,
+      isFeatured: data.isFeatured,
     }
 
     if (mode === 'create') {
@@ -104,7 +115,10 @@ export default function SellerProductForm({ mode }: Props) {
   return (
     <div className="container section">
       <div className="seller-form__header">
-        <button className="btn btn-ghost seller-form__back" onClick={() => navigate('/seller/products')}>
+        <button
+          className="btn btn-ghost seller-form__back"
+          onClick={() => navigate('/seller/products')}
+        >
           <FiArrowLeft size={16} /> Back to Products
         </button>
         <h1 className="seller-form__title">
@@ -142,7 +156,9 @@ export default function SellerProductForm({ mode }: Props) {
                 placeholder="Describe your product…"
                 {...register('description', { required: 'Description is required' })}
               />
-              {errors.description && <div className="invalid-feedback">{errors.description.message}</div>}
+              {errors.description && (
+                <div className="invalid-feedback">{errors.description.message}</div>
+              )}
             </div>
 
             <div className="seller-form__field">
@@ -153,7 +169,9 @@ export default function SellerProductForm({ mode }: Props) {
               >
                 <option value="">Select category…</option>
                 {PRODUCT_CATEGORIES.map((c) => (
-                  <option key={c} value={c}>{c}</option>
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
                 ))}
               </select>
               {errors.category && <div className="invalid-feedback">{errors.category.message}</div>}
@@ -197,7 +215,10 @@ export default function SellerProductForm({ mode }: Props) {
                 min="0"
                 className={`form-control ${errors.price ? 'is-invalid' : ''}`}
                 placeholder="0.00"
-                {...register('price', { required: 'Price is required', min: { value: 0, message: 'Must be ≥ 0' } })}
+                {...register('price', {
+                  required: 'Price is required',
+                  min: { value: 0, message: 'Must be ≥ 0' },
+                })}
               />
               {errors.price && <div className="invalid-feedback">{errors.price.message}</div>}
             </div>
@@ -221,9 +242,14 @@ export default function SellerProductForm({ mode }: Props) {
                 min="0"
                 className={`form-control ${errors.stockQuantity ? 'is-invalid' : ''}`}
                 placeholder="0"
-                {...register('stockQuantity', { required: 'Stock is required', min: { value: 0, message: 'Must be ≥ 0' } })}
+                {...register('stockQuantity', {
+                  required: 'Stock is required',
+                  min: { value: 0, message: 'Must be ≥ 0' },
+                })}
               />
-              {errors.stockQuantity && <div className="invalid-feedback">{errors.stockQuantity.message}</div>}
+              {errors.stockQuantity && (
+                <div className="invalid-feedback">{errors.stockQuantity.message}</div>
+              )}
             </div>
 
             <div className="seller-form__field seller-form__field--checkbox">
@@ -261,7 +287,11 @@ export default function SellerProductForm({ mode }: Props) {
 
         {/* Actions */}
         <div className="seller-form__actions">
-          <button type="button" className="btn btn-outline" onClick={() => navigate('/seller/products')}>
+          <button
+            type="button"
+            className="btn btn-outline"
+            onClick={() => navigate('/seller/products')}
+          >
             Cancel
           </button>
           <button type="submit" className="btn btn-primary" disabled={isBusy}>

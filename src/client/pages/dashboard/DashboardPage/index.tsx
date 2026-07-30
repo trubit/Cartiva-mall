@@ -1,10 +1,14 @@
-import { Link }                from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import {
-  FiShoppingBag, FiHeart, FiBell, FiDollarSign,
-  FiClock, FiChevronRight,
+  FiShoppingBag,
+  FiHeart,
+  FiBell,
+  FiDollarSign,
+  FiClock,
+  FiChevronRight,
 } from 'react-icons/fi'
 import { useDashboardSummary } from '../../../hooks/useDashboard.js'
-import LoadingSpinner           from '../../../components/ui/LoadingSpinner.js'
+import LoadingSpinner from '../../../components/ui/LoadingSpinner.js'
 
 const formatCurrency = (n: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n)
@@ -13,31 +17,27 @@ const formatDate = (iso: string) =>
   new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 
 const ORDER_STATUS_CLASS: Record<string, string> = {
-  pending:    'order-badge--pending',
+  pending: 'order-badge--pending',
   processing: 'order-badge--processing',
-  shipped:    'order-badge--shipped',
-  delivered:  'order-badge--delivered',
-  cancelled:  'order-badge--cancelled',
-  returned:   'order-badge--returned',
+  shipped: 'order-badge--shipped',
+  delivered: 'order-badge--delivered',
+  cancelled: 'order-badge--cancelled',
+  returned: 'order-badge--returned',
 }
 
 export default function DashboardPage() {
   const { data, isLoading } = useDashboardSummary()
 
   if (isLoading) return <LoadingSpinner />
-  if (!data)     return null
+  if (!data) return null
 
   const { user, orderStats, wishlistCount, unreadNotifications, recentOrders } = data
 
   return (
     <div>
       <div className="dashboard-page-header">
-        <h1 className="dashboard-page-title">
-          Welcome back, {user.firstName}!
-        </h1>
-        <p className="dashboard-page-subtitle">
-          Here's what's happening with your account today.
-        </p>
+        <h1 className="dashboard-page-title">Welcome back, {user.firstName}!</h1>
+        <p className="dashboard-page-subtitle">Here's what's happening with your account today.</p>
       </div>
 
       {/* Overview cards */}
@@ -111,9 +111,9 @@ export default function DashboardPage() {
           <div className="dashboard-order-stats">
             {[
               { label: 'Processing', value: orderStats.processing },
-              { label: 'Shipped',    value: orderStats.shipped    },
-              { label: 'Delivered',  value: orderStats.delivered  },
-              { label: 'Cancelled',  value: orderStats.cancelled  },
+              { label: 'Shipped', value: orderStats.shipped },
+              { label: 'Delivered', value: orderStats.delivered },
+              { label: 'Cancelled', value: orderStats.cancelled },
             ].map(({ label, value }) => (
               <div className="dashboard-order-stat" key={label}>
                 <span className="dashboard-order-stat__value">{value}</span>
@@ -140,9 +140,7 @@ export default function DashboardPage() {
             <div className="dashboard-empty">
               <FiShoppingBag className="dashboard-empty__icon" />
               <p className="dashboard-empty__title">No orders yet</p>
-              <p className="dashboard-empty__text">
-                Start shopping to see your orders here.
-              </p>
+              <p className="dashboard-empty__text">Start shopping to see your orders here.</p>
               <Link to="/products" className="dashboard-btn dashboard-btn--primary">
                 Browse Products
               </Link>

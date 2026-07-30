@@ -9,19 +9,27 @@ interface Props {
 }
 
 const NOTIFICATIONS: { key: keyof INotificationSettings; title: string; desc: string }[] = [
-  { key: 'emailNotifications', title: 'Email Notifications', desc: 'Receive notifications via email' },
-  { key: 'pushNotifications',  title: 'Push Notifications',  desc: 'Browser and mobile push alerts' },
-  { key: 'orderUpdates',       title: 'Order Updates',        desc: 'Shipping, delivery, and order status' },
-  { key: 'promotions',         title: 'Promotions & Deals',   desc: 'Flash sales, coupons and special offers' },
-  { key: 'newsletter',         title: 'Newsletter',           desc: 'Weekly updates and featured products' },
+  {
+    key: 'emailNotifications',
+    title: 'Email Notifications',
+    desc: 'Receive notifications via email',
+  },
+  { key: 'pushNotifications', title: 'Push Notifications', desc: 'Browser and mobile push alerts' },
+  { key: 'orderUpdates', title: 'Order Updates', desc: 'Shipping, delivery, and order status' },
+  {
+    key: 'promotions',
+    title: 'Promotions & Deals',
+    desc: 'Flash sales, coupons and special offers',
+  },
+  { key: 'newsletter', title: 'Newsletter', desc: 'Weekly updates and featured products' },
 ]
 
 const defaultSettings: INotificationSettings = {
   emailNotifications: true,
-  pushNotifications:  true,
-  orderUpdates:       true,
-  promotions:         false,
-  newsletter:         false,
+  pushNotifications: true,
+  orderUpdates: true,
+  promotions: false,
+  newsletter: false,
 }
 
 export default function NotificationPreferences({ user }: Props) {
@@ -38,13 +46,17 @@ export default function NotificationPreferences({ user }: Props) {
     try {
       await mutation.mutateAsync(values)
       setSuccess('Notification preferences saved.')
-    } catch { /* surface below */ }
+    } catch {
+      /* surface below */
+    }
   }
 
   return (
     <div className="profile-card">
       <div className="profile-card-header">
-        <h2 className="profile-section-title"><FiBell /> Notifications</h2>
+        <h2 className="profile-section-title">
+          <FiBell /> Notifications
+        </h2>
       </div>
 
       {success && <p className="profile-alert profile-alert--success">{success}</p>}
@@ -69,7 +81,15 @@ export default function NotificationPreferences({ user }: Props) {
 
       <div className="profile-form-actions mt-3">
         <button className="btn-profile-primary" onClick={onSave} disabled={mutation.isPending}>
-          {mutation.isPending ? <><CgSpinner className="spin" /> Saving…</> : <><FiSave /> Save Preferences</>}
+          {mutation.isPending ? (
+            <>
+              <CgSpinner className="spin" /> Saving…
+            </>
+          ) : (
+            <>
+              <FiSave /> Save Preferences
+            </>
+          )}
         </button>
       </div>
     </div>

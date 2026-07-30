@@ -1,8 +1,15 @@
-import { FiDollarSign, FiClock, FiCheckCircle, FiTrendingUp, FiAlertCircle, FiInfo } from 'react-icons/fi'
+import {
+  FiDollarSign,
+  FiClock,
+  FiCheckCircle,
+  FiTrendingUp,
+  FiAlertCircle,
+  FiInfo,
+} from 'react-icons/fi'
 import { useSellerEarnings } from '../../../hooks/useSeller.js'
-import SellerStatsCard        from '../../../components/seller/SellerStatsCard/index.js'
-import { RevenueBarChart }    from '../../../components/seller/RevenueChart/index.js'
-import { formatCurrency }     from '../../../../shared/helpers/index.js'
+import SellerStatsCard from '../../../components/seller/SellerStatsCard/index.js'
+import { RevenueBarChart } from '../../../components/seller/RevenueChart/index.js'
+import { formatCurrency } from '../../../../shared/helpers/index.js'
 
 export default function SellerPayouts() {
   const { data, isLoading, isError } = useSellerEarnings()
@@ -26,7 +33,8 @@ export default function SellerPayouts() {
       <div className="sl-alert sl-alert--info">
         <FiInfo size={16} />
         <span>
-          Platform fee: <strong>{isLoading ? '—' : `${data?.platformFeePercent ?? 5}%`}</strong> is deducted from each transaction. Net earnings are displayed after fee deduction.
+          Platform fee: <strong>{isLoading ? '—' : `${data?.platformFeePercent ?? 5}%`}</strong> is
+          deducted from each transaction. Net earnings are displayed after fee deduction.
         </span>
       </div>
 
@@ -71,11 +79,19 @@ export default function SellerPayouts() {
         <div className="sl-earnings-hero__inner">
           <p className="sl-earnings-hero__label">Available Balance</p>
           <p className="sl-earnings-hero__amount">
-            {isLoading ? <span className="skeleton" style={{ display: 'inline-block', width: 140, height: 40, borderRadius: 8 }} /> : formatCurrency(data?.availableBalance ?? 0)}
+            {isLoading ? (
+              <span
+                className="skeleton"
+                style={{ display: 'inline-block', width: 140, height: 40, borderRadius: 8 }}
+              />
+            ) : (
+              formatCurrency(data?.availableBalance ?? 0)
+            )}
           </p>
           <p className="sl-earnings-hero__sub">Net earnings ready for withdrawal</p>
           <button className="sl-btn sl-btn--primary sl-btn--lg" disabled>
-            Request Withdrawal <span style={{ fontSize: '0.7rem', marginLeft: 6, opacity: 0.7 }}>(Coming Soon)</span>
+            Request Withdrawal{' '}
+            <span style={{ fontSize: '0.7rem', marginLeft: 6, opacity: 0.7 }}>(Coming Soon)</span>
           </button>
         </div>
         <div className="sl-earnings-hero__decoration" aria-hidden />
@@ -86,11 +102,7 @@ export default function SellerPayouts() {
         <div className="sl-chart-card__header">
           <p className="sl-chart-card__title">Monthly Revenue — Last 6 Months</p>
         </div>
-        <RevenueBarChart
-          data={data?.revenueByMonth ?? []}
-          loading={isLoading}
-          height={240}
-        />
+        <RevenueBarChart data={data?.revenueByMonth ?? []} loading={isLoading} height={240} />
       </div>
 
       {/* Payout history placeholder */}

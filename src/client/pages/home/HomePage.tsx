@@ -10,17 +10,27 @@ import type { IProduct } from '../../../shared/types/product.types.js'
 import Logo from '../../components/ui/Logo/index.js'
 
 const CATEGORY_ICONS: Record<string, string> = {
-  'Electronics': '💻', 'Clothing & Fashion': '👗', 'Home & Garden': '🏡',
-  'Sports & Outdoors': '⚽', 'Books & Media': '📚', 'Health & Beauty': '💄',
-  'Toys & Games': '🎮', 'Automotive': '🚗', 'Food & Grocery': '🛒',
+  Electronics: '💻',
+  'Clothing & Fashion': '👗',
+  'Home & Garden': '🏡',
+  'Sports & Outdoors': '⚽',
+  'Books & Media': '📚',
+  'Health & Beauty': '💄',
+  'Toys & Games': '🎮',
+  Automotive: '🚗',
+  'Food & Grocery': '🛒',
   'Jewelry & Accessories': '💍',
 }
 
 const PERKS = [
-  { icon: <FiShield />,    title: 'Verified Sellers', desc: 'Every seller is verified for your safety' },
-  { icon: <FiTruck />,     title: 'Fast Delivery',    desc: 'Get orders delivered quickly to your door' },
-  { icon: <FiRefreshCw />, title: 'Easy Returns',     desc: '30-day hassle-free return policy' },
-  { icon: <FiShield />,    title: 'Secure Payments',  desc: 'End-to-end encrypted checkout' },
+  {
+    icon: <FiShield />,
+    title: 'Verified Sellers',
+    desc: 'Every seller is verified for your safety',
+  },
+  { icon: <FiTruck />, title: 'Fast Delivery', desc: 'Get orders delivered quickly to your door' },
+  { icon: <FiRefreshCw />, title: 'Easy Returns', desc: '30-day hassle-free return policy' },
+  { icon: <FiShield />, title: 'Secure Payments', desc: 'End-to-end encrypted checkout' },
 ]
 
 export default function HomePage() {
@@ -38,13 +48,11 @@ export default function HomePage() {
             </div>
             <span className="hero-banner__tagline">Trusted · Fast · Secure</span>
 
-            <h1 className="hero-banner__title">
-              Shop Smarter. Live Better.
-            </h1>
+            <h1 className="hero-banner__title">Shop Smarter. Live Better.</h1>
 
             <p className="hero-banner__subtitle">
-              Discover thousands of products from verified sellers.
-              Great deals, fast delivery, easy returns.
+              Discover thousands of products from verified sellers. Great deals, fast delivery, easy
+              returns.
             </p>
 
             {/* Standalone search */}
@@ -66,15 +74,17 @@ export default function HomePage() {
       </section>
 
       {/* ── Category strip ───────────────────────────────────── */}
-      <section style={{ background: 'var(--color-white)', borderBottom: '1px solid var(--color-neutral-200)', padding: '0.875rem 0' }}>
+      <section
+        style={{
+          background: 'var(--color-white)',
+          borderBottom: '1px solid var(--color-neutral-200)',
+          padding: '0.875rem 0',
+        }}
+      >
         <div className="container">
           <div className="category-chips">
             {PRODUCT_CATEGORIES.map((cat) => (
-              <Link
-                key={cat}
-                to={`/category/${encodeURIComponent(cat)}`}
-                className="category-chip"
-              >
+              <Link key={cat} to={`/category/${encodeURIComponent(cat)}`} className="category-chip">
                 {CATEGORY_ICONS[cat]} {cat}
               </Link>
             ))}
@@ -83,11 +93,30 @@ export default function HomePage() {
       </section>
 
       {/* ── Today's Deals banner ─────────────────────────────── */}
-      <div style={{ background: '#fff3cd', borderBottom: '1px solid #ffc107', padding: '0.5rem 0' }}>
-        <div className="container" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
-          <span style={{ fontWeight: 700, fontSize: 'var(--text-sm)', color: '#856404' }}>⚡ Today's Deals</span>
-          <span style={{ fontSize: 'var(--text-xs)', color: '#856404' }}>Limited-time offers — while supplies last</span>
-          <Link to="/products?isFeatured=true" style={{ marginLeft: 'auto', fontSize: 'var(--text-xs)', color: 'var(--color-link)', display: 'flex', alignItems: 'center', gap: 4 }}>
+      <div
+        style={{ background: '#fff3cd', borderBottom: '1px solid #ffc107', padding: '0.5rem 0' }}
+      >
+        <div
+          className="container"
+          style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexWrap: 'wrap' }}
+        >
+          <span style={{ fontWeight: 700, fontSize: 'var(--text-sm)', color: '#856404' }}>
+            ⚡ Today's Deals
+          </span>
+          <span style={{ fontSize: 'var(--text-xs)', color: '#856404' }}>
+            Limited-time offers — while supplies last
+          </span>
+          <Link
+            to="/products?isFeatured=true"
+            style={{
+              marginLeft: 'auto',
+              fontSize: 'var(--text-xs)',
+              color: 'var(--color-link)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
             See all deals <FiArrowRight size={12} />
           </Link>
         </div>
@@ -134,17 +163,15 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
-            gap: 'var(--space-3)',
-          }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
+              gap: 'var(--space-3)',
+            }}
+          >
             {PRODUCT_CATEGORIES.map((cat) => (
-              <Link
-                key={cat}
-                to={`/category/${encodeURIComponent(cat)}`}
-                className="category-card"
-              >
+              <Link key={cat} to={`/category/${encodeURIComponent(cat)}`} className="category-card">
                 <div className="category-card__icon">{CATEGORY_ICONS[cat]}</div>
                 <div className="category-card__name">{cat}</div>
               </Link>
@@ -156,11 +183,13 @@ export default function HomePage() {
       {/* ── Why Shop With Us ────────────────────────────────── */}
       <section className="section section--sm" style={{ background: 'var(--color-brand-bg)' }}>
         <div className="container">
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: 'var(--space-4)',
-          }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: 'var(--space-4)',
+            }}
+          >
             {PERKS.map(({ icon, title, desc }) => (
               <div key={title} className="perk-card">
                 <div className="perk-card__icon">{icon}</div>
@@ -177,10 +206,25 @@ export default function HomePage() {
       {/* ── CTA banner ──────────────────────────────────────── */}
       <section style={{ background: 'var(--color-navbar-bg)', padding: 'var(--space-10) 0' }}>
         <div className="container" style={{ textAlign: 'center' }}>
-          <h2 style={{ color: '#fff', fontSize: 'var(--text-2xl)', fontWeight: 700, marginBottom: 'var(--space-2)' }}>
+          <h2
+            style={{
+              color: '#fff',
+              fontSize: 'var(--text-2xl)',
+              fontWeight: 700,
+              marginBottom: 'var(--space-2)',
+            }}
+          >
             Start Selling on Cartiva
           </h2>
-          <p style={{ color: 'rgba(255,255,255,.7)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-6)', maxWidth: 440, margin: '0 auto var(--space-6)' }}>
+          <p
+            style={{
+              color: 'rgba(255,255,255,.7)',
+              fontSize: 'var(--text-sm)',
+              marginBottom: 'var(--space-6)',
+              maxWidth: 440,
+              margin: '0 auto var(--space-6)',
+            }}
+          >
             Reach millions of buyers. List your products today and grow your business.
           </p>
           <Link to="/register" className="hero-btn-primary">
@@ -191,10 +235,7 @@ export default function HomePage() {
 
       {/* Quick View Modal */}
       {quickViewProduct && (
-        <QuickViewModal
-          product={quickViewProduct}
-          onClose={() => setQuickViewProduct(null)}
-        />
+        <QuickViewModal product={quickViewProduct} onClose={() => setQuickViewProduct(null)} />
       )}
     </>
   )

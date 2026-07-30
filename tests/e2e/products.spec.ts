@@ -12,16 +12,16 @@ test.describe('Products page', () => {
   })
 
   test('renders a product listing area or empty state', async ({ page }) => {
-    const content = page.locator(
-      '[class*="product-grid"], [class*="ProductGrid"], [class*="empty"], h2, p'
-    ).first()
+    const content = page
+      .locator('[class*="product-grid"], [class*="ProductGrid"], [class*="empty"], h2, p')
+      .first()
     await expect(content).toBeVisible({ timeout: 10000 })
   })
 
   test('shows a filter sidebar or filter button', async ({ page }) => {
-    const filter = page.locator(
-      '[class*="filter"], [class*="Filter"], button:has-text("Filter"), aside'
-    ).first()
+    const filter = page
+      .locator('[class*="filter"], [class*="Filter"], button:has-text("Filter"), aside')
+      .first()
     await expect(filter).toBeVisible({ timeout: 8000 })
   })
 

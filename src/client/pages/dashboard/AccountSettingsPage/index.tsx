@@ -4,39 +4,37 @@ import { useDashboardSummary, useUpdateSettings } from '../../../hooks/useDashbo
 import LoadingSpinner from '../../../components/ui/LoadingSpinner.js'
 
 type FormState = {
-  firstName:   string
-  lastName:    string
+  firstName: string
+  lastName: string
   phoneNumber: string
-  bio:         string
+  bio: string
 }
 
 export default function AccountSettingsPage() {
   const { data, isLoading } = useDashboardSummary()
-  const updateSettings      = useUpdateSettings()
-  const [saved, setSaved]   = useState(false)
-  const [error, setError]   = useState<string | null>(null)
+  const updateSettings = useUpdateSettings()
+  const [saved, setSaved] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const [form, setForm] = useState<FormState>({
-    firstName:   '',
-    lastName:    '',
+    firstName: '',
+    lastName: '',
     phoneNumber: '',
-    bio:         '',
+    bio: '',
   })
 
   useEffect(() => {
     if (data?.user) {
       setForm({
-        firstName:   data.user.firstName   ?? '',
-        lastName:    data.user.lastName    ?? '',
+        firstName: data.user.firstName ?? '',
+        lastName: data.user.lastName ?? '',
         phoneNumber: data.user.phoneNumber ?? '',
-        bio:         data.user.bio         ?? '',
+        bio: data.user.bio ?? '',
       })
     }
   }, [data?.user])
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }))
     setSaved(false)
     setError(null)
@@ -62,9 +60,7 @@ export default function AccountSettingsPage() {
           <FiUser style={{ marginRight: 8, verticalAlign: 'middle' }} />
           Account Settings
         </h1>
-        <p className="dashboard-page-subtitle">
-          Update your personal information
-        </p>
+        <p className="dashboard-page-subtitle">Update your personal information</p>
       </div>
 
       <div className="dashboard-section">
@@ -77,11 +73,7 @@ export default function AccountSettingsPage() {
               ✓ Settings saved successfully
             </div>
           )}
-          {error && (
-            <div className="dashboard-alert dashboard-alert--error">
-              {error}
-            </div>
-          )}
+          {error && <div className="dashboard-alert dashboard-alert--error">{error}</div>}
 
           <form onSubmit={handleSubmit} className="dashboard-form">
             <div className="dashboard-form__row">

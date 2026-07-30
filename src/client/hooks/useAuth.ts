@@ -3,6 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { authService } from '../services/authService.js'
 import { useAuthStore } from '../store/authStore.js'
 import { useCartStore } from '../store/cartStore.js'
+import { useSellerStore } from '../store/sellerStore.js'
+import { useDashboardStore } from '../store/dashboardStore.js'
+import { useOrderStore } from '../store/orderStore.js'
+import { usePaymentStore } from '../store/paymentStore.js'
+import { useCheckoutStore } from '../store/checkoutStore.js'
 import { cartService } from '../services/cartService.js'
 import { queryClient } from '../services/queryClient.js'
 import { CART_KEY } from './useCart.js'
@@ -10,8 +15,8 @@ import type { LoginInput, RegisterInput } from '../../shared/validators/auth.val
 
 // ─── Login ────────────────────────────────────────────────────────────────────
 export const useLogin = () => {
-  const { setAuth }    = useAuthStore()
-  const navigate       = useNavigate()
+  const { setAuth } = useAuthStore()
+  const navigate = useNavigate()
   const { guestItems, clearGuestCart, setServerCart } = useCartStore()
 
   return useMutation({
@@ -54,13 +59,20 @@ export const useRegister = () => {
 
 // ─── Logout ───────────────────────────────────────────────────────────────────
 export const useLogout = () => {
-  const { clearAuth } = useAuthStore()
   const navigate = useNavigate()
 
   return useMutation({
     mutationFn: () => authService.logout(),
     onSettled: () => {
-      clearAuth()
+      // Clear all user-specific state to prevent PII leakage between users on shared devices
+      useAuthStore.getState().clearAuth()
+      useCartStore.getState().clearServerCart()
+      useCartStore.getState().clearGuestCart()
+      useSellerStore.getState().reset()
+      useDashboardStore.getState().clearAll()
+      useOrderStore.getState().clearAll()
+      usePaymentStore.getState().reset()
+      useCheckoutStore.getState().reset()
       queryClient.clear()
       navigate('/login')
     },
@@ -81,9 +93,9 @@ export const useMe = () => {
       }
       return res.data?.user
     },
-    enabled:              isAuthenticated,
-    staleTime:            5 * 60 * 1000,
-    refetchOnWindowFocus: true,  // Picks up emailVerified change when user returns from email tab
+    enabled: isAuthenticated,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: true, // Picks up emailVerified change when user returns from email tab
   })
 }
 
@@ -97,8 +109,15 @@ export const useForgotPassword = () =>
 export const useResetPassword = () => {
   const navigate = useNavigate()
   return useMutation({
-    mutationFn: ({ token, password, confirmPassword }: { token: string; password: string; confirmPassword: string }) =>
-      authService.resetPassword(token, password, confirmPassword),
+    mutationFn: ({
+      token,
+      password,
+      confirmPassword,
+    }: {
+      token: string
+      password: string
+      confirmPassword: string
+    }) => authService.resetPassword(token, password, confirmPassword),
     onSuccess: () => {
       navigate('/login?reset=true')
     },

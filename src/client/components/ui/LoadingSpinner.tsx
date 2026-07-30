@@ -30,7 +30,10 @@ export default function LoadingSpinner({
   if (!fullscreen) return spinner
 
   return (
-    <div className="flex-center" style={{ minHeight: '100vh', flexDirection: 'column', gap: 'var(--space-4)' }}>
+    <div
+      className="flex-center"
+      style={{ minHeight: '100vh', flexDirection: 'column', gap: 'var(--space-4)' }}
+    >
       {spinner}
       <span style={{ color: 'var(--color-neutral-500)', fontSize: 'var(--text-sm)' }}>{label}</span>
     </div>

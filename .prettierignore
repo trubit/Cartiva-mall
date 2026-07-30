@@ -1,0 +1,23 @@
+node_modules/
+dist/
+dist-ssr/
+build/
+.git/
+
+# Test output
+tests/coverage/
+tests/playwright-report/
+tests/playwright-results/
+
+# Lock files — never reformat these
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+bun.lockb
+
+# TypeScript incremental build cache
+*.tsbuildinfo
+node_modules/.tmp/
+
+# Uploaded/generated assets
+public/

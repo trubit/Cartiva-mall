@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { createProductSchema, productFiltersSchema, reviewSchema } from '../../validators/product.validators.js'
+import {
+  createProductSchema,
+  productFiltersSchema,
+  reviewSchema,
+} from '../../validators/product.validators.js'
 import { PRODUCT_CATEGORIES } from '../../constants/index.js'
 
 describe('createProductSchema', () => {
@@ -124,7 +128,10 @@ describe('productFiltersSchema', () => {
   it('accepts valid sort values', () => {
     const sorts = ['newest', 'price_asc', 'price_desc', 'rating', 'popular'] as const
     for (const sort of sorts) {
-      expect(productFiltersSchema.safeParse({ sort }).success, `sort "${sort}" should be valid`).toBe(true)
+      expect(
+        productFiltersSchema.safeParse({ sort }).success,
+        `sort "${sort}" should be valid`,
+      ).toBe(true)
     }
   })
 

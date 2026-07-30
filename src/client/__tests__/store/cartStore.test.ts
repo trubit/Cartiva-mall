@@ -13,7 +13,7 @@ function makeProduct(overrides: Partial<IProduct> = {}): IProduct {
     _id: 'product-1',
     title: 'Test Product',
     description: 'A test product',
-    price: 20.00,
+    price: 20.0,
     images: [],
     category: PRODUCT_CATEGORIES[0],
     stockQuantity: 50,

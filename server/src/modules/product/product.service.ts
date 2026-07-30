@@ -2,7 +2,11 @@ import mongoose from 'mongoose'
 import { Product, type IProductDocument } from './product.model.js'
 import { AppError } from '../../middlewares/error.middleware.js'
 import { cacheGet, cacheSet, cacheDelPattern, cacheIncr } from '../../utils/cache.js'
-import type { CreateProductInput, UpdateProductInput, ProductFiltersInput } from '../../../../src/shared/validators/product.validators.js'
+import type {
+  CreateProductInput,
+  UpdateProductInput,
+  ProductFiltersInput,
+} from '../../../../src/shared/validators/product.validators.js'
 import type { PaginationMeta } from '../../../../src/shared/types/api.types.js'
 
 // Escape all PCRE metacharacters before embedding user input in a RegExp.
@@ -23,9 +27,9 @@ const filterCacheKey = (prefix: string, filters: object): string => {
 
 // ─── Cache TTLs ───────────────────────────────────────────────────────────────
 const TTL = {
-  PRODUCT_DETAIL:   120,     // 2 min — individual product page
-  PRODUCT_LIST:      30,     // 30 s  — paginated listing (changes often)
-  FEATURED:         300,     // 5 min — featured products (rarely changes)
+  PRODUCT_DETAIL: 120, // 2 min — individual product page
+  PRODUCT_LIST: 30, // 30 s  — paginated listing (changes often)
+  FEATURED: 300, // 5 min — featured products (rarely changes)
 }
 
 const VIEWS_FLUSH_INTERVAL_MS = 60_000 // flush buffered view counts every 60 s
@@ -34,12 +38,12 @@ const VIEWS_FLUSH_INTERVAL_MS = 60_000 // flush buffered view counts every 60 s
 const buildFilter = (filters: ProductFiltersInput, extra: Record<string, unknown> = {}) => {
   const q: Record<string, unknown> = { ...extra }
 
-  if (filters.category)              q.category = filters.category
-  if (filters.brand)                 q.brand    = new RegExp(escRegex(filters.brand), 'i')
-  if (filters.search)                q.$text    = { $search: filters.search }
-  if (filters.inStock === true)      q.stockQuantity = { $gt: 0 }
-  if (filters.isFeatured === true)   q.isFeatured = true
-  if (filters.sellerId)              q.sellerId = new mongoose.Types.ObjectId(filters.sellerId)
+  if (filters.category) q.category = filters.category
+  if (filters.brand) q.brand = new RegExp(escRegex(filters.brand), 'i')
+  if (filters.search) q.$text = { $search: filters.search }
+  if (filters.inStock === true) q.stockQuantity = { $gt: 0 }
+  if (filters.isFeatured === true) q.isFeatured = true
+  if (filters.sellerId) q.sellerId = new mongoose.Types.ObjectId(filters.sellerId)
 
   if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
     q.price = {}
@@ -55,12 +59,17 @@ const buildFilter = (filters: ProductFiltersInput, extra: Record<string, unknown
 // ─── Build sort ───────────────────────────────────────────────────────────────
 const buildSort = (sort?: string): Record<string, 1 | -1> => {
   switch (sort) {
-    case 'price_asc':  return { price: 1 }
-    case 'price_desc': return { price: -1 }
-    case 'rating':     return { ratingsAverage: -1 }
-    case 'popular':    return { views: -1 }
+    case 'price_asc':
+      return { price: 1 }
+    case 'price_desc':
+      return { price: -1 }
+    case 'rating':
+      return { ratingsAverage: -1 }
+    case 'popular':
+      return { views: -1 }
     case 'newest':
-    default:           return { createdAt: -1 }
+    default:
+      return { createdAt: -1 }
   }
 }
 
@@ -76,16 +85,16 @@ const paginate = (page: number, limit: number, total: number): PaginationMeta =>
 
 // ─── Public: Get products with filters ────────────────────────────────────────
 export const getProducts = async (filters: ProductFiltersInput) => {
-  const page  = filters.page  ?? 1
+  const page = filters.page ?? 1
   const limit = filters.limit ?? 20
-  const skip  = (page - 1) * limit
+  const skip = (page - 1) * limit
 
   const cacheKey = filterCacheKey('products:list', filters)
-  const cached   = await cacheGet<{ products: unknown[]; pagination: PaginationMeta }>(cacheKey)
+  const cached = await cacheGet<{ products: unknown[]; pagination: PaginationMeta }>(cacheKey)
   if (cached) return cached
 
   const filter = buildFilter(filters, { status: 'active', isActive: true })
-  const sort   = buildSort(filters.sort)
+  const sort = buildSort(filters.sort)
 
   const [products, total] = await Promise.all([
     Product.find(filter)
@@ -108,7 +117,7 @@ export const getProductById = async (id: string): Promise<IProductDocument> => {
 
   // Serve from cache if available
   const cacheKey = `products:detail:${id}`
-  const cached   = await cacheGet<IProductDocument>(cacheKey)
+  const cached = await cacheGet<IProductDocument>(cacheKey)
   if (cached) {
     // Increment the view counter in Redis asynchronously — no DB write per request.
     // A background flush job writes the accumulated count to MongoDB every minute.
@@ -116,17 +125,19 @@ export const getProductById = async (id: string): Promise<IProductDocument> => {
     return cached
   }
 
-  const product = await Product.findOne(
-    { _id: id, status: 'active', isActive: true },
-  ).populate('sellerId', 'firstName lastName username profileImage')
+  const product = await Product.findOne({ _id: id, status: 'active', isActive: true })
+    .populate('sellerId', 'firstName lastName username profileImage')
+    .lean({ virtuals: true })
 
   if (!product) throw new AppError('Product not found', 404)
 
   // Increment view counter in Redis (non-blocking, batched)
-  void cacheIncr(`views:product:${id}`, VIEWS_FLUSH_INTERVAL_MS / 1000 + 120)
+  cacheIncr(`views:product:${id}`, VIEWS_FLUSH_INTERVAL_MS / 1000 + 120).catch((err: unknown) => {
+    void err // fire-and-forget with logged failure captured at flush time
+  })
 
-  await cacheSet(cacheKey, product.toObject({ virtuals: true }), TTL.PRODUCT_DETAIL)
-  return product
+  await cacheSet(cacheKey, product, TTL.PRODUCT_DETAIL)
+  return product as unknown as IProductDocument
 }
 
 // ─── Background job: flush Redis view counters → MongoDB ─────────────────────
@@ -140,13 +151,18 @@ export const flushViewCounters = async (): Promise<void> => {
     do {
       const [nextCursor, keys] = await redis.scan(cursor, 'MATCH', 'views:product:*', 'COUNT', 100)
       cursor = nextCursor
-      for (const key of keys) {
-        const raw = await redis.getdel(key)
-        if (raw) {
-          const count = parseInt(raw, 10)
-          const id    = key.replace('views:product:', '')
-          if (count > 0) updates.push({ id, count })
-        }
+      if (keys.length > 0) {
+        const pipeline = redis.pipeline()
+        keys.forEach((k) => pipeline.getdel(k))
+        const results = await pipeline.exec()
+        results?.forEach((result, idx) => {
+          const raw = result?.[1] as string | null
+          if (raw) {
+            const count = parseInt(raw, 10)
+            const id = keys[idx]!.replace('views:product:', '')
+            if (count > 0) updates.push({ id, count })
+          }
+        })
       }
     } while (cursor !== '0')
 
@@ -159,8 +175,9 @@ export const flushViewCounters = async (): Promise<void> => {
       },
     }))
     await Product.bulkWrite(bulkOps, { ordered: false })
-  } catch {
-    // Non-fatal — view counts will be retried next interval
+  } catch (err) {
+    const { logger } = await import('../../utils/logger.js')
+    logger.error('flushViewCounters failed — view counts may be lost', { err })
   }
 }
 
@@ -185,25 +202,29 @@ export const createProduct = async (
   data: CreateProductInput,
   sellerId: string,
 ): Promise<IProductDocument> => {
-  const existing = await Product.findOne({ sku: data.sku.toUpperCase(), status: { $ne: 'blocked' }, isActive: true })
+  const existing = await Product.findOne({
+    sku: data.sku.toUpperCase(),
+    status: { $ne: 'blocked' },
+    isActive: true,
+  })
   if (existing) throw new AppError('SKU already exists', 409)
 
   const product = await Product.create({
-    title:         data.title,
-    description:   data.description,
-    price:         data.price,
+    title: data.title,
+    description: data.description,
+    price: data.price,
     discountPrice: data.discountPrice,
-    images:        data.images ?? [],
-    category:      data.category,
-    subCategory:   data.subCategory,
-    brand:         data.brand,
+    images: data.images ?? [],
+    category: data.category,
+    subCategory: data.subCategory,
+    brand: data.brand,
     stockQuantity: data.stockQuantity,
-    sku:           data.sku,
-    tags:          data.tags ?? [],
-    isFeatured:    data.isFeatured ?? false,
-    sellerId:      new mongoose.Types.ObjectId(sellerId),
-    status:        'pending',
-    isActive:      true,
+    sku: data.sku,
+    tags: data.tags ?? [],
+    isFeatured: data.isFeatured ?? false,
+    sellerId: new mongoose.Types.ObjectId(sellerId),
+    status: 'pending',
+    isActive: true,
   })
 
   await invalidateProductCache()
@@ -219,7 +240,9 @@ export const updateProduct = async (
 ): Promise<IProductDocument> => {
   if (!mongoose.isValidObjectId(id)) throw new AppError('Invalid product ID', 400)
 
-  const filter = isAdmin ? { _id: id } : { _id: id, sellerId: new mongoose.Types.ObjectId(sellerId) }
+  const filter = isAdmin
+    ? { _id: id }
+    : { _id: id, sellerId: new mongoose.Types.ObjectId(sellerId) }
   const product = await Product.findOne(filter)
   if (!product) throw new AppError('Product not found or access denied', 404)
 
@@ -229,18 +252,18 @@ export const updateProduct = async (
   }
 
   Object.assign(product, {
-    ...(data.title         !== undefined && { title:         data.title }),
-    ...(data.description   !== undefined && { description:   data.description }),
-    ...(data.price         !== undefined && { price:         data.price }),
+    ...(data.title !== undefined && { title: data.title }),
+    ...(data.description !== undefined && { description: data.description }),
+    ...(data.price !== undefined && { price: data.price }),
     ...(data.discountPrice !== undefined && { discountPrice: data.discountPrice }),
-    ...(data.images        !== undefined && { images:        data.images }),
-    ...(data.category      !== undefined && { category:      data.category }),
-    ...(data.subCategory   !== undefined && { subCategory:   data.subCategory }),
-    ...(data.brand         !== undefined && { brand:         data.brand }),
+    ...(data.images !== undefined && { images: data.images }),
+    ...(data.category !== undefined && { category: data.category }),
+    ...(data.subCategory !== undefined && { subCategory: data.subCategory }),
+    ...(data.brand !== undefined && { brand: data.brand }),
     ...(data.stockQuantity !== undefined && { stockQuantity: data.stockQuantity }),
-    ...(data.sku           !== undefined && { sku:           data.sku.toUpperCase() }),
-    ...(data.tags          !== undefined && { tags:          data.tags }),
-    ...(data.isFeatured    !== undefined && { isFeatured:    data.isFeatured }),
+    ...(data.sku !== undefined && { sku: data.sku.toUpperCase() }),
+    ...(data.tags !== undefined && { tags: data.tags }),
+    ...(data.isFeatured !== undefined && { isFeatured: data.isFeatured }),
   })
 
   await product.save()
@@ -249,10 +272,16 @@ export const updateProduct = async (
 }
 
 // ─── Seller: Delete product (soft delete) ─────────────────────────────────────
-export const deleteProduct = async (id: string, sellerId: string, isAdmin = false): Promise<void> => {
+export const deleteProduct = async (
+  id: string,
+  sellerId: string,
+  isAdmin = false,
+): Promise<void> => {
   if (!mongoose.isValidObjectId(id)) throw new AppError('Invalid product ID', 400)
 
-  const filter = isAdmin ? { _id: id } : { _id: id, sellerId: new mongoose.Types.ObjectId(sellerId) }
+  const filter = isAdmin
+    ? { _id: id }
+    : { _id: id, sellerId: new mongoose.Types.ObjectId(sellerId) }
   const product = await Product.findOneAndUpdate(filter, { isActive: false, status: 'blocked' })
   if (!product) throw new AppError('Product not found or access denied', 404)
 
@@ -289,16 +318,16 @@ export const blockProduct = async (id: string): Promise<IProductDocument> => {
 
 // ─── Seller: Get own products ─────────────────────────────────────────────────
 export const getSellerProducts = async (sellerId: string, filters: ProductFiltersInput) => {
-  const page  = filters.page  ?? 1
+  const page = filters.page ?? 1
   const limit = filters.limit ?? 20
-  const skip  = (page - 1) * limit
-  const sort  = buildSort(filters.sort)
+  const skip = (page - 1) * limit
+  const sort = buildSort(filters.sort)
 
   const filter: Record<string, unknown> = {
     sellerId: new mongoose.Types.ObjectId(sellerId),
   }
   if (filters.category) filter.category = filters.category
-  if (filters.search)   filter.$text    = { $search: filters.search }
+  if (filters.search) filter.$text = { $search: filters.search }
 
   const [products, total] = await Promise.all([
     Product.find(filter).sort(sort).skip(skip).limit(limit).lean({ virtuals: true }),
@@ -311,7 +340,7 @@ export const getSellerProducts = async (sellerId: string, filters: ProductFilter
 // ─── Get featured products ────────────────────────────────────────────────────
 export const getFeaturedProducts = async (limit = 12) => {
   const cacheKey = `products:featured:${limit}`
-  const cached   = await cacheGet<IProductDocument[]>(cacheKey)
+  const cached = await cacheGet<IProductDocument[]>(cacheKey)
   if (cached) return cached
 
   const products = await Product.find({ status: 'active', isActive: true, isFeatured: true })

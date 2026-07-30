@@ -1,27 +1,19 @@
 import { useEffect } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 
-// Handles Stripe's redirect after 3D Secure / redirect-based payment methods.
-// Stripe appends: ?payment_intent=pi_...&redirect_status=succeeded|failed
+// Stripe redirect handler — Stripe has been removed.
+// Redirect any accidental visitors back to checkout.
 export default function PaymentComplete() {
-  const [params]  = useSearchParams()
-  const navigate  = useNavigate()
-  const orderId       = params.get('orderId') ?? ''
-  const redirectStatus = params.get('redirect_status')
-  const paymentIntent  = params.get('payment_intent')
+  const navigate = useNavigate()
 
   useEffect(() => {
-    if (redirectStatus === 'succeeded') {
-      navigate(`/payment/success?orderId=${orderId}&payment_intent=${paymentIntent ?? ''}`, { replace: true })
-    } else {
-      navigate(`/payment/failed?orderId=${orderId}&payment_intent=${paymentIntent ?? ''}`, { replace: true })
-    }
-  }, [redirectStatus, orderId, paymentIntent, navigate])
+    navigate('/checkout', { replace: true })
+  }, [navigate])
 
   return (
     <div className="payment-complete">
       <div className="payment-complete__spinner" />
-      <p>Finalising your payment…</p>
+      <p>Redirecting…</p>
     </div>
   )
 }

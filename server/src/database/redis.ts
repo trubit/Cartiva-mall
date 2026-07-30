@@ -8,16 +8,22 @@ const retryStrategy = (times: number) => {
   return Math.min(times * 200, 10_000)
 }
 
+const redisBaseOptions = {
+  host: env.REDIS_HOST,
+  port: env.REDIS_PORT,
+  ...(env.REDIS_PASSWORD ? { password: env.REDIS_PASSWORD } : {}),
+  ...(env.REDIS_TLS_ENABLED ? { tls: {} } : {}),
+  retryStrategy,
+}
+
 /** Primary client — used for caching, rate limiting, pub/sub publish.
  *  enableOfflineQueue: false so cache helpers fail-open immediately when Redis is down.
  */
 export const redis = new Redis({
-  host:               env.REDIS_HOST,
-  port:               env.REDIS_PORT,
-  lazyConnect:        true,
+  ...redisBaseOptions,
+  lazyConnect: true,
   enableOfflineQueue: false,
   maxRetriesPerRequest: 2,
-  retryStrategy,
 })
 
 /** Subscriber client — dedicated to Socket.IO Redis adapter subscriptions.
@@ -25,15 +31,13 @@ export const redis = new Redis({
  *  is ready instead of throwing an unhandled rejection during adapter setup.
  */
 export const redisSub = new Redis({
-  host:       env.REDIS_HOST,
-  port:       env.REDIS_PORT,
+  ...redisBaseOptions,
   lazyConnect: true,
-  retryStrategy,
 })
 
-redis.on('connect',      () => logger.info('Redis connected'))
+redis.on('connect', () => logger.info('Redis connected'))
 redis.on('reconnecting', () => logger.warn('Redis reconnecting…'))
-redis.on('error',        () => {}) // suppress per-error noise; retryStrategy handles it
+redis.on('error', () => {}) // suppress per-error noise; retryStrategy handles it
 
 redisSub.on('error', () => {})
 

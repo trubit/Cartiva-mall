@@ -1,63 +1,128 @@
 name: CI
 
-# Run on every push to main and on every PR that targets main.
+# Run on every push to main and on every PR targeting main.
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
 
-# Cancel a previous run on the same branch if a newer commit arrives.
+# Cancel an in-progress run on the same ref when a newer commit arrives.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Single source of truth for the Node version used across all jobs.
+env:
+  NODE_VERSION: '20'
+
 jobs:
-  # ── Job 1: TypeScript type-check + client/shared unit tests ──────────────
-  client-tests:
-    name: Client & Shared Tests
+  # ── Job 1: Lint & format ───────────────────────────────────────────────────
+  # Fast fail-gate: runs in parallel with typecheck so bad code is rejected
+  # immediately without waiting for slower test or build jobs.
+  lint:
+    name: Lint & Format
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 20
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
 
       - name: Install dependencies
         run: npm ci
 
-      - name: TypeScript type check
+      - name: ESLint
+        run: npm run lint
+
+      - name: Prettier format check
+        run: npm run format:check
+
+  # ── Job 2: TypeScript type-check (client + server) ────────────────────────
+  # Runs the actual tsconfig for each side independently.
+  # Previously "typecheck" was tsc --noEmit on the solution tsconfig (files:[])
+  # which is a silent no-op — this replaces it with real checks.
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Client & shared (tsconfig.app.json)
         run: npm run typecheck
 
-      - name: Run client & shared tests
-        run: npm run test
+      - name: Server (tsconfig.server.json)
+        run: npm run typecheck:server
 
-  # ── Job 2: Server unit tests (uses MongoDB Memory Server — no real DB) ───
+  # ── Job 3: Client & shared unit tests ─────────────────────────────────────
+  # Blocked on lint + typecheck so we don't waste minutes testing broken code.
+  client-tests:
+    name: Client & Shared Tests
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests with coverage
+        run: npm run test:coverage
+
+      - name: Upload client coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: client-coverage
+          path: tests/coverage/client/
+          retention-days: 14
+
+  # ── Job 4: Server unit tests ───────────────────────────────────────────────
+  # Uses MongoDB Memory Server — no external database required.
+  # MongoDB binary is cached between runs so the 80–120 MB download only
+  # happens when package-lock.json changes.
   server-tests:
     name: Server Tests
     runs-on: ubuntu-latest
+    needs: [lint, typecheck]
 
-    # Make the binary cache path available to every step in this job.
-    # /home/runner is always the home directory on GitHub-hosted Ubuntu runners.
     env:
       MONGOMS_BIN: /home/runner/.cache/mongodb-binaries
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 20
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
 
-      # Cache the MongoDB binary that mongodb-memory-server downloads.
       - name: Cache MongoDB binary
         uses: actions/cache@v4
         with:
@@ -69,12 +134,72 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run server tests
-        run: npm run test:server
+      - name: Run server tests with coverage
+        run: npm run test:server:coverage
         env:
           MONGOMS_DOWNLOAD_DIR: ${{ env.MONGOMS_BIN }}
           NODE_ENV: test
-          # Dummy secrets — only used by JWT helpers in test scope.
-          # Real secrets live in GitHub → Settings → Secrets and never here.
-          JWT_ACCESS_SECRET: ci-test-jwt-access-secret
-          JWT_REFRESH_SECRET: ci-test-jwt-refresh-secret
+          # Dummy secrets used only inside the test scope (JWT signing/verify).
+          # Real secrets live in GitHub → Settings → Secrets and never in code.
+          JWT_ACCESS_SECRET: ci-test-jwt-access-secret-32chars-min
+          JWT_REFRESH_SECRET: ci-test-jwt-refresh-secret-32chars-min
+
+      - name: Upload server coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: server-coverage
+          path: tests/coverage/server/
+          retention-days: 14
+
+  # ── Job 5: Dependency security audit ─────────────────────────────────────────
+  security-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit dependencies (fail on high or critical)
+        run: npm audit --audit-level=high
+
+  # ── Job 6: Build verification ──────────────────────────────────────────────
+  # Confirms that `tsc -b && vite build` produces valid output without errors.
+  # Blocked only on typecheck (lint doesn't affect build output).
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [typecheck]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build client + server
+        run: npm run build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ github.sha }}
+          path: dist/
+          retention-days: 7

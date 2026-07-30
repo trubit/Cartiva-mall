@@ -10,9 +10,9 @@ import type {
 import type { IProduct } from '../../shared/types/product.types.js'
 import type { PaginationMeta } from '../../shared/types/index.js'
 
-const unwrap     = <T>(res: { data: { data: T } }): T => res.data.data
+const unwrap = <T>(res: { data: { data: T } }): T => res.data.data
 const unwrapPage = <T>(res: { data: { data: T; pagination?: PaginationMeta } }) => ({
-  data:       res.data.data,
+  data: res.data.data,
   pagination: res.data.pagination,
 })
 
@@ -28,7 +28,9 @@ export const dashboardService = {
   },
 
   addToWishlist(productId: string): Promise<{ items: IWishlistItem[]; total: number }> {
-    return api.post('/dashboard/wishlist', { productId }).then(unwrap<{ items: IWishlistItem[]; total: number }>)
+    return api
+      .post('/dashboard/wishlist', { productId })
+      .then(unwrap<{ items: IWishlistItem[]; total: number }>)
   },
 
   removeFromWishlist(productId: string): Promise<void> {
@@ -36,9 +38,9 @@ export const dashboardService = {
   },
 
   checkWishlist(productId: string): Promise<boolean> {
-    return api.get(`/dashboard/wishlist/${productId}/check`).then(
-      (res: { data: { data: { inWishlist: boolean } } }) => res.data.data.inWishlist,
-    )
+    return api
+      .get(`/dashboard/wishlist/${productId}/check`)
+      .then((res: { data: { data: { inWishlist: boolean } } }) => res.data.data.inWishlist)
   },
 
   // ── Notifications ─────────────────────────────────────────────────────────────
@@ -46,15 +48,15 @@ export const dashboardService = {
     data: { notifications: INotification[]; total: number; unread: number }
     pagination?: PaginationMeta
   }> {
-    return api.get('/dashboard/notifications', { params }).then(
-      unwrapPage<{ notifications: INotification[]; total: number; unread: number }>,
-    )
+    return api
+      .get('/dashboard/notifications', { params })
+      .then(unwrapPage<{ notifications: INotification[]; total: number; unread: number }>)
   },
 
   getUnreadCount(): Promise<number> {
-    return api.get('/dashboard/notifications/unread-count').then(
-      (res: { data: { data: { count: number } } }) => res.data.data.count,
-    )
+    return api
+      .get('/dashboard/notifications/unread-count')
+      .then((res: { data: { data: { count: number } } }) => res.data.data.count)
   },
 
   markNotificationRead(id: string): Promise<INotification> {
@@ -70,9 +72,9 @@ export const dashboardService = {
     data: { payments: IDashboardPayment[]; total: number }
     pagination?: PaginationMeta
   }> {
-    return api.get('/dashboard/payments', { params }).then(
-      unwrapPage<{ payments: IDashboardPayment[]; total: number }>,
-    )
+    return api
+      .get('/dashboard/payments', { params })
+      .then(unwrapPage<{ payments: IDashboardPayment[]; total: number }>)
   },
 
   // ── Recently Viewed ───────────────────────────────────────────────────────────

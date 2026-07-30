@@ -1,32 +1,32 @@
 import { useEffect, useState } from 'react'
-import Modal    from 'react-bootstrap/Modal'
-import Form     from 'react-bootstrap/Form'
-import Row      from 'react-bootstrap/Row'
-import Col      from 'react-bootstrap/Col'
+import Modal from 'react-bootstrap/Modal'
+import Form from 'react-bootstrap/Form'
+import Row from 'react-bootstrap/Row'
+import Col from 'react-bootstrap/Col'
 import { FiEdit3 } from 'react-icons/fi'
-import { useUpdateProduct }    from '../../../hooks/useProducts.js'
-import { PRODUCT_CATEGORIES }  from '../../../../shared/constants/index.js'
-import { useQueryClient }      from '@tanstack/react-query'
-import { SELLER_PRODUCTS }     from '../../../hooks/useSeller.js'
-import ProductImageUploader    from '../../product/ProductImageUploader/index.js'
-import type { IProduct }       from '../../../../shared/types/index.js'
+import { useUpdateProduct } from '../../../hooks/useProducts.js'
+import { PRODUCT_CATEGORIES } from '../../../../shared/constants/index.js'
+import { useQueryClient } from '@tanstack/react-query'
+import { SELLER_PRODUCTS } from '../../../hooks/useSeller.js'
+import ProductImageUploader from '../../product/ProductImageUploader/index.js'
+import type { IProduct } from '../../../../shared/types/index.js'
 
 interface EditProductModalProps {
   product: IProduct | null
-  onHide:  () => void
+  onHide: () => void
 }
 
 export default function EditProductModal({ product, onHide }: EditProductModalProps) {
   const [form, setForm] = useState({
-    title:         '',
-    description:   '',
-    price:         '',
+    title: '',
+    description: '',
+    price: '',
     discountPrice: '',
-    category:      PRODUCT_CATEGORIES[0] as string,
-    brand:         '',
-    sku:           '',
+    category: PRODUCT_CATEGORIES[0] as string,
+    brand: '',
+    sku: '',
     stockQuantity: '1',
-    isFeatured:    false,
+    isFeatured: false,
   })
   const [imageUrls, setImageUrls] = useState<string[]>([])
 
@@ -36,15 +36,15 @@ export default function EditProductModal({ product, onHide }: EditProductModalPr
   useEffect(() => {
     if (product) {
       setForm({
-        title:         product.title,
-        description:   product.description,
-        price:         String(product.price),
+        title: product.title,
+        description: product.description,
+        price: String(product.price),
         discountPrice: product.discountPrice ? String(product.discountPrice) : '',
-        category:      product.category,
-        brand:         product.brand ?? '',
-        sku:           product.sku,
+        category: product.category,
+        brand: product.brand ?? '',
+        sku: product.sku,
         stockQuantity: String(product.stockQuantity),
-        isFeatured:    product.isFeatured,
+        isFeatured: product.isFeatured,
       })
       setImageUrls(product.images ?? [])
       resetMutation()
@@ -61,16 +61,16 @@ export default function EditProductModal({ product, onHide }: EditProductModalPr
       {
         id: product._id,
         data: {
-          title:         form.title,
-          description:   form.description,
-          price:         Number(form.price),
+          title: form.title,
+          description: form.description,
+          price: Number(form.price),
           discountPrice: form.discountPrice ? Number(form.discountPrice) : undefined,
-          category:      form.category,
-          brand:         form.brand || undefined,
-          sku:           form.sku.toUpperCase(),
+          category: form.category,
+          brand: form.brand || undefined,
+          sku: form.sku.toUpperCase(),
           stockQuantity: Number(form.stockQuantity),
-          isFeatured:    form.isFeatured,
-          images:        imageUrls,
+          isFeatured: form.isFeatured,
+          images: imageUrls,
         },
       },
       {
@@ -101,14 +101,15 @@ export default function EditProductModal({ product, onHide }: EditProductModalPr
         )}
 
         <Form id="edit-product-modal-form" onSubmit={handleSubmit} noValidate>
-
           {/* ── Product Details ─────────────────────────────────── */}
           <div className="pm-section">
             <p className="pm-section-label">Product Details</p>
             <Row className="g-3">
               <Col xs={12}>
                 <Form.Group controlId="ep-title">
-                  <Form.Label>Product Title <span style={{ color: 'var(--pm-danger-text)' }}>*</span></Form.Label>
+                  <Form.Label>
+                    Product Title <span style={{ color: 'var(--pm-danger-text)' }}>*</span>
+                  </Form.Label>
                   <Form.Control
                     required
                     value={form.title}
@@ -133,12 +134,15 @@ export default function EditProductModal({ product, onHide }: EditProductModalPr
           {/* ── Product Images ───────────────────────────────────── */}
           <div className="pm-section">
             <p className="pm-section-label">Product Images</p>
-            <ProductImageUploader
-              value={imageUrls}
-              onChange={setImageUrls}
-              maxImages={6}
-            />
-            <p style={{ fontSize: '0.72rem', color: 'var(--pm-modal-text-muted)', marginTop: '0.5rem', marginBottom: 0 }}>
+            <ProductImageUploader value={imageUrls} onChange={setImageUrls} maxImages={6} />
+            <p
+              style={{
+                fontSize: '0.72rem',
+                color: 'var(--pm-modal-text-muted)',
+                marginTop: '0.5rem',
+                marginBottom: 0,
+              }}
+            >
               First image is the main thumbnail · JPEG, PNG, WebP · max 5 MB each
             </p>
           </div>
@@ -149,9 +153,14 @@ export default function EditProductModal({ product, onHide }: EditProductModalPr
             <Row className="g-3">
               <Col xs={6} md={4}>
                 <Form.Group controlId="ep-price">
-                  <Form.Label>Price ($) <span style={{ color: 'var(--pm-danger-text)' }}>*</span></Form.Label>
+                  <Form.Label>
+                    Price ($) <span style={{ color: 'var(--pm-danger-text)' }}>*</span>
+                  </Form.Label>
                   <Form.Control
-                    required type="number" min="0.01" step="0.01"
+                    required
+                    type="number"
+                    min="0.01"
+                    step="0.01"
                     value={form.price}
                     onChange={(e) => set('price', e.target.value)}
                   />
@@ -161,7 +170,9 @@ export default function EditProductModal({ product, onHide }: EditProductModalPr
                 <Form.Group controlId="ep-discount">
                   <Form.Label>Discount Price ($)</Form.Label>
                   <Form.Control
-                    type="number" min="0" step="0.01"
+                    type="number"
+                    min="0"
+                    step="0.01"
                     value={form.discountPrice}
                     onChange={(e) => set('discountPrice', e.target.value)}
                   />
@@ -169,9 +180,13 @@ export default function EditProductModal({ product, onHide }: EditProductModalPr
               </Col>
               <Col xs={6} md={4}>
                 <Form.Group controlId="ep-stock">
-                  <Form.Label>Stock Qty <span style={{ color: 'var(--pm-danger-text)' }}>*</span></Form.Label>
+                  <Form.Label>
+                    Stock Qty <span style={{ color: 'var(--pm-danger-text)' }}>*</span>
+                  </Form.Label>
                   <Form.Control
-                    required type="number" min="0"
+                    required
+                    type="number"
+                    min="0"
                     value={form.stockQuantity}
                     onChange={(e) => set('stockQuantity', e.target.value)}
                   />
@@ -187,18 +202,22 @@ export default function EditProductModal({ product, onHide }: EditProductModalPr
               <Col xs={6}>
                 <Form.Group controlId="ep-category">
                   <Form.Label>Category</Form.Label>
-                  <Form.Select value={form.category} onChange={(e) => set('category', e.target.value)}>
-                    {PRODUCT_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                  <Form.Select
+                    value={form.category}
+                    onChange={(e) => set('category', e.target.value)}
+                  >
+                    {PRODUCT_CATEGORIES.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
                   </Form.Select>
                 </Form.Group>
               </Col>
               <Col xs={6}>
                 <Form.Group controlId="ep-brand">
                   <Form.Label>Brand</Form.Label>
-                  <Form.Control
-                    value={form.brand}
-                    onChange={(e) => set('brand', e.target.value)}
-                  />
+                  <Form.Control value={form.brand} onChange={(e) => set('brand', e.target.value)} />
                 </Form.Group>
               </Col>
               <Col xs={6}>
@@ -222,12 +241,16 @@ export default function EditProductModal({ product, onHide }: EditProductModalPr
               </Col>
             </Row>
           </div>
-
         </Form>
       </Modal.Body>
 
       <Modal.Footer>
-        <button type="button" className="pm-btn pm-btn--cancel" onClick={onHide} disabled={isPending}>
+        <button
+          type="button"
+          className="pm-btn pm-btn--cancel"
+          onClick={onHide}
+          disabled={isPending}
+        >
           Cancel
         </button>
         <button
@@ -236,7 +259,13 @@ export default function EditProductModal({ product, onHide }: EditProductModalPr
           className="pm-btn pm-btn--submit"
           disabled={isPending}
         >
-          {isPending ? <><span className="pm-spinner" /> Saving…</> : 'Save Changes'}
+          {isPending ? (
+            <>
+              <span className="pm-spinner" /> Saving…
+            </>
+          ) : (
+            'Save Changes'
+          )}
         </button>
       </Modal.Footer>
     </Modal>

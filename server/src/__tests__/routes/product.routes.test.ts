@@ -4,21 +4,21 @@ import mongoose from 'mongoose'
 
 vi.mock('ioredis', () => {
   class Redis {
-    get        = vi.fn().mockResolvedValue(null)
-    set        = vi.fn().mockResolvedValue('OK')
-    setex      = vi.fn().mockResolvedValue('OK')
-    del        = vi.fn().mockResolvedValue(1)
-    exists     = vi.fn().mockResolvedValue(0)
-    expire     = vi.fn().mockResolvedValue(1)
-    sadd       = vi.fn().mockResolvedValue(0)
-    scan       = vi.fn().mockResolvedValue(['0', []])
-    incr       = vi.fn().mockResolvedValue(1)
-    call       = vi.fn().mockResolvedValue(null)
-    connect    = vi.fn().mockResolvedValue(undefined)
-    quit       = vi.fn().mockResolvedValue('OK')
-    on         = vi.fn()
+    get = vi.fn().mockResolvedValue(null)
+    set = vi.fn().mockResolvedValue('OK')
+    setex = vi.fn().mockResolvedValue('OK')
+    del = vi.fn().mockResolvedValue(1)
+    exists = vi.fn().mockResolvedValue(0)
+    expire = vi.fn().mockResolvedValue(1)
+    sadd = vi.fn().mockResolvedValue(0)
+    scan = vi.fn().mockResolvedValue(['0', []])
+    incr = vi.fn().mockResolvedValue(1)
+    call = vi.fn().mockResolvedValue(null)
+    connect = vi.fn().mockResolvedValue(undefined)
+    quit = vi.fn().mockResolvedValue('OK')
+    on = vi.fn()
     disconnect = vi.fn()
-    status     = 'ready'
+    status = 'ready'
   }
   return { default: Redis, Redis }
 })
@@ -26,13 +26,13 @@ vi.mock('ioredis', () => {
 vi.mock('../../middlewares/rateLimiter.middleware.js', () => {
   const pass = (_req: unknown, _res: unknown, next: () => void) => next()
   return {
-    globalLimiter:    pass,
-    authLimiter:      pass,
-    searchLimiter:    pass,
-    uploadLimiter:    pass,
+    globalLimiter: pass,
+    authLimiter: pass,
+    searchLimiter: pass,
+    uploadLimiter: pass,
     dashboardLimiter: pass,
-    checkoutLimiter:  pass,
-    paymentLimiter:   pass,
+    checkoutLimiter: pass,
+    paymentLimiter: pass,
   }
 })
 
@@ -79,7 +79,12 @@ beforeAll(async () => {
   sellerId = (seller._id as mongoose.Types.ObjectId).toString()
 
   await ProductModel.create([
-    makeProductData({ title: 'Laptop Pro', category: PRODUCT_CATEGORIES[0], isFeatured: true, sellerId }),
+    makeProductData({
+      title: 'Laptop Pro',
+      category: PRODUCT_CATEGORIES[0],
+      isFeatured: true,
+      sellerId,
+    }),
     makeProductData({ title: 'Wireless Mouse', category: PRODUCT_CATEGORIES[0], sellerId }),
     makeProductData({ title: 'Yoga Mat', category: PRODUCT_CATEGORIES[3], sellerId }),
   ])
@@ -109,7 +114,9 @@ describe('GET /products', () => {
     const category = encodeURIComponent(PRODUCT_CATEGORIES[0])
     const res = await request(app).get(`${PRODUCTS}?category=${category}`)
     expect(res.status).toBe(200)
-    expect(res.body.data.every((p: { category: string }) => p.category === PRODUCT_CATEGORIES[0])).toBe(true)
+    expect(
+      res.body.data.every((p: { category: string }) => p.category === PRODUCT_CATEGORIES[0]),
+    ).toBe(true)
   })
 
   it('supports page and limit query params', async () => {
@@ -133,9 +140,7 @@ describe('GET /products/featured', () => {
 
   it('only returns featured products', async () => {
     const res = await request(app).get(`${PRODUCTS}/featured`)
-    expect(
-      res.body.data.every((p: { isFeatured: boolean }) => p.isFeatured === true)
-    ).toBe(true)
+    expect(res.body.data.every((p: { isFeatured: boolean }) => p.isFeatured === true)).toBe(true)
   })
 })
 
@@ -144,7 +149,7 @@ describe('GET /products/:id', () => {
 
   beforeAll(async () => {
     const product = await ProductModel.create(
-      makeProductData({ title: 'Specific Product', sellerId })
+      makeProductData({ title: 'Specific Product', sellerId }),
     )
     productId = (product._id as mongoose.Types.ObjectId).toString()
   })

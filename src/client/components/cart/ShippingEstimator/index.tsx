@@ -7,10 +7,7 @@ interface ShippingEstimatorProps {
 }
 
 export default function ShippingEstimator({ totals }: ShippingEstimatorProps) {
-  const progress = Math.min(
-    100,
-    (totals.subtotal / totals.freeShippingThreshold) * 100,
-  )
+  const progress = Math.min(100, (totals.subtotal / totals.freeShippingThreshold) * 100)
 
   return (
     <div className="shipping-estimator">
@@ -27,15 +24,17 @@ export default function ShippingEstimator({ totals }: ShippingEstimatorProps) {
       ) : (
         <div className="shipping-estimator__progress-wrap">
           <p className="shipping-estimator__hint">
-            Add{' '}
-            <strong>{formatCurrency(totals.remainingForFreeShipping)}</strong>
-            {' '}more for free shipping
+            Add <strong>{formatCurrency(totals.remainingForFreeShipping)}</strong> more for free
+            shipping
           </p>
-          <div className="shipping-estimator__bar" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
-            <div
-              className="shipping-estimator__bar-fill"
-              style={{ width: `${progress}%` }}
-            />
+          <div
+            className="shipping-estimator__bar"
+            role="progressbar"
+            aria-valuenow={progress}
+            aria-valuemin={0}
+            aria-valuemax={100}
+          >
+            <div className="shipping-estimator__bar-fill" style={{ width: `${progress}%` }} />
           </div>
           <div className="shipping-estimator__cost-row">
             <span>Flat rate shipping</span>

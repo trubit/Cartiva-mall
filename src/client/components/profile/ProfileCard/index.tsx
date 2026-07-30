@@ -10,14 +10,18 @@ const fmt = (val?: string) => val || <span className="profile-info-value empty">
 
 const fmtDate = (iso?: string) => {
   if (!iso) return <span className="profile-info-value empty">Not set</span>
-  return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  return new Date(iso).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })
 }
 
 const GENDER_LABEL: Record<string, string> = {
-  male:               'Male',
-  female:             'Female',
-  other:              'Other',
-  prefer_not_to_say:  'Prefer not to say',
+  male: 'Male',
+  female: 'Female',
+  other: 'Other',
+  prefer_not_to_say: 'Prefer not to say',
 }
 
 export default function ProfileCard({ user }: Props) {
@@ -37,7 +41,18 @@ export default function ProfileCard({ user }: Props) {
       </div>
 
       {user.bio && (
-        <p style={{ fontSize: '.9rem', color: '#444', lineHeight: 1.6, marginBottom: '1.25rem', padding: '.75rem', background: '#fafafa', borderRadius: 8, borderLeft: '3px solid #FF9900' }}>
+        <p
+          style={{
+            fontSize: '.9rem',
+            color: '#444',
+            lineHeight: 1.6,
+            marginBottom: '1.25rem',
+            padding: '.75rem',
+            background: '#fafafa',
+            borderRadius: 8,
+            borderLeft: '3px solid #FF9900',
+          }}
+        >
           {user.bio}
         </p>
       )}
@@ -57,22 +72,36 @@ export default function ProfileCard({ user }: Props) {
         </div>
         <div className="profile-info-item">
           <span className="profile-info-label">Gender</span>
-          <span className="profile-info-value">{user.gender ? GENDER_LABEL[user.gender] : <span className="profile-info-value empty">Not set</span>}</span>
+          <span className="profile-info-value">
+            {user.gender ? (
+              GENDER_LABEL[user.gender]
+            ) : (
+              <span className="profile-info-value empty">Not set</span>
+            )}
+          </span>
         </div>
         <div className="profile-info-item">
-          <span className="profile-info-label"><FiMail style={{ verticalAlign: 'middle' }} /> Email</span>
+          <span className="profile-info-label">
+            <FiMail style={{ verticalAlign: 'middle' }} /> Email
+          </span>
           <span className="profile-info-value">{fmt(user.email)}</span>
         </div>
         <div className="profile-info-item">
-          <span className="profile-info-label"><FiPhone style={{ verticalAlign: 'middle' }} /> Phone</span>
+          <span className="profile-info-label">
+            <FiPhone style={{ verticalAlign: 'middle' }} /> Phone
+          </span>
           <span className="profile-info-value">{fmt(user.phoneNumber)}</span>
         </div>
         <div className="profile-info-item">
-          <span className="profile-info-label"><FiCalendar style={{ verticalAlign: 'middle' }} /> Date of Birth</span>
+          <span className="profile-info-label">
+            <FiCalendar style={{ verticalAlign: 'middle' }} /> Date of Birth
+          </span>
           <span className="profile-info-value">{fmtDate(user.dateOfBirth)}</span>
         </div>
         <div className="profile-info-item">
-          <span className="profile-info-label"><FiGlobe style={{ verticalAlign: 'middle' }} /> Language</span>
+          <span className="profile-info-label">
+            <FiGlobe style={{ verticalAlign: 'middle' }} /> Language
+          </span>
           <span className="profile-info-value">{user.language?.toUpperCase() ?? 'EN'}</span>
         </div>
       </div>

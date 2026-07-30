@@ -1,9 +1,14 @@
 import api from './api.js'
-import type { IOrder, IOrderTracking, ICreateOrderResponse, PaginationMeta } from '../../shared/types/index.js'
+import type {
+  IOrder,
+  IOrderTracking,
+  ICreateOrderResponse,
+  PaginationMeta,
+} from '../../shared/types/index.js'
 
-const unwrap     = <T>(res: { data: { data: T } }): T => res.data.data
+const unwrap = <T>(res: { data: { data: T } }): T => res.data.data
 const unwrapPage = <T>(res: { data: { data: T; pagination?: PaginationMeta } }) => ({
-  orders:     res.data.data,
+  orders: res.data.data,
   pagination: res.data.pagination,
 })
 
@@ -32,14 +37,16 @@ export const orderService = {
     createdAt: string
     updatedAt: string
   }> {
-    return api.get(`/orders/${orderId}/track`).then(unwrap<{
-      orderNumber: string
-      orderStatus: string
-      shippingMethod: string
-      tracking: IOrderTracking
-      createdAt: string
-      updatedAt: string
-    }>)
+    return api.get(`/orders/${orderId}/track`).then(
+      unwrap<{
+        orderNumber: string
+        orderStatus: string
+        shippingMethod: string
+        tracking: IOrderTracking
+        createdAt: string
+        updatedAt: string
+      }>,
+    )
   },
 
   // ── Cancel ──────────────────────────────────────────────────────────────────
@@ -49,7 +56,7 @@ export const orderService = {
 
   // ── Status update (seller / admin) ─────────────────────────────────────────
   updateOrderStatus(
-    orderId:     string,
+    orderId: string,
     orderStatus: string,
     tracking?: {
       trackingNumber?: string
@@ -69,16 +76,22 @@ export const orderService = {
   },
 
   updateReturnStatus(
-    orderId:     string,
-    status:      'approved' | 'rejected' | 'completed',
+    orderId: string,
+    status: 'approved' | 'rejected' | 'completed',
     refundAmount?: number,
-    note?:       string,
+    note?: string,
   ): Promise<IOrder> {
-    return api.put(`/orders/${orderId}/return/status`, { status, refundAmount, note }).then(unwrap<IOrder>)
+    return api
+      .put(`/orders/${orderId}/return/status`, { status, refundAmount, note })
+      .then(unwrap<IOrder>)
   },
 
   // ── Seller orders ────────────────────────────────────────────────────────────
-  getSellerOrders(params?: { status?: string; page?: number; limit?: number }): Promise<PagedOrders> {
+  getSellerOrders(params?: {
+    status?: string
+    page?: number
+    limit?: number
+  }): Promise<PagedOrders> {
     return api.get('/orders/seller', { params }).then(unwrapPage<IOrder[]>)
   },
 }

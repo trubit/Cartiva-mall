@@ -27,32 +27,45 @@ export interface IProductDocument extends Document {
 
 const productSchema = new mongoose.Schema<IProductDocument>(
   {
-    title:         { type: String, required: true, trim: true, maxlength: 200 },
-    description:   { type: String, required: true, trim: true, maxlength: 5000 },
-    price:         { type: Number, required: true, min: 0 },
+    title: { type: String, required: true, trim: true, maxlength: 200 },
+    description: { type: String, required: true, trim: true, maxlength: 5000 },
+    price: { type: Number, required: true, min: 0 },
     discountPrice: { type: Number, min: 0 },
-    images:        { type: [String], default: [] },
-    category:      {
+    images: { type: [String], default: [] },
+    category: {
       type: String,
       required: true,
       enum: [
-        'Electronics', 'Clothing & Fashion', 'Home & Garden', 'Sports & Outdoors',
-        'Books & Media', 'Health & Beauty', 'Toys & Games', 'Automotive',
-        'Food & Grocery', 'Jewelry & Accessories',
+        'Electronics',
+        'Clothing & Fashion',
+        'Home & Garden',
+        'Sports & Outdoors',
+        'Books & Media',
+        'Health & Beauty',
+        'Toys & Games',
+        'Automotive',
+        'Food & Grocery',
+        'Jewelry & Accessories',
       ],
     },
-    subCategory:   { type: String, trim: true },
-    brand:         { type: String, trim: true },
+    subCategory: { type: String, trim: true },
+    brand: { type: String, trim: true },
     stockQuantity: { type: Number, required: true, min: 0, default: 0 },
-    sku:           { type: String, required: true, unique: true, trim: true, uppercase: true },
-    ratingsAverage:{ type: Number, default: 0, min: 0, max: 5, set: (v: number) => Math.round(v * 10) / 10 },
-    ratingsCount:  { type: Number, default: 0, min: 0 },
-    sellerId:      { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-    tags:          { type: [String], default: [] },
-    isActive:      { type: Boolean, default: true },
-    status:        { type: String, enum: ['pending', 'active', 'blocked'], default: 'pending' },
-    isFeatured:    { type: Boolean, default: false },
-    views:         { type: Number, default: 0 },
+    sku: { type: String, required: true, unique: true, trim: true, uppercase: true },
+    ratingsAverage: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 5,
+      set: (v: number) => Math.round(v * 10) / 10,
+    },
+    ratingsCount: { type: Number, default: 0, min: 0 },
+    sellerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    tags: { type: [String], default: [] },
+    isActive: { type: Boolean, default: true },
+    status: { type: String, enum: ['pending', 'active', 'blocked'], default: 'pending' },
+    isFeatured: { type: Boolean, default: false },
+    views: { type: Number, default: 0 },
   },
   {
     timestamps: true,
@@ -81,7 +94,7 @@ productSchema.index({ createdAt: -1 })
 productSchema.index({ isActive: 1, status: 1 })
 productSchema.index({ isFeatured: 1, status: 1 })
 productSchema.index({ sellerId: 1, status: 1 })
-productSchema.index({ views: -1 })            // supports sort=popular without full collection scan
-productSchema.index({ brand: 1 })             // supports brand equality filter after lowercasing
+productSchema.index({ views: -1 }) // supports sort=popular without full collection scan
+productSchema.index({ brand: 1 }) // supports brand equality filter after lowercasing
 
 export const Product = mongoose.model<IProductDocument>('Product', productSchema)

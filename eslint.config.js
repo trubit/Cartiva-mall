@@ -18,5 +18,19 @@ export default defineConfig([
     languageOptions: {
       globals: globals.browser,
     },
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+          destructuredArrayIgnorePattern: '^_',
+        },
+      ],
+      // Form-reset patterns (initializing controlled inputs from props on open/change)
+      // are intentional derived-state syncs — downgrade to warning.
+      'react-hooks/set-state-in-effect': 'warn',
+    },
   },
 ])

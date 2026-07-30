@@ -3,22 +3,22 @@ import { productService } from '../services/productService.js'
 import type { ProductFilters } from '../../shared/types/product.types.js'
 
 export const PRODUCT_KEYS = {
-  all:      ['products'] as const,
-  lists:    () => [...PRODUCT_KEYS.all, 'list'] as const,
-  list:     (f: ProductFilters) => [...PRODUCT_KEYS.lists(), f] as const,
+  all: ['products'] as const,
+  lists: () => [...PRODUCT_KEYS.all, 'list'] as const,
+  list: (f: ProductFilters) => [...PRODUCT_KEYS.lists(), f] as const,
   featured: () => [...PRODUCT_KEYS.all, 'featured'] as const,
-  detail:   (id: string) => [...PRODUCT_KEYS.all, 'detail', id] as const,
-  search:   (q: string, f: ProductFilters) => [...PRODUCT_KEYS.all, 'search', q, f] as const,
+  detail: (id: string) => [...PRODUCT_KEYS.all, 'detail', id] as const,
+  search: (q: string, f: ProductFilters) => [...PRODUCT_KEYS.all, 'search', q, f] as const,
   category: (cat: string, f: ProductFilters) => [...PRODUCT_KEYS.all, 'category', cat, f] as const,
-  seller:   (f: ProductFilters) => [...PRODUCT_KEYS.all, 'seller', f] as const,
-  reviews:  (id: string, page: number) => [...PRODUCT_KEYS.all, 'reviews', id, page] as const,
+  seller: (f: ProductFilters) => [...PRODUCT_KEYS.all, 'seller', f] as const,
+  reviews: (id: string, page: number) => [...PRODUCT_KEYS.all, 'reviews', id, page] as const,
 }
 
 // ── Product list ──────────────────────────────────────────────────────────────
 export const useProducts = (filters: ProductFilters = {}) =>
   useQuery({
     queryKey: PRODUCT_KEYS.list(filters),
-    queryFn:  () => productService.getProducts(filters),
+    queryFn: () => productService.getProducts(filters),
     placeholderData: keepPreviousData,
     staleTime: 2 * 60 * 1000,
   })
@@ -27,7 +27,7 @@ export const useProducts = (filters: ProductFilters = {}) =>
 export const useFeaturedProducts = (limit = 12) =>
   useQuery({
     queryKey: PRODUCT_KEYS.featured(),
-    queryFn:  () => productService.getFeatured(limit),
+    queryFn: () => productService.getFeatured(limit),
     staleTime: 5 * 60 * 1000,
   })
 
@@ -35,8 +35,8 @@ export const useFeaturedProducts = (limit = 12) =>
 export const useProduct = (id: string) =>
   useQuery({
     queryKey: PRODUCT_KEYS.detail(id),
-    queryFn:  () => productService.getProductById(id),
-    enabled:  !!id,
+    queryFn: () => productService.getProductById(id),
+    enabled: !!id,
     staleTime: 2 * 60 * 1000,
   })
 
@@ -44,8 +44,8 @@ export const useProduct = (id: string) =>
 export const useSearchProducts = (q: string, filters: ProductFilters = {}) =>
   useQuery({
     queryKey: PRODUCT_KEYS.search(q, filters),
-    queryFn:  () => productService.searchProducts(q, filters),
-    enabled:  q.trim().length >= 2,
+    queryFn: () => productService.searchProducts(q, filters),
+    enabled: q.trim().length >= 2,
     placeholderData: keepPreviousData,
     staleTime: 1 * 60 * 1000,
   })
@@ -54,8 +54,8 @@ export const useSearchProducts = (q: string, filters: ProductFilters = {}) =>
 export const useCategoryProducts = (category: string, filters: ProductFilters = {}) =>
   useQuery({
     queryKey: PRODUCT_KEYS.category(category, filters),
-    queryFn:  () => productService.getByCategory(category, filters),
-    enabled:  !!category,
+    queryFn: () => productService.getByCategory(category, filters),
+    enabled: !!category,
     placeholderData: keepPreviousData,
     staleTime: 2 * 60 * 1000,
   })
@@ -64,7 +64,7 @@ export const useCategoryProducts = (category: string, filters: ProductFilters = 
 export const useSellerProducts = (filters: ProductFilters = {}) =>
   useQuery({
     queryKey: PRODUCT_KEYS.seller(filters),
-    queryFn:  () => productService.getSellerProducts(filters),
+    queryFn: () => productService.getSellerProducts(filters),
     placeholderData: keepPreviousData,
   })
 
@@ -72,8 +72,8 @@ export const useSellerProducts = (filters: ProductFilters = {}) =>
 export const useProductReviews = (productId: string, page = 1) =>
   useQuery({
     queryKey: PRODUCT_KEYS.reviews(productId, page),
-    queryFn:  () => productService.getReviews(productId, page),
-    enabled:  !!productId,
+    queryFn: () => productService.getReviews(productId, page),
+    enabled: !!productId,
     placeholderData: keepPreviousData,
   })
 
@@ -82,7 +82,7 @@ export const useCreateProduct = () => {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: productService.createProduct,
-    onSuccess:  () => qc.invalidateQueries({ queryKey: PRODUCT_KEYS.all }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: PRODUCT_KEYS.all }),
   })
 }
 
@@ -102,7 +102,7 @@ export const useDeleteProduct = () => {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: productService.deleteProduct,
-    onSuccess:  () => qc.invalidateQueries({ queryKey: PRODUCT_KEYS.all }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: PRODUCT_KEYS.all }),
   })
 }
 

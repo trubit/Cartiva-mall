@@ -1,19 +1,22 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { dashboardService }    from '../services/dashboardService.js'
-import { useDashboardStore }   from '../store/dashboardStore.js'
-import type { DashboardSettingsPayload, ChangePasswordPayload } from '../../shared/types/dashboard.types.js'
+import { dashboardService } from '../services/dashboardService.js'
+import { useDashboardStore } from '../store/dashboardStore.js'
+import type {
+  DashboardSettingsPayload,
+  ChangePasswordPayload,
+} from '../../shared/types/dashboard.types.js'
 
-export const DASHBOARD_KEY    = ['dashboard'] as const
-export const WISHLIST_KEY     = [...DASHBOARD_KEY, 'wishlist'] as const
-export const NOTIF_KEY        = [...DASHBOARD_KEY, 'notifications'] as const
+export const DASHBOARD_KEY = ['dashboard'] as const
+export const WISHLIST_KEY = [...DASHBOARD_KEY, 'wishlist'] as const
+export const NOTIF_KEY = [...DASHBOARD_KEY, 'notifications'] as const
 export const PAYMENT_HISTORY_KEY = [...DASHBOARD_KEY, 'payments'] as const
-export const RECENT_KEY       = [...DASHBOARD_KEY, 'recently-viewed'] as const
+export const RECENT_KEY = [...DASHBOARD_KEY, 'recently-viewed'] as const
 
 // ─── Overview ────────────────────────────────────────────────────────────────
 export const useDashboardSummary = () =>
   useQuery({
     queryKey: [...DASHBOARD_KEY, 'summary'],
-    queryFn:  dashboardService.getSummary,
+    queryFn: dashboardService.getSummary,
     staleTime: 60_000,
   })
 
@@ -23,7 +26,7 @@ export const useWishlist = () => {
 
   return useQuery({
     queryKey: WISHLIST_KEY,
-    queryFn:  async () => {
+    queryFn: async () => {
       const result = await dashboardService.getWishlist()
       setWishlist(result.items)
       return result
@@ -45,13 +48,15 @@ export const useAddToWishlist = () => {
 }
 
 export const useRemoveFromWishlist = () => {
-  const qc              = useQueryClient()
+  const qc = useQueryClient()
   const removeFromStore = useDashboardStore((s) => s.removeFromWishlist)
 
   return useMutation({
     mutationFn: (productId: string) => dashboardService.removeFromWishlist(productId),
-    onMutate:   (productId)         => { removeFromStore(productId) },
-    onSuccess:  ()                  => {
+    onMutate: (productId) => {
+      removeFromStore(productId)
+    },
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: WISHLIST_KEY })
       qc.invalidateQueries({ queryKey: [...DASHBOARD_KEY, 'summary'] })
     },
@@ -61,8 +66,8 @@ export const useRemoveFromWishlist = () => {
 export const useCheckWishlist = (productId: string) =>
   useQuery({
     queryKey: [...WISHLIST_KEY, productId, 'check'],
-    queryFn:  () => dashboardService.checkWishlist(productId),
-    enabled:  Boolean(productId),
+    queryFn: () => dashboardService.checkWishlist(productId),
+    enabled: Boolean(productId),
     staleTime: 30_000,
   })
 
@@ -70,7 +75,7 @@ export const useCheckWishlist = (productId: string) =>
 export const useNotifications = (params?: { page?: number; limit?: number }) =>
   useQuery({
     queryKey: [...NOTIF_KEY, params],
-    queryFn:  () => dashboardService.getNotifications(params),
+    queryFn: () => dashboardService.getNotifications(params),
     staleTime: 15_000,
   })
 
@@ -79,7 +84,7 @@ export const useUnreadCount = () => {
 
   return useQuery({
     queryKey: [...NOTIF_KEY, 'unread-count'],
-    queryFn:  async () => {
+    queryFn: async () => {
       const count = await dashboardService.getUnreadCount()
       setUnreadCount(count)
       return count
@@ -90,12 +95,12 @@ export const useUnreadCount = () => {
 }
 
 export const useMarkNotificationRead = () => {
-  const qc              = useQueryClient()
+  const qc = useQueryClient()
   const decrementUnread = useDashboardStore((s) => s.decrementUnreadCount)
 
   return useMutation({
     mutationFn: (id: string) => dashboardService.markNotificationRead(id),
-    onSuccess:  () => {
+    onSuccess: () => {
       decrementUnread()
       qc.invalidateQueries({ queryKey: NOTIF_KEY })
     },
@@ -103,12 +108,12 @@ export const useMarkNotificationRead = () => {
 }
 
 export const useMarkAllNotificationsRead = () => {
-  const qc             = useQueryClient()
-  const resetUnread    = useDashboardStore((s) => s.resetUnreadCount)
+  const qc = useQueryClient()
+  const resetUnread = useDashboardStore((s) => s.resetUnreadCount)
 
   return useMutation({
     mutationFn: dashboardService.markAllNotificationsRead,
-    onSuccess:  () => {
+    onSuccess: () => {
       resetUnread()
       qc.invalidateQueries({ queryKey: NOTIF_KEY })
     },
@@ -119,7 +124,7 @@ export const useMarkAllNotificationsRead = () => {
 export const usePaymentHistory = (params?: { page?: number; limit?: number }) =>
   useQuery({
     queryKey: [...PAYMENT_HISTORY_KEY, params],
-    queryFn:  () => dashboardService.getPaymentHistory(params),
+    queryFn: () => dashboardService.getPaymentHistory(params),
     staleTime: 60_000,
   })
 
@@ -129,7 +134,7 @@ export const useRecentlyViewed = () => {
 
   return useQuery({
     queryKey: RECENT_KEY,
-    queryFn:  async () => {
+    queryFn: async () => {
       const products = await dashboardService.getRecentlyViewed()
       setRecent(products)
       return products
@@ -143,7 +148,9 @@ export const useTrackRecentlyViewed = () => {
 
   return useMutation({
     mutationFn: (productId: string) => dashboardService.trackRecentlyViewed(productId),
-    onSuccess:  () => { qc.invalidateQueries({ queryKey: RECENT_KEY }) },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: RECENT_KEY })
+    },
   })
 }
 
@@ -153,7 +160,9 @@ export const useUpdateSettings = () => {
 
   return useMutation({
     mutationFn: (payload: DashboardSettingsPayload) => dashboardService.updateSettings(payload),
-    onSuccess:  () => { qc.invalidateQueries({ queryKey: [...DASHBOARD_KEY, 'summary'] }) },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [...DASHBOARD_KEY, 'summary'] })
+    },
   })
 }
 

@@ -11,9 +11,9 @@ test.describe('Cart page (unauthenticated)', () => {
   })
 
   test('shows an empty cart or login prompt', async ({ page }) => {
-    const content = page.locator(
-      '[class*="empty"], text=/empty/i, text=/login/i, text=/sign in/i, [class*="cart"]'
-    ).first()
+    const content = page
+      .locator('[class*="empty"], text=/empty/i, text=/login/i, text=/sign in/i, [class*="cart"]')
+      .first()
     await expect(content).toBeVisible({ timeout: 8000 })
   })
 })
@@ -21,15 +21,18 @@ test.describe('Cart page (unauthenticated)', () => {
 test.describe('Cart icon in navbar', () => {
   test('cart icon is visible in navigation', async ({ page }) => {
     await page.goto('/')
-    const cartIcon = page.locator(
-      '[class*="cart"], a[href*="cart"], [aria-label*="cart"], [aria-label*="Cart"]'
-    ).first()
+    const cartIcon = page
+      .locator('[class*="cart"], a[href*="cart"], [aria-label*="cart"], [aria-label*="Cart"]')
+      .first()
     await expect(cartIcon).toBeVisible()
   })
 
   test('clicking cart icon navigates to /cart', async ({ page }) => {
     await page.goto('/')
-    await page.locator('[class*="cart-icon"], a[href="/cart"], [aria-label*="cart"]').first().click()
+    await page
+      .locator('[class*="cart-icon"], a[href="/cart"], [aria-label*="cart"]')
+      .first()
+      .click()
     await expect(page).toHaveURL(/\/cart/)
   })
 })

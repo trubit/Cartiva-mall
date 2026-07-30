@@ -1,23 +1,23 @@
-import { useState }                    from 'react'
+import { useState } from 'react'
 import { FiTruck, FiExternalLink, FiCalendar, FiHash, FiCopy, FiCheck } from 'react-icons/fi'
-import { formatDate }                    from '../../../../shared/helpers/index.js'
-import type { IOrderTracking }           from '../../../../shared/types/index.js'
+import { formatDate } from '../../../../shared/helpers/index.js'
+import type { IOrderTracking } from '../../../../shared/types/index.js'
 
 interface TrackingInfoProps {
-  tracking:       IOrderTracking
+  tracking: IOrderTracking
   shippingMethod?: string
 }
 
 const METHOD_LABEL: Record<string, { label: string; icon: string; days: string }> = {
-  standard: { label: 'Standard Shipping',  icon: '📦', days: '5–7 business days' },
-  express:  { label: 'Express Shipping',   icon: '⚡', days: '2–3 business days' },
-  sameDay:  { label: 'Same-Day Delivery',  icon: '🚀', days: 'Delivered today'   },
+  standard: { label: 'Standard Shipping', icon: '📦', days: '5–7 business days' },
+  express: { label: 'Express Shipping', icon: '⚡', days: '2–3 business days' },
+  sameDay: { label: 'Same-Day Delivery', icon: '🚀', days: 'Delivered today' },
 }
 
 export default function TrackingInfo({ tracking, shippingMethod }: TrackingInfoProps) {
   const [copied, setCopied] = useState(false)
   const hasTracking = tracking.trackingNumber || tracking.carrier
-  const method      = shippingMethod ? METHOD_LABEL[shippingMethod] : null
+  const method = shippingMethod ? METHOD_LABEL[shippingMethod] : null
 
   const copyTrackingNumber = async () => {
     if (!tracking.trackingNumber) return
@@ -25,12 +25,13 @@ export default function TrackingInfo({ tracking, shippingMethod }: TrackingInfoP
       await navigator.clipboard.writeText(tracking.trackingNumber)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
-    } catch { /* silent */ }
+    } catch {
+      /* silent */
+    }
   }
 
   return (
     <div className="pti">
-
       {/* Shipping method pill */}
       {method && (
         <div className="pti-method">
@@ -45,7 +46,9 @@ export default function TrackingInfo({ tracking, shippingMethod }: TrackingInfoP
       {/* ETA hero — most prominent if available */}
       {tracking.estimatedDeliveryDate && (
         <div className="pti-eta">
-          <div className="pti-eta__icon"><FiCalendar size={18} /></div>
+          <div className="pti-eta__icon">
+            <FiCalendar size={18} />
+          </div>
           <div>
             <div className="pti-eta__label">Estimated Delivery</div>
             <div className="pti-eta__date">
@@ -63,9 +66,7 @@ export default function TrackingInfo({ tracking, shippingMethod }: TrackingInfoP
               <span className="pti-row__label">
                 <FiTruck size={12} /> Carrier
               </span>
-              <span className="pti-row__value pti-row__value--carrier">
-                {tracking.carrier}
-              </span>
+              <span className="pti-row__value pti-row__value--carrier">{tracking.carrier}</span>
             </div>
           )}
 
@@ -76,9 +77,7 @@ export default function TrackingInfo({ tracking, shippingMethod }: TrackingInfoP
                 <FiHash size={12} /> Tracking #
               </span>
               <div className="pti-tracking-num">
-                <span className="pti-tracking-num__code">
-                  {tracking.trackingNumber}
-                </span>
+                <span className="pti-tracking-num__code">{tracking.trackingNumber}</span>
                 <button
                   className="pti-copy-btn"
                   onClick={copyTrackingNumber}

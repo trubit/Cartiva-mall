@@ -8,8 +8,7 @@ interface ThemeStore {
   toggleTheme: () => void
 }
 
-const applyTheme = (theme: Theme) =>
-  document.documentElement.setAttribute('data-theme', theme)
+const applyTheme = (theme: Theme) => document.documentElement.setAttribute('data-theme', theme)
 
 export const useThemeStore = create<ThemeStore>()(
   persist(

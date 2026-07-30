@@ -1,15 +1,12 @@
-import { useState }      from 'react'
+import { useState } from 'react'
 import { FiDollarSign, FiShoppingBag, FiTrendingUp, FiAlertCircle } from 'react-icons/fi'
 import { useSellerAnalytics } from '../../../hooks/useSeller.js'
-import SellerStatsCard         from '../../../components/seller/SellerStatsCard/index.js'
-import {
-  RevenueAreaChart,
-  OrderStatusPie,
-} from '../../../components/seller/RevenueChart/index.js'
+import SellerStatsCard from '../../../components/seller/SellerStatsCard/index.js'
+import { RevenueAreaChart, OrderStatusPie } from '../../../components/seller/RevenueChart/index.js'
 import { formatCurrency } from '../../../../shared/helpers/index.js'
 
 const PERIODS: { label: string; days: number }[] = [
-  { label: '7 days',  days: 7  },
+  { label: '7 days', days: 7 },
   { label: '30 days', days: 30 },
   { label: '90 days', days: 90 },
 ]
@@ -34,11 +31,15 @@ export default function SellerAnalytics() {
               key={p.days}
               onClick={() => setDays(p.days)}
               style={{
-                padding: '6px 14px', borderRadius: 8, fontSize: 'var(--text-sm)',
-                fontWeight: 600, border: '1px solid',
-                background:   days === p.days ? '#007185' : 'transparent',
-                color:        days === p.days ? '#fff' : '#007185',
-                borderColor:  '#007185', cursor: 'pointer',
+                padding: '6px 14px',
+                borderRadius: 8,
+                fontSize: 'var(--text-sm)',
+                fontWeight: 600,
+                border: '1px solid',
+                background: days === p.days ? '#007185' : 'transparent',
+                color: days === p.days ? '#fff' : '#007185',
+                borderColor: '#007185',
+                cursor: 'pointer',
               }}
             >
               {p.label}
@@ -66,7 +67,7 @@ export default function SellerAnalytics() {
         <SellerStatsCard
           icon={<FiShoppingBag size={22} />}
           label="Total Orders"
-          value={isLoading ? '—' : data?.totalOrders ?? 0}
+          value={isLoading ? '—' : (data?.totalOrders ?? 0)}
           sub={`Last ${days} days`}
           accent="orange"
           loading={isLoading}
@@ -95,11 +96,7 @@ export default function SellerAnalytics() {
           <div className="sl-chart-card__header">
             <p className="sl-chart-card__title">Revenue — Last {days} Days</p>
           </div>
-          <RevenueAreaChart
-            data={data?.revenueByDay ?? []}
-            loading={isLoading}
-            height={240}
-          />
+          <RevenueAreaChart data={data?.revenueByDay ?? []} loading={isLoading} height={240} />
         </div>
         <div className="sl-chart-card">
           <div className="sl-chart-card__header">
@@ -120,11 +117,15 @@ export default function SellerAnalytics() {
         </div>
         {isLoading ? (
           <div className="d-flex flex-column gap-2">
-            {[1, 2, 3, 4, 5].map((i) => <div key={i} className="skeleton" style={{ height: 60, borderRadius: 8 }} />)}
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="skeleton" style={{ height: 60, borderRadius: 8 }} />
+            ))}
           </div>
         ) : (data?.topProducts.length ?? 0) === 0 ? (
           <div className="sl-empty" style={{ padding: '2rem 0' }}>
-            <p style={{ color: 'var(--color-neutral-500)', margin: 0 }}>No sales data for this period.</p>
+            <p style={{ color: 'var(--color-neutral-500)', margin: 0 }}>
+              No sales data for this period.
+            </p>
           </div>
         ) : (
           <table className="seller-table">
@@ -140,20 +141,32 @@ export default function SellerAnalytics() {
             <tbody>
               {data!.topProducts.map((p, i) => (
                 <tr key={p._id}>
-                  <td style={{ fontWeight: 700, color: 'var(--color-neutral-400)', width: 40 }}>{i + 1}</td>
+                  <td style={{ fontWeight: 700, color: 'var(--color-neutral-400)', width: 40 }}>
+                    {i + 1}
+                  </td>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <img
                         src={p.image ?? PLACEHOLDER}
                         alt={p.title}
-                        style={{ width: 36, height: 36, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }}
-                        onError={(e) => { (e.target as HTMLImageElement).src = PLACEHOLDER }}
+                        style={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: 6,
+                          objectFit: 'cover',
+                          flexShrink: 0,
+                        }}
+                        onError={(e) => {
+                          ;(e.target as HTMLImageElement).src = PLACEHOLDER
+                        }}
                       />
                       <span style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{p.title}</span>
                     </div>
                   </td>
                   <td style={{ fontWeight: 600 }}>{p.totalSold}</td>
-                  <td style={{ fontWeight: 700, color: '#007185' }}>{formatCurrency(p.totalRevenue)}</td>
+                  <td style={{ fontWeight: 700, color: '#007185' }}>
+                    {formatCurrency(p.totalRevenue)}
+                  </td>
                   <td style={{ color: 'var(--color-neutral-500)', fontSize: 'var(--text-sm)' }}>
                     {p.totalSold > 0 ? formatCurrency(p.totalRevenue / p.totalSold) : '—'}
                   </td>

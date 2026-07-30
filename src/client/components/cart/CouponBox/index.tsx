@@ -2,12 +2,12 @@ import { useState } from 'react'
 import { FiTag, FiX, FiCheck } from 'react-icons/fi'
 
 interface CouponBoxProps {
-  appliedCode?:  string
-  discount?:     number
-  onApply:       (code: string) => void
-  onRemove:      () => void
-  isLoading?:    boolean
-  error?:        string
+  appliedCode?: string
+  discount?: number
+  onApply: (code: string) => void
+  onRemove: () => void
+  isLoading?: boolean
+  error?: string
 }
 
 export default function CouponBox({

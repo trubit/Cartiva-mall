@@ -9,11 +9,11 @@ interface Props {
 }
 
 export default function AvatarUploader({ user }: Props) {
-  const fileRef             = useRef<HTMLInputElement>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
   const [preview, setPreview] = useState<string | null>(null)
-  const [error,   setError]   = useState('')
+  const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
-  const uploadMutation      = useUploadAvatar()
+  const uploadMutation = useUploadAvatar()
 
   const initials = `${user.firstName[0] ?? ''}${user.lastName[0] ?? ''}`.toUpperCase()
   const src = preview ?? user.profileImage
@@ -21,8 +21,14 @@ export default function AvatarUploader({ user }: Props) {
   const handleFile = (file: File) => {
     setError('')
     setSuccess('')
-    if (!file.type.startsWith('image/')) { setError('Only image files allowed.'); return }
-    if (file.size > 5 * 1024 * 1024)    { setError('Image must be under 5 MB.'); return }
+    if (!file.type.startsWith('image/')) {
+      setError('Only image files allowed.')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Image must be under 5 MB.')
+      return
+    }
 
     const reader = new FileReader()
     reader.onload = (e) => setPreview(e.target?.result as string)
@@ -36,7 +42,10 @@ export default function AvatarUploader({ user }: Props) {
 
   const handleUpload = async () => {
     const file = fileRef.current?.files?.[0]
-    if (!file) { setError('Please select an image first.'); return }
+    if (!file) {
+      setError('Please select an image first.')
+      return
+    }
     try {
       await uploadMutation.mutateAsync(file)
       setPreview(null)
@@ -69,7 +78,7 @@ export default function AvatarUploader({ user }: Props) {
         onChange={handleChange}
       />
 
-      {error   && <p className="profile-alert profile-alert--error">{error}</p>}
+      {error && <p className="profile-alert profile-alert--error">{error}</p>}
       {success && <p className="profile-alert profile-alert--success">{success}</p>}
 
       <button
@@ -77,10 +86,15 @@ export default function AvatarUploader({ user }: Props) {
         onClick={handleUpload}
         disabled={uploadMutation.isPending || !preview}
       >
-        {uploadMutation.isPending
-          ? <><CgSpinner className="spin" /> Uploading…</>
-          : <><FiUpload /> {preview ? 'Save Avatar' : 'Choose Photo'}</>
-        }
+        {uploadMutation.isPending ? (
+          <>
+            <CgSpinner className="spin" /> Uploading…
+          </>
+        ) : (
+          <>
+            <FiUpload /> {preview ? 'Save Avatar' : 'Choose Photo'}
+          </>
+        )}
       </button>
       <p className="avatar-hint">JPEG, PNG or WebP · Max 5 MB</p>
     </div>

@@ -1,16 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { orderService, type PagedOrders } from '../services/orderService.js'
-import { useOrderStore }                  from '../store/orderStore.js'
-import type { ReturnReason }              from '../../shared/constants/index.js'
+import { useOrderStore } from '../store/orderStore.js'
+import type { ReturnReason } from '../../shared/constants/index.js'
 
-export const ORDER_KEY        = ['orders'] as const
+export const ORDER_KEY = ['orders'] as const
 export const SELLER_ORDER_KEY = ['orders', 'seller'] as const
 
 // ─── Fetch user's orders ──────────────────────────────────────────────────────
 export const useMyOrders = (params?: { status?: string; page?: number; limit?: number }) =>
   useQuery<PagedOrders>({
     queryKey: [...ORDER_KEY, params],
-    queryFn:  () => orderService.getMyOrders(params),
+    queryFn: () => orderService.getMyOrders(params),
     staleTime: 30_000,
   })
 
@@ -18,8 +18,8 @@ export const useMyOrders = (params?: { status?: string; page?: number; limit?: n
 export const useOrder = (orderId: string) =>
   useQuery({
     queryKey: [...ORDER_KEY, orderId],
-    queryFn:  () => orderService.getOrder(orderId),
-    enabled:  Boolean(orderId),
+    queryFn: () => orderService.getOrder(orderId),
+    enabled: Boolean(orderId),
     staleTime: 15_000,
   })
 
@@ -27,14 +27,14 @@ export const useOrder = (orderId: string) =>
 export const useTrackOrder = (orderId: string) =>
   useQuery({
     queryKey: [...ORDER_KEY, orderId, 'track'],
-    queryFn:  () => orderService.trackOrder(orderId),
-    enabled:  Boolean(orderId),
+    queryFn: () => orderService.trackOrder(orderId),
+    enabled: Boolean(orderId),
     staleTime: 10_000,
   })
 
 // ─── Cancel order ─────────────────────────────────────────────────────────────
 export const useCancelOrder = () => {
-  const qc              = useQueryClient()
+  const qc = useQueryClient()
   const updateOrderInList = useOrderStore((s) => s.updateOrderInList)
 
   return useMutation({
@@ -49,19 +49,26 @@ export const useCancelOrder = () => {
 
 // ─── Request return ───────────────────────────────────────────────────────────
 export const useRequestReturn = () => {
-  const qc              = useQueryClient()
+  const qc = useQueryClient()
   const setReturnStatus = useOrderStore((s) => s.setReturnStatus)
-  const setReturnError  = useOrderStore((s) => s.setReturnError)
+  const setReturnError = useOrderStore((s) => s.setReturnError)
   const updateOrderInList = useOrderStore((s) => s.updateOrderInList)
 
   return useMutation({
-    mutationFn: ({ orderId, reason, description }: {
-      orderId:      string
-      reason:       ReturnReason
+    mutationFn: ({
+      orderId,
+      reason,
+      description,
+    }: {
+      orderId: string
+      reason: ReturnReason
       description?: string
     }) => orderService.requestReturn(orderId, reason, description),
 
-    onMutate:  () => { setReturnStatus('submitting'); setReturnError(null) },
+    onMutate: () => {
+      setReturnStatus('submitting')
+      setReturnError(null)
+    },
     onSuccess: (updated) => {
       setReturnStatus('success')
       updateOrderInList(updated)
@@ -76,12 +83,12 @@ export const useRequestReturn = () => {
 
 // ─── Update order status (seller) ────────────────────────────────────────────
 export const useUpdateOrderStatus = () => {
-  const qc            = useQueryClient()
-  const updateInList  = useOrderStore((s) => s.updateOrderInList)
+  const qc = useQueryClient()
+  const updateInList = useOrderStore((s) => s.updateOrderInList)
 
   return useMutation({
     mutationFn: (input: {
-      orderId:     string
+      orderId: string
       orderStatus: string
       tracking?: {
         trackingNumber?: string
@@ -104,6 +111,6 @@ export const useUpdateOrderStatus = () => {
 export const useSellerOrders = (params?: { status?: string; page?: number; limit?: number }) =>
   useQuery<PagedOrders>({
     queryKey: [...SELLER_ORDER_KEY, params],
-    queryFn:  () => orderService.getSellerOrders(params),
+    queryFn: () => orderService.getSellerOrders(params),
     staleTime: 30_000,
   })

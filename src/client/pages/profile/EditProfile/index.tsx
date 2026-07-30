@@ -3,7 +3,10 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { FiEdit3, FiSave } from 'react-icons/fi'
 import { CgSpinner } from 'react-icons/cg'
 import { useState } from 'react'
-import { updateProfileSchema, type UpdateProfileInput } from '../../../../shared/validators/profile.validators.js'
+import {
+  updateProfileSchema,
+  type UpdateProfileInput,
+} from '../../../../shared/validators/profile.validators.js'
 import { useProfile, useUpdateProfile } from '../../../hooks/useProfile.js'
 import AvatarUploader from '../../../components/profile/AvatarUploader/index.js'
 
@@ -22,18 +25,24 @@ export default function EditProfile() {
   const mutation = useUpdateProfile()
   const [success, setSuccess] = useState('')
 
-  const { register, handleSubmit, formState: { errors, isDirty } } = useForm<UpdateProfileInput>({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isDirty },
+  } = useForm<UpdateProfileInput>({
     resolver: zodResolver(updateProfileSchema),
-    defaultValues: user ? {
-      firstName:   user.firstName,
-      lastName:    user.lastName,
-      username:    user.username,
-      phoneNumber: user.phoneNumber ?? '',
-      bio:         user.bio         ?? '',
-      gender:      user.gender,
-      dateOfBirth: user.dateOfBirth ? user.dateOfBirth.slice(0, 10) : '',
-      language:    user.language    ?? 'en',
-    } : {},
+    defaultValues: user
+      ? {
+          firstName: user.firstName,
+          lastName: user.lastName,
+          username: user.username,
+          phoneNumber: user.phoneNumber ?? '',
+          bio: user.bio ?? '',
+          gender: user.gender,
+          dateOfBirth: user.dateOfBirth ? user.dateOfBirth.slice(0, 10) : '',
+          language: user.language ?? 'en',
+        }
+      : {},
   })
 
   const onSubmit = async (data: UpdateProfileInput) => {
@@ -41,19 +50,22 @@ export default function EditProfile() {
     try {
       await mutation.mutateAsync(data)
       setSuccess('Profile updated successfully.')
-    } catch { /* surface below */ }
+    } catch {
+      /* surface below */
+    }
   }
 
-  if (isLoading || !user) return (
-    <div className="profile-skeleton" style={{ height: 400, borderRadius: 12 }} />
-  )
+  if (isLoading || !user)
+    return <div className="profile-skeleton" style={{ height: 400, borderRadius: 12 }} />
 
   return (
     <>
       {/* Avatar */}
       <div className="profile-card">
         <div className="profile-card-header">
-          <h2 className="profile-section-title"><FiEdit3 /> Profile Photo</h2>
+          <h2 className="profile-section-title">
+            <FiEdit3 /> Profile Photo
+          </h2>
         </div>
         <AvatarUploader user={user} />
       </div>
@@ -61,7 +73,9 @@ export default function EditProfile() {
       {/* Edit form */}
       <div className="profile-card">
         <div className="profile-card-header">
-          <h2 className="profile-section-title"><FiEdit3 /> Edit Information</h2>
+          <h2 className="profile-section-title">
+            <FiEdit3 /> Edit Information
+          </h2>
         </div>
 
         {success && <p className="profile-alert profile-alert--success">{success}</p>}
@@ -76,12 +90,20 @@ export default function EditProfile() {
             <div className="mb-3">
               <label className="form-label">First Name</label>
               <input className="form-control" placeholder="Alice" {...register('firstName')} />
-              {errors.firstName && <div className="text-danger mt-1" style={{ fontSize: '.8rem' }}>{errors.firstName.message}</div>}
+              {errors.firstName && (
+                <div className="text-danger mt-1" style={{ fontSize: '.8rem' }}>
+                  {errors.firstName.message}
+                </div>
+              )}
             </div>
             <div className="mb-3">
               <label className="form-label">Last Name</label>
               <input className="form-control" placeholder="Smith" {...register('lastName')} />
-              {errors.lastName && <div className="text-danger mt-1" style={{ fontSize: '.8rem' }}>{errors.lastName.message}</div>}
+              {errors.lastName && (
+                <div className="text-danger mt-1" style={{ fontSize: '.8rem' }}>
+                  {errors.lastName.message}
+                </div>
+              )}
             </div>
           </div>
 
@@ -89,19 +111,40 @@ export default function EditProfile() {
             <div className="mb-3">
               <label className="form-label">Username</label>
               <input className="form-control" placeholder="alicesmith" {...register('username')} />
-              {errors.username && <div className="text-danger mt-1" style={{ fontSize: '.8rem' }}>{errors.username.message}</div>}
+              {errors.username && (
+                <div className="text-danger mt-1" style={{ fontSize: '.8rem' }}>
+                  {errors.username.message}
+                </div>
+              )}
             </div>
             <div className="mb-3">
               <label className="form-label">Phone Number</label>
-              <input className="form-control" placeholder="+234 800 000 0000" {...register('phoneNumber')} />
-              {errors.phoneNumber && <div className="text-danger mt-1" style={{ fontSize: '.8rem' }}>{errors.phoneNumber.message}</div>}
+              <input
+                className="form-control"
+                placeholder="+234 800 000 0000"
+                {...register('phoneNumber')}
+              />
+              {errors.phoneNumber && (
+                <div className="text-danger mt-1" style={{ fontSize: '.8rem' }}>
+                  {errors.phoneNumber.message}
+                </div>
+              )}
             </div>
           </div>
 
           <div className="mb-3">
             <label className="form-label">Bio</label>
-            <textarea className="form-control" rows={3} placeholder="Tell us a little about yourself…" {...register('bio')} />
-            {errors.bio && <div className="text-danger mt-1" style={{ fontSize: '.8rem' }}>{errors.bio.message}</div>}
+            <textarea
+              className="form-control"
+              rows={3}
+              placeholder="Tell us a little about yourself…"
+              {...register('bio')}
+            />
+            {errors.bio && (
+              <div className="text-danger mt-1" style={{ fontSize: '.8rem' }}>
+                {errors.bio.message}
+              </div>
+            )}
           </div>
 
           <div className="profile-form-row">
@@ -125,17 +168,28 @@ export default function EditProfile() {
             <label className="form-label">Language</label>
             <select className="form-select" {...register('language')}>
               {LANGUAGES.map((l) => (
-                <option key={l.code} value={l.code}>{l.label}</option>
+                <option key={l.code} value={l.code}>
+                  {l.label}
+                </option>
               ))}
             </select>
           </div>
 
           <div className="profile-form-actions">
-            <button type="submit" className="btn-profile-primary" disabled={mutation.isPending || !isDirty}>
-              {mutation.isPending
-                ? <><CgSpinner className="spin" /> Saving…</>
-                : <><FiSave /> Save Changes</>
-              }
+            <button
+              type="submit"
+              className="btn-profile-primary"
+              disabled={mutation.isPending || !isDirty}
+            >
+              {mutation.isPending ? (
+                <>
+                  <CgSpinner className="spin" /> Saving…
+                </>
+              ) : (
+                <>
+                  <FiSave /> Save Changes
+                </>
+              )}
             </button>
           </div>
         </form>

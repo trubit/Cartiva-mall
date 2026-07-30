@@ -11,7 +11,11 @@ export const getMe = async (req: Request, res: Response, next: NextFunction): Pr
   }
 }
 
-export const updateProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const updateProfile = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const user = await profileService.updateProfile(req.user!.userId, req.body)
     sendSuccess(res, { user }, 'Profile updated')
@@ -20,7 +24,11 @@ export const updateProfile = async (req: Request, res: Response, next: NextFunct
   }
 }
 
-export const updateAddress = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const updateAddress = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const user = await profileService.updateAddress(req.user!.userId, req.body)
     sendSuccess(res, { user }, 'Address updated')
@@ -29,7 +37,11 @@ export const updateAddress = async (req: Request, res: Response, next: NextFunct
   }
 }
 
-export const uploadAvatar = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const uploadAvatar = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     if (!req.file) {
       res.status(400).json({ success: false, message: 'No image file provided' })
@@ -42,7 +54,11 @@ export const uploadAvatar = async (req: Request, res: Response, next: NextFuncti
   }
 }
 
-export const updateNotifications = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const updateNotifications = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const user = await profileService.updateNotificationSettings(req.user!.userId, req.body)
     sendSuccess(res, { user }, 'Notification settings updated')
@@ -51,7 +67,11 @@ export const updateNotifications = async (req: Request, res: Response, next: Nex
   }
 }
 
-export const deleteAccount = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const deleteAccount = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     await profileService.deleteAccount(req.user!.userId, req.body.password)
     res.clearCookie('refresh_token')

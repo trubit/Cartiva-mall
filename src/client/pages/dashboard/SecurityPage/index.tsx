@@ -1,11 +1,70 @@
 import { useState } from 'react'
 import { FiShield, FiLock, FiEye, FiEyeOff } from 'react-icons/fi'
-import { useChangePassword }     from '../../../hooks/useDashboard.js'
+import { useChangePassword } from '../../../hooks/useDashboard.js'
 
 type PasswordForm = {
   currentPassword: string
-  newPassword:     string
+  newPassword: string
   confirmPassword: string
+}
+
+type ShowState = { current: boolean; new: boolean; confirm: boolean }
+
+function PasswordInput({
+  id,
+  label,
+  showKey,
+  form,
+  show,
+  onFormChange,
+  onToggleShow,
+}: {
+  id: keyof PasswordForm
+  label: string
+  showKey: keyof ShowState
+  form: PasswordForm
+  show: ShowState
+  onFormChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  onToggleShow: (key: keyof ShowState) => void
+}) {
+  return (
+    <div className="dashboard-form__group">
+      <label className="dashboard-form__label" htmlFor={id}>
+        {label}
+      </label>
+      <div style={{ position: 'relative' }}>
+        <input
+          id={id}
+          name={id}
+          type={show[showKey] ? 'text' : 'password'}
+          value={form[id]}
+          onChange={onFormChange}
+          className="dashboard-form__input"
+          required
+          style={{ paddingRight: '2.5rem' }}
+        />
+        <button
+          type="button"
+          onClick={() => onToggleShow(showKey)}
+          style={{
+            position: 'absolute',
+            right: '0.75rem',
+            top: '50%',
+            transform: 'translateY(-50%)',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            color: 'var(--color-neutral-500)',
+            display: 'flex',
+            padding: 0,
+          }}
+          aria-label={show[showKey] ? 'Hide password' : 'Show password'}
+        >
+          {show[showKey] ? <FiEyeOff /> : <FiEye />}
+        </button>
+      </div>
+    </div>
+  )
 }
 
 export default function SecurityPage() {
@@ -13,21 +72,25 @@ export default function SecurityPage() {
 
   const [form, setForm] = useState<PasswordForm>({
     currentPassword: '',
-    newPassword:     '',
+    newPassword: '',
     confirmPassword: '',
   })
-  const [show, setShow] = useState({
+  const [show, setShow] = useState<ShowState>({
     current: false,
-    new:     false,
+    new: false,
     confirm: false,
   })
   const [success, setSuccess] = useState(false)
-  const [error,   setError]   = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }))
     setSuccess(false)
     setError(null)
+  }
+
+  const handleToggleShow = (key: keyof ShowState) => {
+    setShow((s) => ({ ...s, [key]: !s[key] }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -55,50 +118,6 @@ export default function SecurityPage() {
       setError(err instanceof Error ? err.message : 'Failed to change password')
     }
   }
-
-  const PasswordInput = ({
-    id, name, label, showKey,
-  }: {
-    id:      keyof PasswordForm
-    name:    keyof PasswordForm
-    label:   string
-    showKey: keyof typeof show
-  }) => (
-    <div className="dashboard-form__group">
-      <label className="dashboard-form__label" htmlFor={id}>{label}</label>
-      <div style={{ position: 'relative' }}>
-        <input
-          id={id}
-          name={name}
-          type={show[showKey] ? 'text' : 'password'}
-          value={form[id]}
-          onChange={handleChange}
-          className="dashboard-form__input"
-          required
-          style={{ paddingRight: '2.5rem' }}
-        />
-        <button
-          type="button"
-          onClick={() => setShow((s) => ({ ...s, [showKey]: !s[showKey] }))}
-          style={{
-            position:   'absolute',
-            right:      '0.75rem',
-            top:        '50%',
-            transform:  'translateY(-50%)',
-            background: 'none',
-            border:     'none',
-            cursor:     'pointer',
-            color:      'var(--color-neutral-500)',
-            display:    'flex',
-            padding:    0,
-          }}
-          aria-label={show[showKey] ? 'Hide password' : 'Show password'}
-        >
-          {show[showKey] ? <FiEyeOff /> : <FiEye />}
-        </button>
-      </div>
-    </div>
-  )
 
   return (
     <div>
@@ -128,30 +147,35 @@ export default function SecurityPage() {
               ✓ Password changed successfully. You may need to log in again on other devices.
             </div>
           )}
-          {error && (
-            <div className="dashboard-alert dashboard-alert--error">
-              {error}
-            </div>
-          )}
+          {error && <div className="dashboard-alert dashboard-alert--error">{error}</div>}
 
           <form onSubmit={handleSubmit} className="dashboard-form">
             <PasswordInput
               id="currentPassword"
-              name="currentPassword"
               label="Current Password"
               showKey="current"
+              form={form}
+              show={show}
+              onFormChange={handleChange}
+              onToggleShow={handleToggleShow}
             />
             <PasswordInput
               id="newPassword"
-              name="newPassword"
               label="New Password"
               showKey="new"
+              form={form}
+              show={show}
+              onFormChange={handleChange}
+              onToggleShow={handleToggleShow}
             />
             <PasswordInput
               id="confirmPassword"
-              name="confirmPassword"
               label="Confirm New Password"
               showKey="confirm"
+              form={form}
+              show={show}
+              onFormChange={handleChange}
+              onToggleShow={handleToggleShow}
             />
             <div className="dashboard-form__actions">
               <button
@@ -173,7 +197,14 @@ export default function SecurityPage() {
           <h2 className="dashboard-section__title">Security Tips</h2>
         </div>
         <div className="dashboard-section__body">
-          <ul style={{ fontSize: 'var(--text-sm)', color: 'var(--color-neutral-600)', lineHeight: 1.8, paddingLeft: '1.25rem' }}>
+          <ul
+            style={{
+              fontSize: 'var(--text-sm)',
+              color: 'var(--color-neutral-600)',
+              lineHeight: 1.8,
+              paddingLeft: '1.25rem',
+            }}
+          >
             <li>Use a unique password not used on other sites</li>
             <li>Include uppercase, lowercase, numbers and symbols</li>
             <li>Never share your password with anyone</li>

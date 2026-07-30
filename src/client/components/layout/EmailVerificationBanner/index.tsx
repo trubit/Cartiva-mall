@@ -20,9 +20,8 @@ export default function EmailVerificationBanner() {
 
         <p className="ev-banner__text">
           <FiMail size={13} style={{ verticalAlign: 'middle', marginRight: 4 }} />
-          Your email <strong>{user.email}</strong> is not verified.
-          {' '}
-          Check your inbox for the verification link, or{' '}
+          Your email <strong>{user.email}</strong> is not verified. Check your inbox for the
+          verification link, or{' '}
           {isSuccess ? (
             <span className="ev-banner__sent">
               <FiCheckCircle size={12} style={{ verticalAlign: 'middle', marginRight: 3 }} />
@@ -35,12 +34,15 @@ export default function EmailVerificationBanner() {
               disabled={isPending}
               className="ev-banner__resend-btn"
             >
-              {isPending
-                ? <><FiRefreshCw size={11} className="animate-spin" /> sending…</>
-                : 'resend it now'}
+              {isPending ? (
+                <>
+                  <FiRefreshCw size={11} className="animate-spin" /> sending…
+                </>
+              ) : (
+                'resend it now'
+              )}
             </button>
-          )}
-          {' '}
+          )}{' '}
           <Link to="/verify-email" className="ev-banner__link">
             Already verified? Click here
           </Link>

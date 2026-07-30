@@ -2,8 +2,8 @@ import CartItem from '../CartItem/index.js'
 import type { ICartDisplayItem } from '../../../../shared/types/cart.types.js'
 
 interface CartListProps {
-  items:       ICartDisplayItem[]
-  onRemove:    (productId: string) => void
+  items: ICartDisplayItem[]
+  onRemove: (productId: string) => void
   onUpdateQty: (productId: string, qty: number) => void
   isMutating?: boolean
 }

@@ -8,19 +8,19 @@ import { useAuthStore } from '../../../store/authStore.js'
 import type { CheckoutAddressInput } from '../../../../shared/validators/checkout.validators.js'
 
 export default function AddressSelection() {
-  const mutation        = useUpdateCheckout()
+  const mutation = useUpdateCheckout()
   const { session, shippingAddress, sameAsShipping, setSameAsShipping } = useCheckoutStore()
-  const user            = useAuthStore((s) => s.user)
+  const user = useAuthStore((s) => s.user)
   const [showNewForm, setShowNewForm] = useState(!shippingAddress)
 
   // Pre-fill from profile address if user has one
   const profilePrefill: Partial<CheckoutAddressInput> = {
-    fullName:   user ? `${user.firstName} ${user.lastName}` : '',
-    phone:      user?.phoneNumber ?? '',
-    country:    user?.address?.country ?? '',
-    state:      user?.address?.state   ?? '',
-    city:       user?.address?.city    ?? '',
-    street:     user?.address?.street  ?? '',
+    fullName: user ? `${user.firstName} ${user.lastName}` : '',
+    phone: user?.phoneNumber ?? '',
+    country: user?.address?.country ?? '',
+    state: user?.address?.state ?? '',
+    city: user?.address?.city ?? '',
+    street: user?.address?.street ?? '',
     postalCode: user?.address?.postalCode ?? '',
   }
 
@@ -119,7 +119,8 @@ export default function AddressSelection() {
 
       {mutation.isError && (
         <p className="checkout-step__error">
-          {(mutation.error as { response?: { data?: { message?: string } } })?.response?.data?.message ?? 'Failed to save address'}
+          {(mutation.error as { response?: { data?: { message?: string } } })?.response?.data
+            ?.message ?? 'Failed to save address'}
         </p>
       )}
     </div>

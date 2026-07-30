@@ -24,7 +24,10 @@ export const validate =
     }
     const issues = result.error.issues ?? []
     const errors = Object.fromEntries(
-      issues.map((e) => [(e.path as (string | number)[]).map(String).join('.') || 'value', e.message]),
+      issues.map((e) => [
+        (e.path as (string | number)[]).map(String).join('.') || 'value',
+        e.message,
+      ]),
     )
     next(new AppError('Validation failed', 422, errors))
   }

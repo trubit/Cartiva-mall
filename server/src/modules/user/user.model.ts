@@ -53,10 +53,10 @@ export interface IUserDocument extends Document {
 
 const addressSchema = new mongoose.Schema<IAddressDoc>(
   {
-    country:    { type: String, trim: true, default: '' },
-    state:      { type: String, trim: true, default: '' },
-    city:       { type: String, trim: true, default: '' },
-    street:     { type: String, trim: true, default: '' },
+    country: { type: String, trim: true, default: '' },
+    state: { type: String, trim: true, default: '' },
+    city: { type: String, trim: true, default: '' },
+    street: { type: String, trim: true, default: '' },
     postalCode: { type: String, trim: true, default: '' },
   },
   { _id: false },
@@ -65,39 +65,46 @@ const addressSchema = new mongoose.Schema<IAddressDoc>(
 const notificationSchema = new mongoose.Schema<INotificationSettingsDoc>(
   {
     emailNotifications: { type: Boolean, default: true },
-    pushNotifications:  { type: Boolean, default: true },
-    orderUpdates:       { type: Boolean, default: true },
-    promotions:         { type: Boolean, default: false },
-    newsletter:         { type: Boolean, default: false },
+    pushNotifications: { type: Boolean, default: true },
+    orderUpdates: { type: Boolean, default: true },
+    promotions: { type: Boolean, default: false },
+    newsletter: { type: Boolean, default: false },
   },
   { _id: false },
 )
 
 const userSchema = new mongoose.Schema<IUserDocument>(
   {
-    firstName:    { type: String, required: true, trim: true, maxlength: 50 },
-    lastName:     { type: String, required: true, trim: true, maxlength: 50 },
-    username:     { type: String, required: true, unique: true, lowercase: true, trim: true, maxlength: 30 },
-    email:        { type: String, required: true, unique: true, lowercase: true, trim: true },
-    password:     { type: String, required: true, select: false, minlength: 8 },
-    phoneNumber:  { type: String, trim: true },
-    bio:          { type: String, trim: true, maxlength: 500 },
-    gender:       { type: String, enum: ['male', 'female', 'other', 'prefer_not_to_say'] },
-    dateOfBirth:  { type: Date },
+    firstName: { type: String, required: true, trim: true, maxlength: 50 },
+    lastName: { type: String, required: true, trim: true, maxlength: 50 },
+    username: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+      maxlength: 30,
+    },
+    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    password: { type: String, required: true, select: false, minlength: 8 },
+    phoneNumber: { type: String, trim: true },
+    bio: { type: String, trim: true, maxlength: 500 },
+    gender: { type: String, enum: ['male', 'female', 'other', 'prefer_not_to_say'] },
+    dateOfBirth: { type: Date },
     profileImage: { type: String, default: '' },
     profileImagePublicId: { type: String, select: false },
-    address:      { type: addressSchema, default: () => ({}) },
-    language:     { type: String, default: 'en', maxlength: 10 },
-    preferences:  { type: mongoose.Schema.Types.Mixed, default: {} },
+    address: { type: addressSchema, default: () => ({}) },
+    language: { type: String, default: 'en', maxlength: 10 },
+    preferences: { type: mongoose.Schema.Types.Mixed, default: {} },
     notificationSettings: { type: notificationSchema, default: () => ({}) },
-    role:         { type: String, enum: Object.values(ROLES), default: ROLES.USER },
-    emailVerified:             { type: Boolean, default: false },
-    emailVerificationToken:    { type: String, select: false },
-    emailVerificationExpires:  { type: Date,   select: false },
-    resetPasswordToken:        { type: String, select: false },
-    resetPasswordExpires:      { type: Date,   select: false },
-    refreshTokens:             { type: [String], select: false, default: [] },
-    isActive:     { type: Boolean, default: true },
+    role: { type: String, enum: Object.values(ROLES), default: ROLES.USER },
+    emailVerified: { type: Boolean, default: false },
+    emailVerificationToken: { type: String, select: false },
+    emailVerificationExpires: { type: Date, select: false },
+    resetPasswordToken: { type: String, select: false },
+    resetPasswordExpires: { type: Date, select: false },
+    refreshTokens: { type: [String], select: false, default: [] },
+    isActive: { type: Boolean, default: true },
   },
   {
     timestamps: true,
@@ -119,6 +126,8 @@ const userSchema = new mongoose.Schema<IUserDocument>(
 
 userSchema.index({ resetPasswordToken: 1 }, { sparse: true })
 userSchema.index({ emailVerificationToken: 1 }, { sparse: true })
+// Text index for admin listUsers search (email, username, firstName, lastName)
+userSchema.index({ email: 'text', username: 'text', firstName: 'text', lastName: 'text' })
 
 // Cost factor 10 = ~70 ms per hash (4× faster than 12 = ~300 ms).
 // Still requires ~2^10 = 1024 iterations — more than sufficient against offline attacks.

@@ -6,8 +6,8 @@ export const getSocket = (): Socket => {
   if (!socket) {
     socket = io(window.location.origin, {
       withCredentials: true,
-      transports:      ['websocket', 'polling'],
-      autoConnect:     false,
+      transports: ['websocket', 'polling'],
+      autoConnect: false,
     })
   }
   return socket

@@ -1,7 +1,7 @@
-import { Link }       from 'react-router-dom'
-import { FiEye }      from 'react-icons/fi'
+import { Link } from 'react-router-dom'
+import { FiEye } from 'react-icons/fi'
 import { useRecentlyViewed } from '../../../hooks/useDashboard.js'
-import LoadingSpinner  from '../../../components/ui/LoadingSpinner.js'
+import LoadingSpinner from '../../../components/ui/LoadingSpinner.js'
 
 const formatCurrency = (n: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n)
@@ -52,7 +52,9 @@ export default function RecentlyViewedPage() {
                     src={product.images?.[0] ?? '/placeholder.png'}
                     alt={product.title}
                     className="dashboard-wishlist-card__img"
-                    onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.png' }}
+                    onError={(e) => {
+                      ;(e.target as HTMLImageElement).src = '/placeholder.png'
+                    }}
                   />
                   <div className="dashboard-wishlist-card__body">
                     <p className="dashboard-wishlist-card__name">{product.title}</p>
@@ -62,11 +64,19 @@ export default function RecentlyViewedPage() {
                           <span className="dashboard-wishlist-card__price-sale">
                             {formatCurrency(product.discountPrice!)}
                           </span>{' '}
-                          <span style={{ textDecoration: 'line-through', color: 'var(--color-neutral-400)', fontSize: 'var(--text-xs)' }}>
+                          <span
+                            style={{
+                              textDecoration: 'line-through',
+                              color: 'var(--color-neutral-400)',
+                              fontSize: 'var(--text-xs)',
+                            }}
+                          >
                             {formatCurrency(product.price)}
                           </span>
                         </>
-                      ) : formatCurrency(product.price)}
+                      ) : (
+                        formatCurrency(product.price)
+                      )}
                     </p>
                   </div>
                 </div>

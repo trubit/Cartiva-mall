@@ -4,40 +4,40 @@ import mongoose from 'mongoose'
 
 vi.mock('ioredis', () => {
   class Redis {
-    get        = vi.fn().mockResolvedValue(null)
-    set        = vi.fn().mockResolvedValue('OK')
-    setex      = vi.fn().mockResolvedValue('OK')
-    del        = vi.fn().mockResolvedValue(1)
-    exists     = vi.fn().mockResolvedValue(0)
-    expire     = vi.fn().mockResolvedValue(1)
-    sadd       = vi.fn().mockResolvedValue(0)
-    scan       = vi.fn().mockResolvedValue(['0', []])
-    incr       = vi.fn().mockResolvedValue(1)
-    call       = vi.fn().mockResolvedValue(null)
-    connect    = vi.fn().mockResolvedValue(undefined)
-    quit       = vi.fn().mockResolvedValue('OK')
-    on         = vi.fn()
+    get = vi.fn().mockResolvedValue(null)
+    set = vi.fn().mockResolvedValue('OK')
+    setex = vi.fn().mockResolvedValue('OK')
+    del = vi.fn().mockResolvedValue(1)
+    exists = vi.fn().mockResolvedValue(0)
+    expire = vi.fn().mockResolvedValue(1)
+    sadd = vi.fn().mockResolvedValue(0)
+    scan = vi.fn().mockResolvedValue(['0', []])
+    incr = vi.fn().mockResolvedValue(1)
+    call = vi.fn().mockResolvedValue(null)
+    connect = vi.fn().mockResolvedValue(undefined)
+    quit = vi.fn().mockResolvedValue('OK')
+    on = vi.fn()
     disconnect = vi.fn()
-    status     = 'ready'
+    status = 'ready'
   }
   return { default: Redis, Redis }
 })
 
 vi.mock('../../utils/email.js', () => ({
-  sendVerificationEmail:  vi.fn().mockResolvedValue(undefined),
+  sendVerificationEmail: vi.fn().mockResolvedValue(undefined),
   sendPasswordResetEmail: vi.fn().mockResolvedValue(undefined),
 }))
 
 vi.mock('../../middlewares/rateLimiter.middleware.js', () => {
   const pass = (_req: unknown, _res: unknown, next: () => void) => next()
   return {
-    globalLimiter:    pass,
-    authLimiter:      pass,
-    searchLimiter:    pass,
-    uploadLimiter:    pass,
+    globalLimiter: pass,
+    authLimiter: pass,
+    searchLimiter: pass,
+    uploadLimiter: pass,
     dashboardLimiter: pass,
-    checkoutLimiter:  pass,
-    paymentLimiter:   pass,
+    checkoutLimiter: pass,
+    paymentLimiter: pass,
   }
 })
 
@@ -50,9 +50,7 @@ const CART = `${API_PREFIX}/cart`
 const AUTH = `${API_PREFIX}/auth`
 
 async function loginAndGetToken(email: string, password: string): Promise<string> {
-  const res = await request(app)
-    .post(`${AUTH}/login`)
-    .send({ email, password })
+  const res = await request(app).post(`${AUTH}/login`).send({ email, password })
   return res.body.data?.accessToken ?? ''
 }
 
@@ -85,7 +83,7 @@ beforeAll(async () => {
   const product = await ProductModel.create({
     title: 'Cart Test Product',
     description: 'Product used in cart route tests.',
-    price: 35.00,
+    price: 35.0,
     category: PRODUCT_CATEGORIES[0],
     stockQuantity: 20,
     sku: `CART-SKU-${Date.now()}`,
@@ -111,17 +109,13 @@ describe('GET /cart', () => {
   })
 
   it('returns 200 for authenticated requests', async () => {
-    const res = await request(app)
-      .get(CART)
-      .set('Authorization', `Bearer ${accessToken}`)
+    const res = await request(app).get(CART).set('Authorization', `Bearer ${accessToken}`)
     expect(res.status).toBe(200)
     expect(res.body.success).toBe(true)
   })
 
   it('returns a cart object with items array', async () => {
-    const res = await request(app)
-      .get(CART)
-      .set('Authorization', `Bearer ${accessToken}`)
+    const res = await request(app).get(CART).set('Authorization', `Bearer ${accessToken}`)
     expect(res.body.data).toHaveProperty('items')
     expect(Array.isArray(res.body.data.items)).toBe(true)
   })
@@ -195,9 +189,7 @@ describe('DELETE /cart/clear', () => {
     expect(clearRes.status).toBeGreaterThanOrEqual(200)
     expect(clearRes.status).toBeLessThan(300)
 
-    const cartRes = await request(app)
-      .get(CART)
-      .set('Authorization', `Bearer ${accessToken}`)
+    const cartRes = await request(app).get(CART).set('Authorization', `Bearer ${accessToken}`)
     expect(cartRes.body.data.items).toHaveLength(0)
   })
 })

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCheckoutStore } from '../store/checkoutStore.js'
-import { checkoutService }  from '../services/checkoutService.js'
+import { checkoutService } from '../services/checkoutService.js'
 import type { ICheckoutSession } from '../../shared/types/checkout.types.js'
 import type {
   UpdateCheckoutInput,
@@ -16,29 +16,31 @@ export const useCheckoutSession = () => {
 
   return useQuery({
     queryKey: CHECKOUT_KEY,
-    queryFn:  async () => {
+    queryFn: async () => {
       const data = await checkoutService.getCheckout()
       setSession(data.session)
       setShippingOptions(data.shippingOptions)
       return data
     },
-    staleTime: 60_000,
+    staleTime: 0,
     retry: false,
   })
 }
 
 // ─── Update address ────────────────────────────────────────────────────────────
 export const useUpdateCheckout = () => {
-  const qc         = useQueryClient()
+  const qc = useQueryClient()
   const setSession = useCheckoutStore((s) => s.setSession)
-  const nextStep   = useCheckoutStore((s) => s.nextStep)
+  const nextStep = useCheckoutStore((s) => s.nextStep)
 
   return useMutation({
     mutationFn: (input: UpdateCheckoutInput) => checkoutService.updateCheckout(input),
     onSuccess: (session: ICheckoutSession) => {
       setSession(session)
-      qc.setQueryData(CHECKOUT_KEY, (old: { session: ICheckoutSession; shippingOptions: unknown[] } | undefined) =>
-        old ? { ...old, session } : old,
+      qc.setQueryData(
+        CHECKOUT_KEY,
+        (old: { session: ICheckoutSession; shippingOptions: unknown[] } | undefined) =>
+          old ? { ...old, session } : old,
       )
       nextStep()
     },
@@ -47,16 +49,18 @@ export const useUpdateCheckout = () => {
 
 // ─── Select shipping ───────────────────────────────────────────────────────────
 export const useSelectShipping = () => {
-  const qc         = useQueryClient()
+  const qc = useQueryClient()
   const setSession = useCheckoutStore((s) => s.setSession)
-  const nextStep   = useCheckoutStore((s) => s.nextStep)
+  const nextStep = useCheckoutStore((s) => s.nextStep)
 
   return useMutation({
     mutationFn: (input: SelectShippingInput) => checkoutService.selectShipping(input),
     onSuccess: (session: ICheckoutSession) => {
       setSession(session)
-      qc.setQueryData(CHECKOUT_KEY, (old: { session: ICheckoutSession; shippingOptions: unknown[] } | undefined) =>
-        old ? { ...old, session } : old,
+      qc.setQueryData(
+        CHECKOUT_KEY,
+        (old: { session: ICheckoutSession; shippingOptions: unknown[] } | undefined) =>
+          old ? { ...old, session } : old,
       )
       nextStep()
     },
@@ -65,7 +69,7 @@ export const useSelectShipping = () => {
 
 // ─── Apply coupon ──────────────────────────────────────────────────────────────
 export const useApplyCoupon = () => {
-  const qc            = useQueryClient()
+  const qc = useQueryClient()
   const { setSession, setCouponError } = useCheckoutStore()
 
   return useMutation({
@@ -73,8 +77,10 @@ export const useApplyCoupon = () => {
     onSuccess: (session: ICheckoutSession) => {
       setSession(session)
       setCouponError(null)
-      qc.setQueryData(CHECKOUT_KEY, (old: { session: ICheckoutSession; shippingOptions: unknown[] } | undefined) =>
-        old ? { ...old, session } : old,
+      qc.setQueryData(
+        CHECKOUT_KEY,
+        (old: { session: ICheckoutSession; shippingOptions: unknown[] } | undefined) =>
+          old ? { ...old, session } : old,
       )
     },
     onError: (err: unknown) => {
@@ -86,7 +92,7 @@ export const useApplyCoupon = () => {
 
 // ─── Remove coupon ─────────────────────────────────────────────────────────────
 export const useRemoveCoupon = () => {
-  const qc            = useQueryClient()
+  const qc = useQueryClient()
   const { setSession, setCouponError } = useCheckoutStore()
 
   return useMutation({
@@ -94,8 +100,10 @@ export const useRemoveCoupon = () => {
     onSuccess: (session: ICheckoutSession) => {
       setSession(session)
       setCouponError(null)
-      qc.setQueryData(CHECKOUT_KEY, (old: { session: ICheckoutSession; shippingOptions: unknown[] } | undefined) =>
-        old ? { ...old, session } : old,
+      qc.setQueryData(
+        CHECKOUT_KEY,
+        (old: { session: ICheckoutSession; shippingOptions: unknown[] } | undefined) =>
+          old ? { ...old, session } : old,
       )
     },
   })

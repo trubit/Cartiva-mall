@@ -2,12 +2,12 @@ import { FiEdit2, FiCheck, FiMapPin } from 'react-icons/fi'
 import type { ICheckoutAddress } from '../../../../shared/types/checkout.types.js'
 
 interface AddressCardProps {
-  address:    ICheckoutAddress
-  label:      string
-  selected?:  boolean
-  onSelect?:  () => void
-  onEdit?:    () => void
-  compact?:   boolean
+  address: ICheckoutAddress
+  label: string
+  selected?: boolean
+  onSelect?: () => void
+  onEdit?: () => void
+  compact?: boolean
 }
 
 export default function AddressCard({
@@ -24,7 +24,9 @@ export default function AddressCard({
       onClick={onSelect}
       role={onSelect ? 'button' : undefined}
       tabIndex={onSelect ? 0 : undefined}
-      onKeyDown={(e) => { if (onSelect && (e.key === 'Enter' || e.key === ' ')) onSelect() }}
+      onKeyDown={(e) => {
+        if (onSelect && (e.key === 'Enter' || e.key === ' ')) onSelect()
+      }}
     >
       <div className="address-card__header">
         <div className="address-card__label-row">
@@ -41,7 +43,10 @@ export default function AddressCard({
           {onEdit && (
             <button
               className="address-card__edit-btn"
-              onClick={(e) => { e.stopPropagation(); onEdit() }}
+              onClick={(e) => {
+                e.stopPropagation()
+                onEdit()
+              }}
               aria-label="Edit address"
             >
               <FiEdit2 size={14} />

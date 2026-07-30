@@ -1,15 +1,26 @@
-import { useState }  from 'react'
+import { useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import {
-  FiArrowLeft, FiMapPin, FiRefreshCw, FiXCircle, FiNavigation,
-  FiPackage, FiShoppingBag, FiPhone, FiClock, FiFileText,
+  FiArrowLeft,
+  FiMapPin,
+  FiRefreshCw,
+  FiXCircle,
+  FiNavigation,
+  FiPackage,
+  FiShoppingBag,
+  FiPhone,
+  FiClock,
+  FiFileText,
   FiChevronRight,
 } from 'react-icons/fi'
-import { useOrder, useCancelOrder }             from '../../../hooks/useOrders.js'
-import { OrderStatusBadge, PaymentStatusBadge } from '../../../components/order/OrderStatus/index.js'
-import OrderTimeline    from '../../../components/order/OrderTimeline/index.js'
-import TrackingInfo     from '../../../components/order/TrackingInfo/index.js'
-import OrderSummary     from '../../../components/order/OrderSummary/index.js'
+import { useOrder, useCancelOrder } from '../../../hooks/useOrders.js'
+import {
+  OrderStatusBadge,
+  PaymentStatusBadge,
+} from '../../../components/order/OrderStatus/index.js'
+import OrderTimeline from '../../../components/order/OrderTimeline/index.js'
+import TrackingInfo from '../../../components/order/TrackingInfo/index.js'
+import OrderSummary from '../../../components/order/OrderSummary/index.js'
 import ReturnRequestForm from '../../../components/order/ReturnRequestForm/index.js'
 import { formatCurrency, formatDate } from '../../../../shared/helpers/index.js'
 import {
@@ -19,15 +30,15 @@ import {
 } from '../../../../shared/constants/index.js'
 
 const STATUS_ACCENT: Record<string, string> = {
-  pending:          '#FF9900',
-  confirmed:        '#007185',
-  processing:       '#0066c0',
-  shipped:          '#8956FF',
-  outForDelivery:   '#067D62',
-  delivered:        '#067D62',
-  cancelled:        '#CC0C39',
-  returned:         '#CC0C39',
-  refunded:         '#565959',
+  pending: '#FF9900',
+  confirmed: '#007185',
+  processing: '#0066c0',
+  shipped: '#8956FF',
+  outForDelivery: '#067D62',
+  delivered: '#067D62',
+  cancelled: '#CC0C39',
+  returned: '#CC0C39',
+  refunded: '#565959',
 }
 
 function isWithinReturnWindow(createdAt: string) {
@@ -52,12 +63,20 @@ function OrderDetailSkeleton() {
         <div className="od-grid">
           <div>
             {[180, 260, 160].map((h, i) => (
-              <div key={i} className="od-skeleton" style={{ height: h, marginBottom: 16, borderRadius: 8 }} />
+              <div
+                key={i}
+                className="od-skeleton"
+                style={{ height: h, marginBottom: 16, borderRadius: 8 }}
+              />
             ))}
           </div>
           <div>
             {[140, 180].map((h, i) => (
-              <div key={i} className="od-skeleton" style={{ height: h, marginBottom: 16, borderRadius: 8 }} />
+              <div
+                key={i}
+                className="od-skeleton"
+                style={{ height: h, marginBottom: 16, borderRadius: 8 }}
+              />
             ))}
           </div>
         </div>
@@ -67,7 +86,7 @@ function OrderDetailSkeleton() {
 }
 
 export default function OrderDetails() {
-  const { id }   = useParams<{ id: string }>()
+  const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [showReturn, setShowReturn] = useState(false)
 
@@ -93,7 +112,7 @@ export default function OrderDetails() {
     )
   }
 
-  const accent   = STATUS_ACCENT[order.orderStatus] ?? '#131921'
+  const accent = STATUS_ACCENT[order.orderStatus] ?? '#131921'
   const canCancel = (CANCELLABLE_STATUSES as readonly string[]).includes(order.orderStatus)
   const canReturn =
     (RETURNABLE_STATUSES as readonly string[]).includes(order.orderStatus) &&
@@ -107,12 +126,10 @@ export default function OrderDetails() {
 
   return (
     <div className="od-page">
-
       {/* ══════════ HERO HEADER ══════════ */}
       <div className="od-hero" style={{ '--od-accent': accent } as React.CSSProperties}>
         <div className="od-hero__accent-bar" />
         <div className="container">
-
           {/* Back */}
           <button className="od-back" onClick={() => navigate(-1)}>
             <FiArrowLeft size={14} />
@@ -162,9 +179,10 @@ export default function OrderDetails() {
           {/* Cancel error */}
           {cancelError && (
             <div className="od-alert od-alert--error">
-              {(cancelError as any)?.response?.data?.message
-                ?? (cancelError as Error)?.message
-                ?? 'Failed to cancel order'}
+              {(cancelError as { response?: { data?: { message?: string } } })?.response?.data
+                ?.message ??
+                (cancelError as Error)?.message ??
+                'Failed to cancel order'}
             </div>
           )}
         </div>
@@ -173,10 +191,8 @@ export default function OrderDetails() {
       {/* ══════════ BODY ══════════ */}
       <div className="container od-body">
         <div className="od-grid">
-
           {/* ── Left column ─────────────────────────────────── */}
           <div className="od-col-main">
-
             {/* Timeline */}
             <div className="od-card">
               <div className="od-card__head">
@@ -209,7 +225,9 @@ export default function OrderDetails() {
                           src={item.image}
                           alt={item.title}
                           className="od-item__img"
-                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                          onError={(e) => {
+                            ;(e.target as HTMLImageElement).style.display = 'none'
+                          }}
                         />
                       ) : (
                         <div className="od-item__img-placeholder">
@@ -224,8 +242,12 @@ export default function OrderDetails() {
                       </Link>
                       <div className="od-item__chips">
                         <span className="od-chip">SKU: {item.sku}</span>
-                        {item.selectedSize  && <span className="od-chip">Size: {item.selectedSize}</span>}
-                        {item.selectedColor && <span className="od-chip od-chip--color">{item.selectedColor}</span>}
+                        {item.selectedSize && (
+                          <span className="od-chip">Size: {item.selectedSize}</span>
+                        )}
+                        {item.selectedColor && (
+                          <span className="od-chip od-chip--color">{item.selectedColor}</span>
+                        )}
                       </div>
                     </div>
 
@@ -313,7 +335,6 @@ export default function OrderDetails() {
 
           {/* ── Right column ─────────────────────────────────── */}
           <div className="od-col-side">
-
             {/* Tracking Info */}
             {order.tracking && (
               <div className="od-card">

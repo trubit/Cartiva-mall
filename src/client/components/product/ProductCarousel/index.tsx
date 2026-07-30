@@ -9,20 +9,24 @@ interface ProductCarouselProps {
   itemsVisible?: number
 }
 
-export default function ProductCarousel({ products, onQuickView, itemsVisible = 4 }: ProductCarouselProps) {
+export default function ProductCarousel({
+  products,
+  onQuickView,
+  itemsVisible = 4,
+}: ProductCarouselProps) {
   const [index, setIndex] = useState(0)
   const trackRef = useRef<HTMLDivElement>(null)
 
   const maxIndex = Math.max(0, products.length - itemsVisible)
-  const canPrev  = index > 0
-  const canNext  = index < maxIndex
+  const canPrev = index > 0
+  const canNext = index < maxIndex
 
   const prev = () => setIndex((i) => Math.max(0, i - 1))
   const next = () => setIndex((i) => Math.min(maxIndex, i + 1))
 
-  const gap     = 20
-  const pct     = 100 / itemsVisible
-  const offset  = index * (pct + gap / itemsVisible)
+  const gap = 20
+  const pct = 100 / itemsVisible
+  const offset = index * (pct + gap / itemsVisible)
 
   if (products.length === 0) return null
 

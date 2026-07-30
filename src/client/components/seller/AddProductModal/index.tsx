@@ -1,34 +1,34 @@
-import { useState }   from 'react'
-import Modal           from 'react-bootstrap/Modal'
-import Form            from 'react-bootstrap/Form'
-import Row             from 'react-bootstrap/Row'
-import Col             from 'react-bootstrap/Col'
+import { useState } from 'react'
+import Modal from 'react-bootstrap/Modal'
+import Form from 'react-bootstrap/Form'
+import Row from 'react-bootstrap/Row'
+import Col from 'react-bootstrap/Col'
 import { FiPlusSquare } from 'react-icons/fi'
-import { useCreateProduct }      from '../../../hooks/useProducts.js'
-import { PRODUCT_CATEGORIES }    from '../../../../shared/constants/index.js'
-import { useQueryClient }        from '@tanstack/react-query'
-import { SELLER_PRODUCTS }       from '../../../hooks/useSeller.js'
-import ProductImageUploader      from '../../product/ProductImageUploader/index.js'
+import { useCreateProduct } from '../../../hooks/useProducts.js'
+import { PRODUCT_CATEGORIES } from '../../../../shared/constants/index.js'
+import { useQueryClient } from '@tanstack/react-query'
+import { SELLER_PRODUCTS } from '../../../hooks/useSeller.js'
+import ProductImageUploader from '../../product/ProductImageUploader/index.js'
 
 interface AddProductModalProps {
-  show:   boolean
+  show: boolean
   onHide: () => void
 }
 
 const INITIAL = {
-  title:         '',
-  description:   '',
-  price:         '',
+  title: '',
+  description: '',
+  price: '',
   discountPrice: '',
-  category:      PRODUCT_CATEGORIES[0] as string,
-  brand:         '',
-  sku:           '',
+  category: PRODUCT_CATEGORIES[0] as string,
+  brand: '',
+  sku: '',
   stockQuantity: '1',
-  isFeatured:    false,
+  isFeatured: false,
 }
 
 export default function AddProductModal({ show, onHide }: AddProductModalProps) {
-  const [form, setForm]         = useState(INITIAL)
+  const [form, setForm] = useState(INITIAL)
   const [imageUrls, setImageUrls] = useState<string[]>([])
   const { mutate, isPending, error } = useCreateProduct()
   const qc = useQueryClient()
@@ -40,16 +40,16 @@ export default function AddProductModal({ show, onHide }: AddProductModalProps) 
     e.preventDefault()
     mutate(
       {
-        title:         form.title,
-        description:   form.description,
-        price:         Number(form.price),
+        title: form.title,
+        description: form.description,
+        price: Number(form.price),
         discountPrice: form.discountPrice ? Number(form.discountPrice) : undefined,
-        category:      form.category,
-        brand:         form.brand || undefined,
-        sku:           form.sku.toUpperCase(),
+        category: form.category,
+        brand: form.brand || undefined,
+        sku: form.sku.toUpperCase(),
         stockQuantity: Number(form.stockQuantity),
-        isFeatured:    form.isFeatured,
-        images:        imageUrls,
+        isFeatured: form.isFeatured,
+        images: imageUrls,
       },
       {
         onSuccess: () => {
@@ -81,14 +81,15 @@ export default function AddProductModal({ show, onHide }: AddProductModalProps) 
         )}
 
         <Form id="add-product-modal-form" onSubmit={handleSubmit} noValidate>
-
           {/* ── Product Details ─────────────────────────────────── */}
           <div className="pm-section">
             <p className="pm-section-label">Product Details</p>
             <Row className="g-3">
               <Col xs={12}>
                 <Form.Group controlId="ap-title">
-                  <Form.Label>Product Title <span style={{ color: 'var(--pm-danger-text)' }}>*</span></Form.Label>
+                  <Form.Label>
+                    Product Title <span style={{ color: 'var(--pm-danger-text)' }}>*</span>
+                  </Form.Label>
                   <Form.Control
                     required
                     value={form.title}
@@ -115,12 +116,15 @@ export default function AddProductModal({ show, onHide }: AddProductModalProps) 
           {/* ── Product Images ───────────────────────────────────── */}
           <div className="pm-section">
             <p className="pm-section-label">Product Images</p>
-            <ProductImageUploader
-              value={imageUrls}
-              onChange={setImageUrls}
-              maxImages={6}
-            />
-            <p style={{ fontSize: '0.72rem', color: 'var(--pm-modal-text-muted)', marginTop: '0.5rem', marginBottom: 0 }}>
+            <ProductImageUploader value={imageUrls} onChange={setImageUrls} maxImages={6} />
+            <p
+              style={{
+                fontSize: '0.72rem',
+                color: 'var(--pm-modal-text-muted)',
+                marginTop: '0.5rem',
+                marginBottom: 0,
+              }}
+            >
               First image is the main thumbnail · JPEG, PNG, WebP · max 5 MB each
             </p>
           </div>
@@ -131,7 +135,9 @@ export default function AddProductModal({ show, onHide }: AddProductModalProps) 
             <Row className="g-3">
               <Col xs={6} md={4}>
                 <Form.Group controlId="ap-price">
-                  <Form.Label>Price ($) <span style={{ color: 'var(--pm-danger-text)' }}>*</span></Form.Label>
+                  <Form.Label>
+                    Price ($) <span style={{ color: 'var(--pm-danger-text)' }}>*</span>
+                  </Form.Label>
                   <Form.Control
                     required
                     type="number"
@@ -158,7 +164,9 @@ export default function AddProductModal({ show, onHide }: AddProductModalProps) 
               </Col>
               <Col xs={6} md={4}>
                 <Form.Group controlId="ap-stock">
-                  <Form.Label>Stock Qty <span style={{ color: 'var(--pm-danger-text)' }}>*</span></Form.Label>
+                  <Form.Label>
+                    Stock Qty <span style={{ color: 'var(--pm-danger-text)' }}>*</span>
+                  </Form.Label>
                   <Form.Control
                     required
                     type="number"
@@ -177,9 +185,18 @@ export default function AddProductModal({ show, onHide }: AddProductModalProps) 
             <Row className="g-3">
               <Col xs={6}>
                 <Form.Group controlId="ap-category">
-                  <Form.Label>Category <span style={{ color: 'var(--pm-danger-text)' }}>*</span></Form.Label>
-                  <Form.Select value={form.category} onChange={(e) => set('category', e.target.value)}>
-                    {PRODUCT_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                  <Form.Label>
+                    Category <span style={{ color: 'var(--pm-danger-text)' }}>*</span>
+                  </Form.Label>
+                  <Form.Select
+                    value={form.category}
+                    onChange={(e) => set('category', e.target.value)}
+                  >
+                    {PRODUCT_CATEGORIES.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
                   </Form.Select>
                 </Form.Group>
               </Col>
@@ -195,7 +212,9 @@ export default function AddProductModal({ show, onHide }: AddProductModalProps) 
               </Col>
               <Col xs={6}>
                 <Form.Group controlId="ap-sku">
-                  <Form.Label>SKU <span style={{ color: 'var(--pm-danger-text)' }}>*</span></Form.Label>
+                  <Form.Label>
+                    SKU <span style={{ color: 'var(--pm-danger-text)' }}>*</span>
+                  </Form.Label>
                   <Form.Control
                     required
                     value={form.sku}
@@ -217,12 +236,16 @@ export default function AddProductModal({ show, onHide }: AddProductModalProps) 
               </Col>
             </Row>
           </div>
-
         </Form>
       </Modal.Body>
 
       <Modal.Footer>
-        <button type="button" className="pm-btn pm-btn--cancel" onClick={onHide} disabled={isPending}>
+        <button
+          type="button"
+          className="pm-btn pm-btn--cancel"
+          onClick={onHide}
+          disabled={isPending}
+        >
           Cancel
         </button>
         <button
@@ -231,7 +254,13 @@ export default function AddProductModal({ show, onHide }: AddProductModalProps) 
           className="pm-btn pm-btn--submit"
           disabled={isPending}
         >
-          {isPending ? <><span className="pm-spinner" /> Creating…</> : 'Create Product'}
+          {isPending ? (
+            <>
+              <span className="pm-spinner" /> Creating…
+            </>
+          ) : (
+            'Create Product'
+          )}
         </button>
       </Modal.Footer>
     </Modal>

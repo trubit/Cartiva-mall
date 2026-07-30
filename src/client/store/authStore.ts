@@ -19,7 +19,8 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
 
       setAuth: (user, accessToken) => {
-        localStorage.setItem('accessToken', accessToken)
+        // Never write the access token to localStorage — it is kept in memory only
+        // to protect against XSS exfiltration. Refresh tokens use httpOnly cookies.
         set({ user, accessToken, isAuthenticated: true })
       },
 
@@ -29,12 +30,13 @@ export const useAuthStore = create<AuthState>()(
         })),
 
       clearAuth: () => {
-        localStorage.removeItem('accessToken')
         set({ user: null, accessToken: null, isAuthenticated: false })
       },
     }),
     {
       name: 'cartiva-auth',
+      // Only persist user identity (not the token) so the next page load
+      // can show the user as logged in while the token is refreshed from cookie.
       partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated }),
     },
   ),

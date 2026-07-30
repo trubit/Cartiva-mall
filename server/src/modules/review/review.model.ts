@@ -13,11 +13,16 @@ export interface IReviewDocument extends Document {
 
 const reviewSchema = new mongoose.Schema<IReviewDocument>(
   {
-    productId:  { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true, index: true },
-    userId:     { type: mongoose.Schema.Types.ObjectId, ref: 'User',    required: true, index: true },
-    rating:     { type: Number, required: true, min: 1, max: 5 },
-    title:      { type: String, trim: true, maxlength: 120 },
-    body:       { type: String, required: true, trim: true, minlength: 10, maxlength: 2000 },
+    productId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Product',
+      required: true,
+      index: true,
+    },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    rating: { type: Number, required: true, min: 1, max: 5 },
+    title: { type: String, trim: true, maxlength: 120 },
+    body: { type: String, required: true, trim: true, minlength: 10, maxlength: 2000 },
     isVerified: { type: Boolean, default: false },
   },
   {

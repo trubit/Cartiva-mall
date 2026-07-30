@@ -4,7 +4,7 @@ import { useCheckoutStore } from '../../../store/checkoutStore.js'
 import type { ShippingMethod } from '../../../../shared/types/checkout.types.js'
 
 export default function ShippingSelection() {
-  const mutation          = useSelectShipping()
+  const mutation = useSelectShipping()
   const { shippingOptions, selectedMethod, setSelectedMethod, prevStep } = useCheckoutStore()
 
   const handleContinue = () => {

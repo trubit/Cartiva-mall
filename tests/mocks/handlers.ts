@@ -21,11 +21,14 @@ export const handlers = [
         },
         accessToken: 'mock-access-token',
       },
-    })
+    }),
   ),
 
   http.post(`${BASE}/auth/register`, () =>
-    HttpResponse.json({ success: true, message: 'Registration successful. Please verify your email.' }, { status: 201 })
+    HttpResponse.json(
+      { success: true, message: 'Registration successful. Please verify your email.' },
+      { status: 201 },
+    ),
   ),
 
   http.get(`${BASE}/auth/me`, () =>
@@ -40,7 +43,7 @@ export const handlers = [
         isActive: true,
         emailVerified: true,
       },
-    })
+    }),
   ),
 
   // Products
@@ -49,12 +52,10 @@ export const handlers = [
       success: true,
       data: [],
       pagination: { total: 0, page: 1, limit: 20, totalPages: 0, hasNext: false, hasPrev: false },
-    })
+    }),
   ),
 
-  http.get(`${BASE}/products/featured`, () =>
-    HttpResponse.json({ success: true, data: [] })
-  ),
+  http.get(`${BASE}/products/featured`, () => HttpResponse.json({ success: true, data: [] })),
 
   http.get(`${BASE}/products/:id`, ({ params }) =>
     HttpResponse.json({
@@ -67,7 +68,7 @@ export const handlers = [
         stockQuantity: 10,
         images: [],
       },
-    })
+    }),
   ),
 
   // Cart
@@ -83,10 +84,10 @@ export const handlers = [
         taxAmount: 0,
         discountAmount: 0,
       },
-    })
+    }),
   ),
 
   http.post(`${BASE}/cart/add`, () =>
-    HttpResponse.json({ success: true, message: 'Item added to cart' })
+    HttpResponse.json({ success: true, message: 'Item added to cart' }),
   ),
 ]

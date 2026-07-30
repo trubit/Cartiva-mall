@@ -15,17 +15,15 @@ export default function AuthButton({
   ...rest
 }: AuthButtonProps) {
   return (
-    <button
-      className={`auth-btn auth-btn-${variant}`}
-      disabled={disabled || loading}
-      {...rest}
-    >
+    <button className={`auth-btn auth-btn-${variant}`} disabled={disabled || loading} {...rest}>
       {loading ? (
         <>
           <CgSpinner className="animate-spin" size={18} />
           <span>Please wait...</span>
         </>
-      ) : children}
+      ) : (
+        children
+      )}
     </button>
   )
 }

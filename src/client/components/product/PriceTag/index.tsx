@@ -16,9 +16,9 @@ export default function PriceTag({
   showSave = false,
   currency = '$',
 }: PriceTagProps) {
-  const hasSale  = discountPrice !== undefined && discountPrice < price
-  const saveAmt  = hasSale ? price - discountPrice : 0
-  const savePct  = hasSale ? Math.round((saveAmt / price) * 100) : 0
+  const hasSale = discountPrice !== undefined && discountPrice < price
+  const saveAmt = hasSale ? price - discountPrice : 0
+  const savePct = hasSale ? Math.round((saveAmt / price) * 100) : 0
 
   const fontSizes = { sm: '0.9rem', md: '1.1rem', lg: '1.5rem' }
   const origSizes = { sm: '0.75rem', md: '0.85rem', lg: '1rem' }
@@ -38,9 +38,7 @@ export default function PriceTag({
         </span>
       )}
 
-      {hasSale && showSave && (
-        <span className="price-tag__save">Save {savePct}%</span>
-      )}
+      {hasSale && showSave && <span className="price-tag__save">Save {savePct}%</span>}
     </span>
   )
 }

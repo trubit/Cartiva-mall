@@ -29,9 +29,9 @@ test.describe('Homepage', () => {
   })
 
   test('displays a hero/banner section', async ({ page }) => {
-    const hero = page.locator(
-      '[class*="hero"], [class*="banner"], section:first-of-type, main > div:first-child'
-    ).first()
+    const hero = page
+      .locator('[class*="hero"], [class*="banner"], section:first-of-type, main > div:first-child')
+      .first()
     await expect(hero).toBeVisible()
   })
 
