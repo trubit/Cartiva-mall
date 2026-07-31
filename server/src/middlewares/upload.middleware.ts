@@ -59,7 +59,7 @@ const uploader = multer({
 async function checkMagicBytes(req: Request): Promise<void> {
   const files: Express.Multer.File[] = req.file
     ? [req.file]
-    : (req.files as Express.Multer.File[]) ?? []
+    : ((req.files as Express.Multer.File[]) ?? [])
 
   for (const file of files) {
     let fd: Awaited<ReturnType<typeof open>> | null = null
@@ -94,7 +94,9 @@ const wrapMulter = (
       }
       return next(new AppError(err instanceof Error ? err.message : 'File upload error', 400))
     }
-    checkMagicBytes(req).then(() => next()).catch(next)
+    checkMagicBytes(req)
+      .then(() => next())
+      .catch(next)
   })
 }
 

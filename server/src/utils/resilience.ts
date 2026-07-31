@@ -109,10 +109,10 @@ export type CircuitState = 'CLOSED' | 'OPEN' | 'HALF_OPEN'
 
 export interface CircuitBreakerOptions {
   name: string
-  failureThreshold?: number  // consecutive failures before opening (default 5)
-  successThreshold?: number  // successes in HALF_OPEN before closing (default 2)
-  halfOpenTimeout?: number   // ms to stay OPEN before allowing a probe (default 60_000)
-  volumeThreshold?: number   // minimum calls before the breaker can open (default 10)
+  failureThreshold?: number // consecutive failures before opening (default 5)
+  successThreshold?: number // successes in HALF_OPEN before closing (default 2)
+  halfOpenTimeout?: number // ms to stay OPEN before allowing a probe (default 60_000)
+  volumeThreshold?: number // minimum calls before the breaker can open (default 10)
 }
 
 const STATE_CLOSED = 0

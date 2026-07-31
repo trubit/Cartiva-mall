@@ -108,7 +108,11 @@ export default function AdminProducts() {
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '.6rem' }}>
                           {product.images?.[0] ? (
-                            <img src={getImageUrl(product.images[0])} alt="" className="admin-product-thumb" />
+                            <img
+                              src={getImageUrl(product.images[0])}
+                              alt=""
+                              className="admin-product-thumb"
+                            />
                           ) : (
                             <div
                               className="admin-product-thumb"

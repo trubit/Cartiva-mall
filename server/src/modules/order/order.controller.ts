@@ -25,10 +25,7 @@ export const createOrder = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const { order } = await orderService.createOrder(
-      req.user!.userId,
-      req.body as CreateOrderInput,
-    )
+    const { order } = await orderService.createOrder(req.user!.userId, req.body as CreateOrderInput)
     sendCreated(
       res,
       {

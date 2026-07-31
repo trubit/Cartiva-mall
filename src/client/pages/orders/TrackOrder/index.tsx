@@ -129,7 +129,11 @@ export default function TrackOrder() {
                   <div className="to-shipment-item" key={i}>
                     <div className="to-shipment-item__img-wrap">
                       {item.image ? (
-                        <img src={getImageUrl(item.image)} alt={item.title} className="to-shipment-item__img" />
+                        <img
+                          src={getImageUrl(item.image)}
+                          alt={item.title}
+                          className="to-shipment-item__img"
+                        />
                       ) : (
                         <div className="to-shipment-item__img-placeholder">
                           <FiPackage size={16} />

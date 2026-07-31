@@ -40,10 +40,7 @@ export const refundPayment = async (input: RefundInput, userId: string) => {
   }
 
   if (input.amount !== undefined && input.amount > order.grandTotal) {
-    throw new AppError(
-      `Refund amount exceeds order total of ${order.grandTotal}`,
-      400,
-    )
+    throw new AppError(`Refund amount exceeds order total of ${order.grandTotal}`, 400)
   }
 
   return paystackRefund(input.orderId, userId, input.reason, input.amount)

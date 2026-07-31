@@ -49,8 +49,7 @@ export const getOrCreateCheckout = async (userId: string): Promise<ICheckoutDocu
       cartItems.every((ci) =>
         existing.items.some(
           (si) =>
-            si.productId.toString() === ci.productId.toString() &&
-            si.quantity === ci.quantity,
+            si.productId.toString() === ci.productId.toString() && si.quantity === ci.quantity,
         ),
       )
     if (cartMatchesSession) return existing

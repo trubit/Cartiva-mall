@@ -19,7 +19,9 @@ const PRODUCT_POPULATE =
   'title images price discountPrice stockQuantity sku status isActive category brand'
 
 const invalidateCheckout = (userId: string) =>
-  Checkout.deleteOne({ userId: uid(userId), status: 'pending' }).exec().catch(() => {})
+  Checkout.deleteOne({ userId: uid(userId), status: 'pending' })
+    .exec()
+    .catch(() => {})
 
 // ─── Recalculate cart totals in-place ────────────────────────────────────────
 const recalculate = (cart: ICartDocument): void => {

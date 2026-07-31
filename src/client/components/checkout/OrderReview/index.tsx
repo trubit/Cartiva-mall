@@ -65,7 +65,11 @@ export default function OrderReview({ onPlaceOrder, isSubmitting }: OrderReviewP
           {session.items.map((item, i) => (
             <li key={`${item.productId}-${i}`} className="order-review__item">
               {item.image && (
-                <img src={getImageUrl(item.image)} alt={item.title} className="order-review__item-img" />
+                <img
+                  src={getImageUrl(item.image)}
+                  alt={item.title}
+                  className="order-review__item-img"
+                />
               )}
               <div className="order-review__item-info">
                 <span className="order-review__item-title">{item.title}</span>

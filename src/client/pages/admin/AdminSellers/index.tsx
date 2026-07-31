@@ -97,7 +97,11 @@ export default function AdminSellers() {
                       <td>
                         <div className="admin-user-cell">
                           {seller.storeLogo ? (
-                            <img src={getImageUrl(seller.storeLogo)} alt="" className="admin-avatar" />
+                            <img
+                              src={getImageUrl(seller.storeLogo)}
+                              alt=""
+                              className="admin-avatar"
+                            />
                           ) : (
                             <div className="admin-avatar-fallback">
                               {seller.storeName?.[0]?.toUpperCase() ?? 'S'}

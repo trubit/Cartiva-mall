@@ -1,11 +1,5 @@
 import { useSearchParams, Link } from 'react-router-dom'
-import {
-  FiCheckCircle,
-  FiPackage,
-  FiArrowRight,
-  FiShoppingBag,
-  FiTruck,
-} from 'react-icons/fi'
+import { FiCheckCircle, FiPackage, FiArrowRight, FiShoppingBag, FiTruck } from 'react-icons/fi'
 import { useOrder } from '../../../hooks/usePayment.js'
 import { formatCurrency, formatDate } from '../../../../shared/helpers/index.js'
 

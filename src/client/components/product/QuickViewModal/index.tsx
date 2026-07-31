@@ -44,7 +44,11 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
 
         {/* Image */}
         {getImageUrl(product.images[0]) ? (
-          <img src={getImageUrl(product.images[0])} alt={product.title} className="quick-view-modal__img" />
+          <img
+            src={getImageUrl(product.images[0])}
+            alt={product.title}
+            className="quick-view-modal__img"
+          />
         ) : (
           <div
             className="quick-view-modal__img"

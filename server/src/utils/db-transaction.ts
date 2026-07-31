@@ -8,10 +8,7 @@ const STANDALONE_PATTERNS = [
 ]
 
 function isTransactionUnsupported(err: unknown): boolean {
-  return (
-    err instanceof Error &&
-    STANDALONE_PATTERNS.some((p) => err.message.includes(p))
-  )
+  return err instanceof Error && STANDALONE_PATTERNS.some((p) => err.message.includes(p))
 }
 
 /**

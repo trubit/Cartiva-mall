@@ -72,7 +72,11 @@ export default function ReturnOrder() {
             {order.items.map((item, i) => (
               <li key={i} className="return-order__item">
                 {item.image && (
-                  <img src={getImageUrl(item.image)} alt={item.title} className="return-order__item-img" />
+                  <img
+                    src={getImageUrl(item.image)}
+                    alt={item.title}
+                    className="return-order__item-img"
+                  />
                 )}
                 <div className="return-order__item-info">
                   <span className="return-order__item-title">{item.title}</span>

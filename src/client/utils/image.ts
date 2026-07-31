@@ -1,7 +1,5 @@
 const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME as string | undefined
-const CDN_BASE = CLOUD_NAME
-  ? `https://res.cloudinary.com/${CLOUD_NAME}/image/upload`
-  : null
+const CDN_BASE = CLOUD_NAME ? `https://res.cloudinary.com/${CLOUD_NAME}/image/upload` : null
 
 /**
  * Resolves any stored image value to a full URL.

@@ -138,7 +138,7 @@ export const verifyTransaction = async (reference: string, userId: string) => {
   if (!order) throw new AppError('Order not found for this payment reference', 404)
   if (order.paymentStatus === 'paid') return order
 
-  let updated: (typeof order) | null = null
+  let updated: typeof order | null = null
 
   // Atomic: update Payment + Order + deduct stock in one DB transaction.
   // Stock deduction runs inside the transaction so a subsequent crash cannot
@@ -335,12 +335,9 @@ export const refundTransaction = async (
   const order = await Order.findOne({ _id: orderId, userId })
   if (!order) throw new AppError('Order not found', 404)
   if (!order.paystackReference) throw new AppError('No Paystack reference for this order', 400)
-  if (order.paymentStatus !== 'paid')
-    throw new AppError('Only paid orders can be refunded', 400)
+  if (order.paymentStatus !== 'paid') throw new AppError('Only paid orders can be refunded', 400)
 
-  const refundAmountMinor = amount
-    ? Math.round(amount * 100)
-    : Math.round(order.grandTotal * 100)
+  const refundAmountMinor = amount ? Math.round(amount * 100) : Math.round(order.grandTotal * 100)
 
   type RefundRes = {
     status: boolean

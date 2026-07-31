@@ -120,7 +120,11 @@ export default function AdminUsers() {
                         <td>
                           <div className="admin-user-cell">
                             {user.profileImage ? (
-                              <img src={getImageUrl(user.profileImage)} alt="" className="admin-avatar" />
+                              <img
+                                src={getImageUrl(user.profileImage)}
+                                alt=""
+                                className="admin-avatar"
+                              />
                             ) : (
                               <div className="admin-avatar-fallback">{initials}</div>
                             )}

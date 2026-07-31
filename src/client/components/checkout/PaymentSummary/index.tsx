@@ -29,7 +29,11 @@ export default function PaymentSummary({ showCoupon = true }: PaymentSummaryProp
           <li key={`${item.productId}-${idx}`} className="payment-summary__item">
             <div className="payment-summary__item-img-wrap">
               {item.image ? (
-                <img src={getImageUrl(item.image)} alt={item.title} className="payment-summary__item-img" />
+                <img
+                  src={getImageUrl(item.image)}
+                  alt={item.title}
+                  className="payment-summary__item-img"
+                />
               ) : (
                 <div className="payment-summary__item-img-placeholder">🛍️</div>
               )}

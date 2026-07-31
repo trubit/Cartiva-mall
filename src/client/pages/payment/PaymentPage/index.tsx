@@ -47,7 +47,9 @@ export default function PaymentPage() {
             order={fetchedOrder ?? order ?? undefined}
             amount={displayAmount}
             currency={currency}
-            orderNumber={fetchedOrder?.orderNumber ?? usePaymentStore.getState().orderNumber ?? undefined}
+            orderNumber={
+              fetchedOrder?.orderNumber ?? usePaymentStore.getState().orderNumber ?? undefined
+            }
           />
         </div>
       </div>

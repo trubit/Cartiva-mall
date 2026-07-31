@@ -107,7 +107,10 @@ export async function callCloudinaryDelete<T>(fn: () => Promise<T>): Promise<T> 
   }
 }
 
-export async function callPaystack<T>(fn: () => Promise<T>, operationName = 'Paystack'): Promise<T> {
+export async function callPaystack<T>(
+  fn: () => Promise<T>,
+  operationName = 'Paystack',
+): Promise<T> {
   try {
     return await paystackBreaker.fire(() =>
       withRetry(() => withTimeout(fn(), PAYSTACK_TIMEOUT_MS, operationName), {
@@ -125,7 +128,10 @@ export async function callPaystack<T>(fn: () => Promise<T>, operationName = 'Pay
     )
   } catch (err) {
     if (err instanceof CircuitBreakerOpenError) {
-      throw new AppError('Payment service is temporarily unavailable. Please try again shortly.', 503)
+      throw new AppError(
+        'Payment service is temporarily unavailable. Please try again shortly.',
+        503,
+      )
     }
     throw err
   }

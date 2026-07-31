@@ -17,10 +17,10 @@ const clientPort = env.CLIENT_URL ? new URL(env.CLIENT_URL).port : '5170'
 function killPort(port) {
   try {
     if (process.platform === 'win32') {
-      const result = execSync(
-        `netstat -ano | findstr :${port}`,
-        { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] },
-      )
+      const result = execSync(`netstat -ano | findstr :${port}`, {
+        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'ignore'],
+      })
       const pids = [
         ...new Set(
           result

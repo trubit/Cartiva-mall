@@ -37,7 +37,10 @@ export default defineConfig(({ mode }) => {
               if (!r.headersSent) {
                 r.writeHead(503, { 'Content-Type': 'application/json' })
                 r.end(
-                  JSON.stringify({ success: false, message: 'Server is starting up, please retry' }),
+                  JSON.stringify({
+                    success: false,
+                    message: 'Server is starting up, please retry',
+                  }),
                 )
               }
             })

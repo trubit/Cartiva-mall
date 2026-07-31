@@ -32,10 +32,6 @@ router.post(
   validate(paystackInitializeSchema),
   paymentController.paystackInitialize,
 )
-router.post(
-  '/paystack/verify',
-  validate(paystackVerifySchema),
-  paymentController.paystackVerify,
-)
+router.post('/paystack/verify', validate(paystackVerifySchema), paymentController.paystackVerify)
 
 export default router

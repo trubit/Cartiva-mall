@@ -365,7 +365,12 @@ export const updateReturnStatus = async (
 
     if (order.paystackReference) {
       try {
-        await paystackRefund(orderId, order.userId.toString(), input.note ?? 'Return approved', refundAmount)
+        await paystackRefund(
+          orderId,
+          order.userId.toString(),
+          input.note ?? 'Return approved',
+          refundAmount,
+        )
         $set.paymentStatus = PAYMENT_STATUS.REFUNDED
         logger.info('Paystack refund issued on return approval', { orderId, refundAmount })
       } catch (err) {
