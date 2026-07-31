@@ -44,7 +44,9 @@ export const promotionService = {
 
   // ── Admin Promotions ──────────────────────────────────────────────────────────
   getPromotions: async (page = 1): Promise<PagedResult<IPromotion>> => {
-    const res = await api.get<ApiResponse<PagedResult<IPromotion>>>(`/admin/promotions?page=${page}`)
+    const res = await api.get<ApiResponse<PagedResult<IPromotion>>>(
+      `/admin/promotions?page=${page}`,
+    )
     return res.data.data!
   },
 

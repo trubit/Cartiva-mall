@@ -80,7 +80,12 @@ const answerSchema = new mongoose.Schema<IAnswerSubDoc>(
 
 const questionSchema = new mongoose.Schema<IQuestionDocument>(
   {
-    productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true, index: true },
+    productId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Product',
+      required: true,
+      index: true,
+    },
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     question: { type: String, required: true, trim: true, minlength: 10, maxlength: 500 },
     answers: { type: [answerSchema], default: [] },

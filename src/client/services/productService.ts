@@ -1,5 +1,10 @@
 import api from './api.js'
-import type { IProduct, IReview, IQuestion, ProductFilters } from '../../shared/types/product.types.js'
+import type {
+  IProduct,
+  IReview,
+  IQuestion,
+  ProductFilters,
+} from '../../shared/types/product.types.js'
 import type { ApiResponse } from '../../shared/types/api.types.js'
 
 interface ProductsResponse {

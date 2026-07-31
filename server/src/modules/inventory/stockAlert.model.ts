@@ -15,7 +15,12 @@ export interface IStockAlertDocument extends Document {
 
 const alertSchema = new mongoose.Schema<IStockAlertDocument>(
   {
-    productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true, index: true },
+    productId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Product',
+      required: true,
+      index: true,
+    },
     warehouseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Warehouse', required: true },
     alertType: { type: String, enum: ['low_stock', 'out_of_stock', 'overstock'], required: true },
     threshold: { type: Number, required: true },

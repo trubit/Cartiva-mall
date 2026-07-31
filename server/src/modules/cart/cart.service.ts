@@ -196,7 +196,9 @@ export const saveForLater = async (userId: string, productId: string): Promise<I
     { userId: uid(userId) },
     {
       $setOnInsert: { userId: uid(userId) },
-      $addToSet: { items: { productId: new mongoose.Types.ObjectId(productId), savedAt: new Date() } },
+      $addToSet: {
+        items: { productId: new mongoose.Types.ObjectId(productId), savedAt: new Date() },
+      },
     },
     { upsert: true },
   )

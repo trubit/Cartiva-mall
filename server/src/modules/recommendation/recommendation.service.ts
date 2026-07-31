@@ -39,9 +39,7 @@ export async function trackBehavior(
 
 // ─── Category affinity for a user (last 90 days) ─────────────────────────────
 
-async function getCategoryAffinity(
-  userId: string,
-): Promise<{ category: string; score: number }[]> {
+async function getCategoryAffinity(userId: string): Promise<{ category: string; score: number }[]> {
   const result = await UserBehavior.aggregate<{ _id: string; totalScore: number }>([
     {
       $match: {
@@ -108,9 +106,7 @@ export async function getPersonalizedRecommendations(
   // Cold-start fill
   if (products.length < limit) {
     const needed = limit - products.length
-    const existingIds = products.map(
-      (p) => (p as unknown as { _id: mongoose.Types.ObjectId })._id,
-    )
+    const existingIds = products.map((p) => (p as unknown as { _id: mongoose.Types.ObjectId })._id)
     const fill = await Product.find({
       status: 'active' as const,
       isActive: true,
@@ -130,10 +126,7 @@ export async function getPersonalizedRecommendations(
 
 // ─── Frequently Bought Together ───────────────────────────────────────────────
 
-export async function getFrequentlyBoughtTogether(
-  productId: string,
-  limit = 8,
-): Promise<object[]> {
+export async function getFrequentlyBoughtTogether(productId: string, limit = 8): Promise<object[]> {
   const key = `rec:fbt:${productId}:${limit}`
   const cached = await redis.get(key)
   if (cached) return JSON.parse(cached) as object[]

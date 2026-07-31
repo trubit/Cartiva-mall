@@ -24,10 +24,7 @@ export default function RelatedProducts({ productId }: RelatedProductsProps) {
             <div className="section-hd__label">You May Also Like</div>
             <h2 className="section-hd__title">Related Products</h2>
           </div>
-          <a
-            href={`/products?category=${encodeURIComponent('')}`}
-            className="section-hd__link"
-          >
+          <a href={`/products?category=${encodeURIComponent('')}`} className="section-hd__link">
             View more <FiArrowRight size={13} />
           </a>
         </div>

@@ -88,7 +88,13 @@ function ReviewSection({ productId }: { productId: string }) {
           <div style={{ textAlign: 'center', minWidth: 80 }}>
             <div className="review-summary__avg">{avg.toFixed(1)}</div>
             <RatingStars value={avg} size="md" />
-            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-neutral-500)', marginTop: 4 }}>
+            <div
+              style={{
+                fontSize: 'var(--text-xs)',
+                color: 'var(--color-neutral-500)',
+                marginTop: 4,
+              }}
+            >
               {reviews.length} review{reviews.length !== 1 ? 's' : ''}
             </div>
           </div>
@@ -163,7 +169,13 @@ function ReviewSection({ productId }: { productId: string }) {
                 </div>
               </div>
               {r.isVerified && (
-                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-success)', marginBottom: 4 }}>
+                <div
+                  style={{
+                    fontSize: 'var(--text-xs)',
+                    color: 'var(--color-success)',
+                    marginBottom: 4,
+                  }}
+                >
                   ✓ Verified Purchase
                 </div>
               )}
@@ -240,7 +252,9 @@ function ReviewSection({ productId }: { productId: string }) {
         })}
         {visible.length === 0 && (
           <p style={{ color: 'var(--color-neutral-500)', fontSize: 'var(--text-sm)' }}>
-            {starFilter ? `No ${starFilter}-star reviews yet.` : 'No reviews yet. Be the first to review this product!'}
+            {starFilter
+              ? `No ${starFilter}-star reviews yet.`
+              : 'No reviews yet. Be the first to review this product!'}
           </p>
         )}
       </div>
@@ -261,7 +275,14 @@ function ReviewSection({ productId }: { productId: string }) {
             style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}
           >
             <div>
-              <label style={{ fontSize: 'var(--text-sm)', fontWeight: 600, display: 'block', marginBottom: 6 }}>
+              <label
+                style={{
+                  fontSize: 'var(--text-sm)',
+                  fontWeight: 600,
+                  display: 'block',
+                  marginBottom: 6,
+                }}
+              >
                 Rating
               </label>
               <div style={{ display: 'flex', gap: 4 }}>
@@ -285,9 +306,18 @@ function ReviewSection({ productId }: { productId: string }) {
               </div>
             </div>
             <div>
-              <label style={{ fontSize: 'var(--text-sm)', fontWeight: 600, display: 'block', marginBottom: 6 }}>
+              <label
+                style={{
+                  fontSize: 'var(--text-sm)',
+                  fontWeight: 600,
+                  display: 'block',
+                  marginBottom: 6,
+                }}
+              >
                 Title{' '}
-                <span style={{ fontWeight: 400, color: 'var(--color-neutral-400)' }}>(optional)</span>
+                <span style={{ fontWeight: 400, color: 'var(--color-neutral-400)' }}>
+                  (optional)
+                </span>
               </label>
               <input
                 type="text"
@@ -299,7 +329,14 @@ function ReviewSection({ productId }: { productId: string }) {
               />
             </div>
             <div>
-              <label style={{ fontSize: 'var(--text-sm)', fontWeight: 600, display: 'block', marginBottom: 6 }}>
+              <label
+                style={{
+                  fontSize: 'var(--text-sm)',
+                  fontWeight: 600,
+                  display: 'block',
+                  marginBottom: 6,
+                }}
+              >
                 Review
               </label>
               <textarea
@@ -340,7 +377,13 @@ function ReviewSection({ productId }: { productId: string }) {
       )}
 
       {!isAuthenticated && (
-        <p style={{ marginTop: '1.5rem', fontSize: 'var(--text-sm)', color: 'var(--color-neutral-500)' }}>
+        <p
+          style={{
+            marginTop: '1.5rem',
+            fontSize: 'var(--text-sm)',
+            color: 'var(--color-neutral-500)',
+          }}
+        >
           <Link to="/login" style={{ color: 'var(--color-brand-accent)', fontWeight: 600 }}>
             Sign in
           </Link>{' '}
@@ -364,7 +407,11 @@ function QASection({ productId }: { productId: string }) {
   const toggleAnswers = (qId: string) => {
     setOpenAnswers((prev) => {
       const next = new Set(prev)
-      if (next.has(qId)) { next.delete(qId) } else { next.add(qId) }
+      if (next.has(qId)) {
+        next.delete(qId)
+      } else {
+        next.add(qId)
+      }
       return next
     })
   }
@@ -378,14 +425,27 @@ function QASection({ productId }: { productId: string }) {
   const handleAnswer = (qId: string) => {
     const text = answerText[qId] ?? ''
     if (text.trim().length < 2) return
-    answerQ({ questionId: qId, answer: text }, { onSuccess: () => setAnswerText((p) => ({ ...p, [qId]: '' })) })
+    answerQ(
+      { questionId: qId, answer: text },
+      { onSuccess: () => setAnswerText((p) => ({ ...p, [qId]: '' })) },
+    )
   }
 
   return (
     <div style={{ marginTop: '3rem' }}>
-      <h3 style={{ fontWeight: 700, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+      <h3
+        style={{
+          fontWeight: 700,
+          marginBottom: '1.5rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+        }}
+      >
         <FiMessageCircle size={18} /> Questions & Answers
-        <span style={{ fontSize: 'var(--text-sm)', fontWeight: 400, color: 'var(--color-neutral-400)' }}>
+        <span
+          style={{ fontSize: 'var(--text-sm)', fontWeight: 400, color: 'var(--color-neutral-400)' }}
+        >
           ({questions.length})
         </span>
       </h3>
@@ -419,7 +479,13 @@ function QASection({ productId }: { productId: string }) {
                 <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)', lineHeight: 1.5 }}>
                   {q.question}
                 </div>
-                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-neutral-400)', marginTop: 2 }}>
+                <div
+                  style={{
+                    fontSize: 'var(--text-xs)',
+                    color: 'var(--color-neutral-400)',
+                    marginTop: 2,
+                  }}
+                >
                   {qName} · {new Date(q.createdAt).toLocaleDateString()}
                 </div>
 
@@ -459,12 +525,27 @@ function QASection({ productId }: { productId: string }) {
                             borderLeft: '2px solid var(--color-neutral-200)',
                           }}
                         >
-                          <span style={{ fontWeight: 700, fontSize: 'var(--text-sm)', color: 'var(--color-neutral-500)', minWidth: 16 }}>
+                          <span
+                            style={{
+                              fontWeight: 700,
+                              fontSize: 'var(--text-sm)',
+                              color: 'var(--color-neutral-500)',
+                              minWidth: 16,
+                            }}
+                          >
                             A
                           </span>
                           <div>
-                            <div style={{ fontSize: 'var(--text-sm)', lineHeight: 1.5 }}>{a.answer}</div>
-                            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-neutral-400)', marginTop: 2 }}>
+                            <div style={{ fontSize: 'var(--text-sm)', lineHeight: 1.5 }}>
+                              {a.answer}
+                            </div>
+                            <div
+                              style={{
+                                fontSize: 'var(--text-xs)',
+                                color: 'var(--color-neutral-400)',
+                                marginTop: 2,
+                              }}
+                            >
                               {aName} · {new Date(a.createdAt).toLocaleDateString()}
                             </div>
                           </div>
@@ -473,7 +554,13 @@ function QASection({ productId }: { productId: string }) {
                     })}
 
                     {q.answers.length === 0 && (
-                      <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-neutral-400)', marginBottom: 8 }}>
+                      <p
+                        style={{
+                          fontSize: 'var(--text-sm)',
+                          color: 'var(--color-neutral-400)',
+                          marginBottom: 8,
+                        }}
+                      >
                         No answers yet.
                       </p>
                     )}
@@ -485,7 +572,9 @@ function QASection({ productId }: { productId: string }) {
                           className="form-control"
                           placeholder="Write an answer…"
                           value={answerText[q._id] ?? ''}
-                          onChange={(e) => setAnswerText((p) => ({ ...p, [q._id]: e.target.value }))}
+                          onChange={(e) =>
+                            setAnswerText((p) => ({ ...p, [q._id]: e.target.value }))
+                          }
                           style={{ flex: 1, fontSize: 'var(--text-sm)' }}
                         />
                         <button
@@ -507,7 +596,13 @@ function QASection({ productId }: { productId: string }) {
       })}
 
       {questions.length === 0 && (
-        <p style={{ color: 'var(--color-neutral-500)', fontSize: 'var(--text-sm)', marginBottom: '1rem' }}>
+        <p
+          style={{
+            color: 'var(--color-neutral-500)',
+            fontSize: 'var(--text-sm)',
+            marginBottom: '1rem',
+          }}
+        >
           No questions yet. Ask the first one!
         </p>
       )}
@@ -523,7 +618,14 @@ function QASection({ productId }: { productId: string }) {
             border: '1px solid var(--color-neutral-200)',
           }}
         >
-          <label style={{ fontWeight: 600, fontSize: 'var(--text-sm)', display: 'block', marginBottom: 8 }}>
+          <label
+            style={{
+              fontWeight: 600,
+              fontSize: 'var(--text-sm)',
+              display: 'block',
+              marginBottom: 8,
+            }}
+          >
             Ask a Question
           </label>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -548,7 +650,13 @@ function QASection({ productId }: { productId: string }) {
           </div>
         </form>
       ) : (
-        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-neutral-500)', marginTop: '0.75rem' }}>
+        <p
+          style={{
+            fontSize: 'var(--text-sm)',
+            color: 'var(--color-neutral-500)',
+            marginTop: '0.75rem',
+          }}
+        >
           <Link to="/login" style={{ color: 'var(--color-brand-accent)', fontWeight: 600 }}>
             Sign in
           </Link>{' '}
@@ -567,7 +675,9 @@ export default function ProductPage() {
   const [qty, setQty] = useState(1)
   const { data: fbt = [] } = useFrequentlyBoughtTogether(id ?? '', 8)
   const { mutate: trackBehavior } = useTrackBehavior()
-  const [fbtQuickView, setFbtQuickView] = useState<import('../../../shared/types/product.types.js').IProduct | null>(null)
+  const [fbtQuickView, setFbtQuickView] = useState<
+    import('../../../shared/types/product.types.js').IProduct | null
+  >(null)
 
   // Track recently viewed + view behaviour event (fire-and-forget)
   useEffect(() => {
@@ -785,7 +895,9 @@ export default function ProductPage() {
         <section style={{ marginTop: '2.5rem' }}>
           <div className="section-hd" style={{ marginBottom: '1rem' }}>
             <div>
-              <div className="section-hd__label" style={{ color: '#b45309' }}>Customers Also Bought</div>
+              <div className="section-hd__label" style={{ color: '#b45309' }}>
+                Customers Also Bought
+              </div>
               <h2 className="section-hd__title" style={{ fontSize: 'var(--text-xl)' }}>
                 Frequently Bought Together
               </h2>

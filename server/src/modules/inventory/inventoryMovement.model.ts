@@ -16,8 +16,18 @@ export interface IInventoryMovementDocument extends Document {
 
 const movementSchema = new mongoose.Schema<IInventoryMovementDocument>(
   {
-    productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true, index: true },
-    warehouseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Warehouse', required: true, index: true },
+    productId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Product',
+      required: true,
+      index: true,
+    },
+    warehouseId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Warehouse',
+      required: true,
+      index: true,
+    },
     toWarehouseId: { type: mongoose.Schema.Types.ObjectId, ref: 'Warehouse' },
     type: {
       type: String,

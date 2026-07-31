@@ -88,8 +88,11 @@ export const useStockIn = (productId: string) => {
       warehouseId,
       quantity,
       note,
-    }: { warehouseId: string; quantity: number; note?: string }) =>
-      inventoryService.stockIn(productId, warehouseId, quantity, note),
+    }: {
+      warehouseId: string
+      quantity: number
+      note?: string
+    }) => inventoryService.stockIn(productId, warehouseId, quantity, note),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: INVENTORY_KEYS.product(productId) })
       qc.invalidateQueries({ queryKey: INVENTORY_KEYS.all })
@@ -104,8 +107,11 @@ export const useStockOut = (productId: string) => {
       warehouseId,
       quantity,
       note,
-    }: { warehouseId: string; quantity: number; note?: string }) =>
-      inventoryService.stockOut(productId, warehouseId, quantity, note),
+    }: {
+      warehouseId: string
+      quantity: number
+      note?: string
+    }) => inventoryService.stockOut(productId, warehouseId, quantity, note),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: INVENTORY_KEYS.product(productId) })
       qc.invalidateQueries({ queryKey: INVENTORY_KEYS.all })
@@ -114,10 +120,7 @@ export const useStockOut = (productId: string) => {
 }
 
 // ── Movements ─────────────────────────────────────────────────────────────────
-export const useMovements = (
-  filter?: { productId?: string; warehouseId?: string },
-  page = 1,
-) =>
+export const useMovements = (filter?: { productId?: string; warehouseId?: string }, page = 1) =>
   useQuery({
     queryKey: INVENTORY_KEYS.movements(filter, page),
     queryFn: () => inventoryService.getMovements(filter, page),

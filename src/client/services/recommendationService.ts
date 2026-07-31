@@ -9,9 +9,7 @@ import type { ApiResponse } from '../../shared/types/api.types.js'
 export const recommendationService = {
   getHomeRecommendations: async (): Promise<IHomeRecommendations> => {
     const res = await api.get<ApiResponse<IHomeRecommendations>>('/recommendations/home')
-    return (
-      res.data.data ?? { bestSellers: [], newArrivals: [], personalizedForYou: [] }
-    )
+    return res.data.data ?? { bestSellers: [], newArrivals: [], personalizedForYou: [] }
   },
 
   getBestSellers: async (limit = 12, category?: string): Promise<IProduct[]> => {

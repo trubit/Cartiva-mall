@@ -113,9 +113,7 @@ describe('GET /recommendations/home', () => {
 describe('GET /recommendations/frequently-bought-together/:productId', () => {
   it('returns 200 with a products array for any productId', async () => {
     const fakeId = new mongoose.Types.ObjectId().toHexString()
-    const res = await request(app)
-      .get(`${REC}/frequently-bought-together/${fakeId}`)
-      .expect(200)
+    const res = await request(app).get(`${REC}/frequently-bought-together/${fakeId}`).expect(200)
     expect(res.body.success).toBe(true)
     expect(Array.isArray(res.body.data)).toBe(true)
     // No matching orders → empty array is valid
@@ -131,10 +129,7 @@ describe('GET /recommendations/personalized (auth required)', () => {
 
 describe('POST /recommendations/behavior (auth required)', () => {
   it('returns 401 without auth token', async () => {
-    const res = await request(app)
-      .post(`${REC}/behavior`)
-      .send({ eventType: 'view' })
-      .expect(401)
+    const res = await request(app).post(`${REC}/behavior`).send({ eventType: 'view' }).expect(401)
     expect(res.body.success).toBe(false)
   })
 })

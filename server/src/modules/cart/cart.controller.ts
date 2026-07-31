@@ -82,10 +82,7 @@ export const saveForLater = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const cart = await cartService.saveForLater(
-      req.user!.userId,
-      req.params['productId'] as string,
-    )
+    const cart = await cartService.saveForLater(req.user!.userId, req.params['productId'] as string)
     sendSuccess(res, cart, 'Item saved for later')
   } catch (err) {
     next(err)

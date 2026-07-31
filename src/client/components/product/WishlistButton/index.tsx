@@ -10,7 +10,11 @@ interface WishlistButtonProps {
   className?: string
 }
 
-export default function WishlistButton({ productId, size = 16, className = '' }: WishlistButtonProps) {
+export default function WishlistButton({
+  productId,
+  size = 16,
+  className = '',
+}: WishlistButtonProps) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const [inWishlist, setInWishlist] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -18,7 +22,10 @@ export default function WishlistButton({ productId, size = 16, className = '' }:
 
   useEffect(() => {
     if (!isAuthenticated) return
-    dashboardService.checkWishlist(productId).then(setInWishlist).catch(() => {})
+    dashboardService
+      .checkWishlist(productId)
+      .then(setInWishlist)
+      .catch(() => {})
   }, [productId, isAuthenticated])
 
   const toggle = async (e: React.MouseEvent) => {
@@ -65,10 +72,7 @@ export default function WishlistButton({ productId, size = 16, className = '' }:
         transform: loading ? 'scale(0.9)' : 'scale(1)',
       }}
     >
-      <FiHeart
-        size={size}
-        fill={inWishlist ? '#e53e3e' : 'none'}
-      />
+      <FiHeart size={size} fill={inWishlist ? '#e53e3e' : 'none'} />
     </button>
   )
 }

@@ -109,7 +109,14 @@ export default function AdminInventory() {
 
   return (
     <div style={{ padding: '1.5rem' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: '1.5rem',
+        }}
+      >
         <h1 style={{ fontWeight: 700, fontSize: 'var(--text-xl)' }}>Inventory Management</h1>
         {tab === 'warehouses' && (
           <button
@@ -160,9 +167,19 @@ export default function AdminInventory() {
           <h3 style={{ fontWeight: 700, marginBottom: '1rem' }}>
             {editingWh ? 'Edit Warehouse' : 'New Warehouse'}
           </h3>
-          <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+          <form
+            onSubmit={handleSubmit}
+            style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}
+          >
             <div>
-              <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
+              <label
+                style={{
+                  fontSize: 'var(--text-xs)',
+                  fontWeight: 600,
+                  display: 'block',
+                  marginBottom: 4,
+                }}
+              >
                 Name *
               </label>
               <input
@@ -174,7 +191,14 @@ export default function AdminInventory() {
               />
             </div>
             <div>
-              <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
+              <label
+                style={{
+                  fontSize: 'var(--text-xs)',
+                  fontWeight: 600,
+                  display: 'block',
+                  marginBottom: 4,
+                }}
+              >
                 Code *
               </label>
               <input
@@ -187,7 +211,14 @@ export default function AdminInventory() {
               />
             </div>
             <div>
-              <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
+              <label
+                style={{
+                  fontSize: 'var(--text-xs)',
+                  fontWeight: 600,
+                  display: 'block',
+                  marginBottom: 4,
+                }}
+              >
                 City
               </label>
               <input
@@ -198,7 +229,14 @@ export default function AdminInventory() {
               />
             </div>
             <div>
-              <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
+              <label
+                style={{
+                  fontSize: 'var(--text-xs)',
+                  fontWeight: 600,
+                  display: 'block',
+                  marginBottom: 4,
+                }}
+              >
                 Country
               </label>
               <input
@@ -209,7 +247,14 @@ export default function AdminInventory() {
               />
             </div>
             <div>
-              <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
+              <label
+                style={{
+                  fontSize: 'var(--text-xs)',
+                  fontWeight: 600,
+                  display: 'block',
+                  marginBottom: 4,
+                }}
+              >
                 Capacity (units)
               </label>
               <input
@@ -242,7 +287,10 @@ export default function AdminInventory() {
             </p>
           )}
           {warehouses.map((wh) => (
-            <div key={wh._id} style={{ ...cardStyle, display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div
+              key={wh._id}
+              style={{ ...cardStyle, display: 'flex', alignItems: 'center', gap: '1rem' }}
+            >
               <div
                 style={{
                   width: 40,
@@ -260,7 +308,8 @@ export default function AdminInventory() {
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 700 }}>{wh.name}</div>
                 <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-neutral-500)' }}>
-                  {wh.code} · {wh.address.city}{wh.address.country ? `, ${wh.address.country}` : ''}
+                  {wh.code} · {wh.address.city}
+                  {wh.address.country ? `, ${wh.address.country}` : ''}
                   {wh.capacity > 0 ? ` · ${wh.capacity.toLocaleString()} units capacity` : ''}
                 </div>
               </div>
@@ -323,7 +372,10 @@ export default function AdminInventory() {
             const prod = typeof alert.productId === 'object' ? alert.productId : null
             const wh = typeof alert.warehouseId === 'object' ? alert.warehouseId : null
             return (
-              <div key={alert._id} style={{ ...cardStyle, display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div
+                key={alert._id}
+                style={{ ...cardStyle, display: 'flex', alignItems: 'center', gap: '1rem' }}
+              >
                 <div
                   style={{
                     width: 10,
@@ -385,7 +437,10 @@ export default function AdminInventory() {
             <thead>
               <tr style={{ borderBottom: '2px solid var(--color-neutral-100)' }}>
                 {['Product', 'Warehouse', 'Type', 'Qty', 'Note', 'By', 'Date'].map((h) => (
-                  <th key={h} style={{ padding: '0.5rem 0.75rem', textAlign: 'left', fontWeight: 600 }}>
+                  <th
+                    key={h}
+                    style={{ padding: '0.5rem 0.75rem', textAlign: 'left', fontWeight: 600 }}
+                  >
                     {h}
                   </th>
                 ))}
@@ -394,7 +449,14 @@ export default function AdminInventory() {
             <tbody>
               {movements.length === 0 && (
                 <tr>
-                  <td colSpan={7} style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-neutral-400)' }}>
+                  <td
+                    colSpan={7}
+                    style={{
+                      padding: '2rem',
+                      textAlign: 'center',
+                      color: 'var(--color-neutral-400)',
+                    }}
+                  >
                     No movements yet.
                   </td>
                 </tr>
@@ -432,7 +494,8 @@ export default function AdminInventory() {
                       </span>
                     </td>
                     <td style={{ padding: '0.5rem 0.75rem', fontVariantNumeric: 'tabular-nums' }}>
-                      {m.quantity > 0 ? '+' : ''}{m.quantity}
+                      {m.quantity > 0 ? '+' : ''}
+                      {m.quantity}
                     </td>
                     <td style={{ padding: '0.5rem 0.75rem', color: 'var(--color-neutral-500)' }}>
                       {m.note ?? '—'}
@@ -440,7 +503,13 @@ export default function AdminInventory() {
                     <td style={{ padding: '0.5rem 0.75rem' }}>
                       {by ? `${by.firstName} ${by.lastName}` : '—'}
                     </td>
-                    <td style={{ padding: '0.5rem 0.75rem', color: 'var(--color-neutral-400)', fontSize: 'var(--text-xs)' }}>
+                    <td
+                      style={{
+                        padding: '0.5rem 0.75rem',
+                        color: 'var(--color-neutral-400)',
+                        fontSize: 'var(--text-xs)',
+                      }}
+                    >
                       {new Date(m.createdAt).toLocaleDateString()}
                     </td>
                   </tr>

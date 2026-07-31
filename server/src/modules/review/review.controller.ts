@@ -95,7 +95,11 @@ export const createQuestion = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const q = await addQuestion(req.params['id'] as string, req.user!.userId, req.body.question as string)
+    const q = await addQuestion(
+      req.params['id'] as string,
+      req.user!.userId,
+      req.body.question as string,
+    )
     sendCreated(res, q, 'Question submitted')
   } catch (err) {
     next(err)
@@ -108,7 +112,11 @@ export const createAnswer = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const q = await addAnswer(req.params['questionId'] as string, req.user!.userId, req.body.answer as string)
+    const q = await addAnswer(
+      req.params['questionId'] as string,
+      req.user!.userId,
+      req.body.answer as string,
+    )
     sendCreated(res, q, 'Answer submitted')
   } catch (err) {
     next(err)

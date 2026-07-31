@@ -20,7 +20,14 @@ export interface IWarehouseDocument extends Document {
 const warehouseSchema = new mongoose.Schema<IWarehouseDocument>(
   {
     name: { type: String, required: true, trim: true, maxlength: 120 },
-    code: { type: String, required: true, trim: true, unique: true, uppercase: true, maxlength: 20 },
+    code: {
+      type: String,
+      required: true,
+      trim: true,
+      unique: true,
+      uppercase: true,
+      maxlength: 20,
+    },
     address: {
       street: { type: String, default: '' },
       city: { type: String, default: '' },

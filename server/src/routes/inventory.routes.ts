@@ -31,7 +31,11 @@ router.get('/product/:productId', authorize('seller', 'admin'), productInventory
 router.get('/warehouse/:warehouseId', authorize('seller', 'admin'), warehouseInventory)
 router.post('/set', authorize('seller', 'admin'), setInventory)
 router.post('/product/:productId/warehouse/:warehouseId/in', authorize('seller', 'admin'), stockIn)
-router.post('/product/:productId/warehouse/:warehouseId/out', authorize('seller', 'admin'), stockOut)
+router.post(
+  '/product/:productId/warehouse/:warehouseId/out',
+  authorize('seller', 'admin'),
+  stockOut,
+)
 
 // ─── Movements ────────────────────────────────────────────────────────────────
 router.get('/movements', authorize('seller', 'admin'), listMovements)

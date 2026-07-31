@@ -15,7 +15,14 @@ function CountdownTimer({ endDate }: { endDate: string }) {
   const m = Math.floor((diff % 3600000) / 60000)
   const s = Math.floor((diff % 60000) / 1000)
   return (
-    <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 'var(--text-xs)', color: '#ef4444', fontWeight: 700 }}>
+    <span
+      style={{
+        fontVariantNumeric: 'tabular-nums',
+        fontSize: 'var(--text-xs)',
+        color: '#ef4444',
+        fontWeight: 700,
+      }}
+    >
       {String(h).padStart(2, '0')}:{String(m).padStart(2, '0')}:{String(s).padStart(2, '0')}
     </span>
   )
@@ -79,7 +86,15 @@ function PromotionBanner({ promo }: { promo: IPromotion }) {
             {discountLabel}
           </span>
           {isFlash && (
-            <span style={{ display: 'flex', alignItems: 'center', gap: 6, opacity: 0.9, fontSize: 'var(--text-sm)' }}>
+            <span
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                opacity: 0.9,
+                fontSize: 'var(--text-sm)',
+              }}
+            >
               Ends in: <CountdownTimer endDate={promo.endDate} />
             </span>
           )}
@@ -189,7 +204,10 @@ export default function DealsPage() {
 
       {!isLoading && promotions.length === 0 && (
         <div style={{ textAlign: 'center', padding: '5rem 0', color: 'var(--color-neutral-400)' }}>
-          <FiTag size={48} style={{ marginBottom: '1rem', display: 'block', margin: '0 auto 1rem' }} />
+          <FiTag
+            size={48}
+            style={{ marginBottom: '1rem', display: 'block', margin: '0 auto 1rem' }}
+          />
           <p>No active promotions right now. Check back soon!</p>
           <Link
             to="/products"

@@ -455,7 +455,11 @@ export const getBrands = async (category?: string) => {
   const cached = await cacheGet<{ brand: string; count: number }[]>(cacheKey)
   if (cached) return cached
 
-  const match: Record<string, unknown> = { status: 'active', isActive: true, brand: { $nin: [null, ''] } }
+  const match: Record<string, unknown> = {
+    status: 'active',
+    isActive: true,
+    brand: { $nin: [null, ''] },
+  }
   if (category) match.category = category
 
   const result = await Product.aggregate<{ brand: string; count: number }>([

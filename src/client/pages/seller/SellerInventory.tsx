@@ -1,6 +1,11 @@
 import { useState } from 'react'
 import { FiPackage, FiPlusCircle, FiMinusCircle, FiActivity } from 'react-icons/fi'
-import { useWarehouses, useMovements, useStockAlerts, useResolveAlert } from '../../hooks/useInventory.js'
+import {
+  useWarehouses,
+  useMovements,
+  useStockAlerts,
+  useResolveAlert,
+} from '../../hooks/useInventory.js'
 import { inventoryService } from '../../services/inventoryService.js'
 import { useSellerProducts } from '../../hooks/useProducts.js'
 import { useQueryClient } from '@tanstack/react-query'
@@ -38,9 +43,19 @@ export default function SellerInventory() {
       if (action === 'set') {
         await inventoryService.setInventory(selectedProduct, selectedWarehouse, quantity, threshold)
       } else if (action === 'in') {
-        await inventoryService.stockIn(selectedProduct, selectedWarehouse, quantity, note || undefined)
+        await inventoryService.stockIn(
+          selectedProduct,
+          selectedWarehouse,
+          quantity,
+          note || undefined,
+        )
       } else {
-        await inventoryService.stockOut(selectedProduct, selectedWarehouse, quantity, note || undefined)
+        await inventoryService.stockOut(
+          selectedProduct,
+          selectedWarehouse,
+          quantity,
+          note || undefined,
+        )
       }
       setMessage('Stock updated successfully')
       void qc.invalidateQueries({ queryKey: INVENTORY_KEYS.all })
@@ -60,7 +75,14 @@ export default function SellerInventory() {
         Inventory Management
       </h1>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '1.5rem',
+          marginBottom: '2rem',
+        }}
+      >
         {/* Stock adjustment form */}
         <div
           style={{
@@ -70,13 +92,32 @@ export default function SellerInventory() {
             padding: '1.25rem',
           }}
         >
-          <h2 style={{ fontWeight: 700, fontSize: 'var(--text-base)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <h2
+            style={{
+              fontWeight: 700,
+              fontSize: 'var(--text-base)',
+              marginBottom: '1rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+            }}
+          >
             <FiPackage size={16} /> Update Stock
           </h2>
 
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <form
+            onSubmit={handleSubmit}
+            style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}
+          >
             <div>
-              <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
+              <label
+                style={{
+                  fontSize: 'var(--text-xs)',
+                  fontWeight: 600,
+                  display: 'block',
+                  marginBottom: 4,
+                }}
+              >
                 Product
               </label>
               <select
@@ -95,7 +136,14 @@ export default function SellerInventory() {
             </div>
 
             <div>
-              <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
+              <label
+                style={{
+                  fontSize: 'var(--text-xs)',
+                  fontWeight: 600,
+                  display: 'block',
+                  marginBottom: 4,
+                }}
+              >
                 Warehouse
               </label>
               {warehouses.length === 0 ? (
@@ -120,7 +168,14 @@ export default function SellerInventory() {
             </div>
 
             <div>
-              <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
+              <label
+                style={{
+                  fontSize: 'var(--text-xs)',
+                  fontWeight: 600,
+                  display: 'block',
+                  marginBottom: 4,
+                }}
+              >
                 Action
               </label>
               <div style={{ display: 'flex', gap: 8 }}>
@@ -142,9 +197,15 @@ export default function SellerInventory() {
                     }}
                   >
                     {a === 'in' ? (
-                      <><FiPlusCircle size={12} style={{ marginRight: 4 }} />Stock In</>
+                      <>
+                        <FiPlusCircle size={12} style={{ marginRight: 4 }} />
+                        Stock In
+                      </>
                     ) : a === 'out' ? (
-                      <><FiMinusCircle size={12} style={{ marginRight: 4 }} />Stock Out</>
+                      <>
+                        <FiMinusCircle size={12} style={{ marginRight: 4 }} />
+                        Stock Out
+                      </>
                     ) : (
                       'Set Quantity'
                     )}
@@ -154,7 +215,14 @@ export default function SellerInventory() {
             </div>
 
             <div>
-              <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
+              <label
+                style={{
+                  fontSize: 'var(--text-xs)',
+                  fontWeight: 600,
+                  display: 'block',
+                  marginBottom: 4,
+                }}
+              >
                 Quantity
               </label>
               <input
@@ -169,7 +237,14 @@ export default function SellerInventory() {
 
             {action === 'set' && (
               <div>
-                <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
+                <label
+                  style={{
+                    fontSize: 'var(--text-xs)',
+                    fontWeight: 600,
+                    display: 'block',
+                    marginBottom: 4,
+                  }}
+                >
                   Low Stock Threshold
                 </label>
                 <input
@@ -184,7 +259,14 @@ export default function SellerInventory() {
 
             {action !== 'set' && (
               <div>
-                <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, display: 'block', marginBottom: 4 }}>
+                <label
+                  style={{
+                    fontSize: 'var(--text-xs)',
+                    fontWeight: 600,
+                    display: 'block',
+                    marginBottom: 4,
+                  }}
+                >
                   Note (optional)
                 </label>
                 <input
@@ -258,9 +340,19 @@ export default function SellerInventory() {
                     borderBottom: '1px solid var(--color-neutral-100)',
                   }}
                 >
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: colors[alert.alertType], flexShrink: 0 }} />
+                  <div
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      background: colors[alert.alertType],
+                      flexShrink: 0,
+                    }}
+                  />
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600 }}>{prod?.title ?? '—'}</div>
+                    <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600 }}>
+                      {prod?.title ?? '—'}
+                    </div>
                     <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-neutral-400)' }}>
                       {wh?.name} · {alert.currentQuantity} units
                     </div>
@@ -294,7 +386,16 @@ export default function SellerInventory() {
           padding: '1.25rem',
         }}
       >
-        <h2 style={{ fontWeight: 700, fontSize: 'var(--text-base)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <h2
+          style={{
+            fontWeight: 700,
+            fontSize: 'var(--text-base)',
+            marginBottom: '1rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+          }}
+        >
           <FiActivity size={15} /> Recent Movements
         </h2>
         <div style={{ overflowX: 'auto' }}>
@@ -302,14 +403,26 @@ export default function SellerInventory() {
             <thead>
               <tr style={{ borderBottom: '2px solid var(--color-neutral-100)' }}>
                 {['Product', 'Warehouse', 'Type', 'Qty', 'Note', 'Date'].map((h) => (
-                  <th key={h} style={{ padding: '0.4rem 0.75rem', textAlign: 'left', fontWeight: 600 }}>{h}</th>
+                  <th
+                    key={h}
+                    style={{ padding: '0.4rem 0.75rem', textAlign: 'left', fontWeight: 600 }}
+                  >
+                    {h}
+                  </th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {movements.length === 0 && (
                 <tr>
-                  <td colSpan={6} style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--color-neutral-400)' }}>
+                  <td
+                    colSpan={6}
+                    style={{
+                      padding: '1.5rem',
+                      textAlign: 'center',
+                      color: 'var(--color-neutral-400)',
+                    }}
+                  >
                     No movements yet.
                   </td>
                 </tr>
@@ -322,20 +435,40 @@ export default function SellerInventory() {
                     <td style={{ padding: '0.4rem 0.75rem' }}>{prod?.title ?? '—'}</td>
                     <td style={{ padding: '0.4rem 0.75rem' }}>{wh?.name ?? '—'}</td>
                     <td style={{ padding: '0.4rem 0.75rem' }}>
-                      <span style={{
-                        padding: '1px 6px',
-                        borderRadius: 'var(--radius-sm)',
-                        fontSize: 'var(--text-xs)',
-                        fontWeight: 600,
-                        background: m.type === 'in' ? 'var(--color-success-50)' : m.type === 'out' ? '#fee2e2' : 'var(--color-neutral-100)',
-                        color: m.type === 'in' ? 'var(--color-success)' : m.type === 'out' ? '#dc2626' : 'var(--color-neutral-500)',
-                      }}>
+                      <span
+                        style={{
+                          padding: '1px 6px',
+                          borderRadius: 'var(--radius-sm)',
+                          fontSize: 'var(--text-xs)',
+                          fontWeight: 600,
+                          background:
+                            m.type === 'in'
+                              ? 'var(--color-success-50)'
+                              : m.type === 'out'
+                                ? '#fee2e2'
+                                : 'var(--color-neutral-100)',
+                          color:
+                            m.type === 'in'
+                              ? 'var(--color-success)'
+                              : m.type === 'out'
+                                ? '#dc2626'
+                                : 'var(--color-neutral-500)',
+                        }}
+                      >
                         {m.type}
                       </span>
                     </td>
                     <td style={{ padding: '0.4rem 0.75rem' }}>{m.quantity}</td>
-                    <td style={{ padding: '0.4rem 0.75rem', color: 'var(--color-neutral-500)' }}>{m.note ?? '—'}</td>
-                    <td style={{ padding: '0.4rem 0.75rem', color: 'var(--color-neutral-400)', fontSize: 'var(--text-xs)' }}>
+                    <td style={{ padding: '0.4rem 0.75rem', color: 'var(--color-neutral-500)' }}>
+                      {m.note ?? '—'}
+                    </td>
+                    <td
+                      style={{
+                        padding: '0.4rem 0.75rem',
+                        color: 'var(--color-neutral-400)',
+                        fontSize: 'var(--text-xs)',
+                      }}
+                    >
                       {new Date(m.createdAt).toLocaleDateString()}
                     </td>
                   </tr>

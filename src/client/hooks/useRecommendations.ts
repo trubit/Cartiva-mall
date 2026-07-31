@@ -7,8 +7,7 @@ export const REC_KEYS = {
   bestSellers: (limit: number, category?: string) =>
     ['recommendations', 'best-sellers', limit, category ?? 'all'] as const,
   newArrivals: (limit: number) => ['recommendations', 'new-arrivals', limit] as const,
-  fbt: (productId: string, limit: number) =>
-    ['recommendations', 'fbt', productId, limit] as const,
+  fbt: (productId: string, limit: number) => ['recommendations', 'fbt', productId, limit] as const,
   personalized: (limit: number) => ['recommendations', 'personalized', limit] as const,
 }
 

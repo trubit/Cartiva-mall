@@ -1,7 +1,22 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { FiArrowRight, FiShoppingBag, FiTruck, FiRefreshCw, FiShield, FiTrendingUp, FiStar, FiZap, FiAward, FiPackage } from 'react-icons/fi'
-import { useFeaturedProducts, useTrendingProducts, useRecommendedProducts } from '../../hooks/useProducts.js'
+import {
+  FiArrowRight,
+  FiShoppingBag,
+  FiTruck,
+  FiRefreshCw,
+  FiShield,
+  FiTrendingUp,
+  FiStar,
+  FiZap,
+  FiAward,
+  FiPackage,
+} from 'react-icons/fi'
+import {
+  useFeaturedProducts,
+  useTrendingProducts,
+  useRecommendedProducts,
+} from '../../hooks/useProducts.js'
 import { useActivePromotions } from '../../hooks/usePromotions.js'
 import { useHomeRecommendations } from '../../hooks/useRecommendations.js'
 import { useAuthStore } from '../../store/authStore.js'
@@ -110,16 +125,13 @@ export default function HomePage() {
           <div className="container">
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {promotions.slice(0, 2).map((promo) => (
-                <Link
-                  key={promo._id}
-                  to="/deals"
-                  style={{ textDecoration: 'none' }}
-                >
+                <Link key={promo._id} to="/deals" style={{ textDecoration: 'none' }}>
                   <div
                     style={{
-                      background: promo.type === 'flash_sale'
-                        ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
-                        : 'linear-gradient(135deg, var(--color-brand-primary) 0%, var(--color-brand-accent) 100%)',
+                      background:
+                        promo.type === 'flash_sale'
+                          ? 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+                          : 'linear-gradient(135deg, var(--color-brand-primary) 0%, var(--color-brand-accent) 100%)',
                       borderRadius: 'var(--radius-lg)',
                       padding: '0.875rem 1.25rem',
                       color: '#fff',
@@ -130,22 +142,28 @@ export default function HomePage() {
                   >
                     <FiZap size={20} style={{ flexShrink: 0 }} />
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 700, fontSize: 'var(--text-sm)' }}>{promo.title}</div>
+                      <div style={{ fontWeight: 700, fontSize: 'var(--text-sm)' }}>
+                        {promo.title}
+                      </div>
                       {promo.description && (
                         <div style={{ opacity: 0.85, fontSize: 'var(--text-xs)', marginTop: 2 }}>
                           {promo.description}
                         </div>
                       )}
                     </div>
-                    <span style={{
-                      padding: '3px 12px',
-                      background: 'rgba(255,255,255,0.25)',
-                      borderRadius: 'var(--radius-full)',
-                      fontSize: 'var(--text-xs)',
-                      fontWeight: 700,
-                      whiteSpace: 'nowrap',
-                    }}>
-                      {promo.discountType === 'percentage' ? `${promo.discountValue}% off` : `$${promo.discountValue} off`}
+                    <span
+                      style={{
+                        padding: '3px 12px',
+                        background: 'rgba(255,255,255,0.25)',
+                        borderRadius: 'var(--radius-full)',
+                        fontSize: 'var(--text-xs)',
+                        fontWeight: 700,
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {promo.discountType === 'percentage'
+                        ? `${promo.discountValue}% off`
+                        : `$${promo.discountValue} off`}
                     </span>
                     <FiArrowRight size={14} style={{ flexShrink: 0 }} />
                   </div>

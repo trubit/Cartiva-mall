@@ -90,11 +90,7 @@ export const getInventoryForProduct = async (productId: string): Promise<IInvent
     .lean() as unknown as IInventoryDocument[]
 }
 
-export const getInventoryForWarehouse = async (
-  warehouseId: string,
-  page = 1,
-  limit = 20,
-) => {
+export const getInventoryForWarehouse = async (warehouseId: string, page = 1, limit = 20) => {
   if (!mongoose.isValidObjectId(warehouseId)) throw new AppError('Invalid warehouse ID', 400)
   const skip = (page - 1) * limit
   const [items, total] = await Promise.all([
@@ -123,7 +119,10 @@ export const upsertInventory = async (
   const wh = await Warehouse.findOne({ _id: warehouseId, isActive: true })
   if (!wh) throw new AppError('Warehouse not found or inactive', 404)
 
-  const existing = await Inventory.findOne({ productId: uid(productId), warehouseId: uid(warehouseId) })
+  const existing = await Inventory.findOne({
+    productId: uid(productId),
+    warehouseId: uid(warehouseId),
+  })
   const prevQty = existing?.quantity ?? 0
   const delta = quantity - prevQty
 
@@ -244,7 +243,9 @@ export const confirmReservation = async (
       await checkAndCreateAlerts(inv)
       const agg = await Inventory.aggregate<{ total: number }>([
         { $match: { productId: uid(item.productId) } },
-        { $group: { _id: null, total: { $sum: { $subtract: ['$quantity', '$reservedQuantity'] } } } },
+        {
+          $group: { _id: null, total: { $sum: { $subtract: ['$quantity', '$reservedQuantity'] } } },
+        },
       ])
       await Product.findByIdAndUpdate(item.productId, { stockQuantity: agg[0]?.total ?? 0 })
     }

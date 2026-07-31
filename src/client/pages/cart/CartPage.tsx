@@ -80,13 +80,24 @@ function SaveForLaterSection() {
               <img
                 src={getImageUrl(p.images[0])}
                 alt={p.title}
-                style={{ width: '100%', aspectRatio: '1/1', objectFit: 'cover', borderRadius: 'var(--radius-md)' }}
+                style={{
+                  width: '100%',
+                  aspectRatio: '1/1',
+                  objectFit: 'cover',
+                  borderRadius: 'var(--radius-md)',
+                }}
               />
             )}
             <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, lineHeight: 1.3 }}>
               {p.title}
             </div>
-            <div style={{ fontWeight: 700, color: 'var(--color-brand-accent)', fontSize: 'var(--text-sm)' }}>
+            <div
+              style={{
+                fontWeight: 700,
+                color: 'var(--color-brand-accent)',
+                fontSize: 'var(--text-sm)',
+              }}
+            >
               ${(p.discountPrice ?? p.price).toFixed(2)}
             </div>
             <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
