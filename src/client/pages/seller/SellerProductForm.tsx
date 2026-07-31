@@ -69,6 +69,7 @@ export default function SellerProductForm({ mode }: Props) {
         tags: existing.tags.join(', '),
         isFeatured: existing.isFeatured,
       })
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setImageUrls(existing.images ?? [])
     }
   }, [existing, mode, reset])

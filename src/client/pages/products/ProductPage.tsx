@@ -364,7 +364,7 @@ function QASection({ productId }: { productId: string }) {
   const toggleAnswers = (qId: string) => {
     setOpenAnswers((prev) => {
       const next = new Set(prev)
-      next.has(qId) ? next.delete(qId) : next.add(qId)
+      if (next.has(qId)) { next.delete(qId) } else { next.add(qId) }
       return next
     })
   }
@@ -581,7 +581,7 @@ export default function ProductPage() {
         })
       }
     }
-  }, [product?._id, isAuthenticated])
+  }, [product?._id, product?.category, isAuthenticated, trackBehavior])
 
   if (isLoading) {
     return (

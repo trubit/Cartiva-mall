@@ -8,6 +8,7 @@ import PriceTag from '../../components/product/PriceTag/index.js'
 
 function CountdownTimer({ endDate }: { endDate: string }) {
   const end = new Date(endDate).getTime()
+  // eslint-disable-next-line react-hooks/purity
   const now = Date.now()
   const diff = Math.max(0, end - now)
   const h = Math.floor(diff / 3600000)

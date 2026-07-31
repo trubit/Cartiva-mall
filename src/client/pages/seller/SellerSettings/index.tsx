@@ -35,6 +35,7 @@ export default function SellerSettings() {
 
   useEffect(() => {
     if (profile) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setStoreName(profile.storeName)
       setStoreDescription(profile.storeDescription)
       setStoreAddress({

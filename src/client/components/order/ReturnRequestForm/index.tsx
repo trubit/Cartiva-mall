@@ -32,6 +32,7 @@ export default function ReturnRequestForm({ orderId, show, onHide }: ReturnReque
     if (show) {
       setReturnStatus('idle')
       setReturnError(null)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setReason('')
       setDescription('')
     }

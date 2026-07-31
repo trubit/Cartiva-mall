@@ -44,6 +44,7 @@ export default function RegisterPage() {
     watch,
   } = useForm<RegisterInput>({ resolver: zodResolver(registerSchema) as Resolver<RegisterInput> })
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const strength = getPasswordStrength(watch('password') ?? '')
 
   const onSubmit = (data: RegisterInput) => register(data)

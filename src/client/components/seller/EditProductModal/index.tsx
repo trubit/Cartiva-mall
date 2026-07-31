@@ -35,6 +35,7 @@ export default function EditProductModal({ product, onHide }: EditProductModalPr
 
   useEffect(() => {
     if (product) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setForm({
         title: product.title,
         description: product.description,

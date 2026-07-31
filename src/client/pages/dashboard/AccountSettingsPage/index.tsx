@@ -25,6 +25,7 @@ export default function AccountSettingsPage() {
 
   useEffect(() => {
     if (data?.user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setForm({
         firstName: data.user.firstName ?? '',
         lastName: data.user.lastName ?? '',

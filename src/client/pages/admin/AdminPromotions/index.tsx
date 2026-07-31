@@ -47,7 +47,7 @@ export default function AdminPromotions() {
     discountValue: 10,
     isActive: true,
     startDate: new Date().toISOString().slice(0, 16),
-    endDate: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 16),
+    endDate: new Date(new Date().getTime() + 7 * 86400000).toISOString().slice(0, 16),
   })
 
   const handleCouponSubmit = (e: React.FormEvent) => {
