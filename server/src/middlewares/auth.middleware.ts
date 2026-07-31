@@ -48,8 +48,9 @@ export const authenticate = async (
   try {
     const authHeader = req.headers.authorization
     const tokenFromHeader = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
+    const tokenFromCookie = (req.cookies as Record<string, string> | undefined)?.access_token
 
-    const token = tokenFromHeader
+    const token = tokenFromHeader ?? tokenFromCookie ?? null
     if (!token) throw new AppError('Authentication required', 401)
 
     const payload = await verifyWithCache(token)
