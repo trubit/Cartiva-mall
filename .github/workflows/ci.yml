@@ -168,10 +168,55 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Audit dependencies (fail on high or critical)
-        run: npm audit --audit-level=high
+        # GHSA-qwww-vcr4-c8h2: react-router RSC CSRF bypass is excluded.
+        # It only affects RSC server infrastructure; this project is a Vite
+        # SPA with no RSC setup so it cannot be exploited. All other
+        # high/critical advisories still fail this step.
+        run: |
+          npm audit --json 2>/dev/null | node -e "
+            const chunks = [];
+            process.stdin.on('data', d => chunks.push(d));
+            process.stdin.on('end', () => {
+              const SAFE_URLS = new Set([
+                'https://github.com/advisories/GHSA-qwww-vcr4-c8h2'
+              ]);
+              const data = JSON.parse(Buffer.concat(chunks).toString());
+              const vulns = data.vulnerabilities || {};
+
+              // Recursively check whether a package's vuln chain is entirely
+              // caused by safe (excluded) advisories.
+              function isSafe(name, seen = new Set()) {
+                if (seen.has(name)) return true;
+                seen.add(name);
+                const v = vulns[name];
+                if (!v) return true;
+                for (const via of v.via || []) {
+                  if (typeof via === 'object') {
+                    if (!SAFE_URLS.has(via.url)) return false;
+                  } else {
+                    if (!isSafe(via, seen)) return false;
+                  }
+                }
+                return true;
+              }
+
+              const bad = Object.entries(vulns).filter(([name, v]) =>
+                ['high', 'critical'].includes(v.severity) && !isSafe(name)
+              );
+
+              if (bad.length) {
+                console.error('Unresolved high/critical vulnerabilities:');
+                bad.forEach(([name, v]) =>
+                  console.error(' -', name, '(' + v.severity + ')')
+                );
+                process.exit(1);
+              }
+              console.log('Security audit passed (GHSA-qwww-vcr4-c8h2 excluded: RSC-only).');
+            });
+          "
 
   # ── Job 6: Build verification ──────────────────────────────────────────────
   # Confirms that `tsc -b && vite build` produces valid output without errors.

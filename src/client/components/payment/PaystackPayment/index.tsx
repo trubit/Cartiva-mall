@@ -61,6 +61,7 @@ export default function PaystackPayment({ orderId, amount }: Props) {
   const verify = usePaystackVerify()
 
   const [scriptReady, setScriptReady] = useState(false)
+  const [currency, setCurrency] = useState('NGN')
   const paystackDataRef = useRef<PaystackInitResponse | null>(null)
 
   useEffect(() => {
@@ -102,6 +103,7 @@ export default function PaystackPayment({ orderId, amount }: Props) {
 
     const data = await initialize.mutateAsync({ orderId, email: user.email })
     paystackDataRef.current = data
+    setCurrency(data.currency ?? 'NGN')
     setStep('form')
     openPopup(data)
   }
@@ -157,7 +159,7 @@ export default function PaystackPayment({ orderId, amount }: Props) {
           Pay{' '}
           {new Intl.NumberFormat(undefined, {
             style: 'currency',
-            currency: paystackDataRef.current?.currency ?? 'NGN',
+            currency,
           }).format(amount)}
         </button>
       )}
