@@ -352,3 +352,145 @@ export const getFeaturedProducts = async (limit = 12) => {
   await cacheSet(cacheKey, products, TTL.FEATURED)
   return products
 }
+
+// ─── Trending products (highest view count among active products) ─────────────
+export const getTrendingProducts = async (limit = 12) => {
+  const cacheKey = `products:trending:${limit}`
+  const cached = await cacheGet<IProductDocument[]>(cacheKey)
+  if (cached) return cached
+
+  const products = await Product.find({ status: 'active', isActive: true, views: { $gt: 0 } })
+    .sort({ views: -1, ratingsAverage: -1 })
+    .limit(limit)
+    .populate('sellerId', 'firstName lastName username')
+    .lean({ virtuals: true })
+
+  await cacheSet(cacheKey, products, 120) // 2 min
+  return products
+}
+
+// ─── Recommended products (high-rating active products) ───────────────────────
+export const getRecommendedProducts = async (limit = 12) => {
+  const cacheKey = `products:recommended:${limit}`
+  const cached = await cacheGet<IProductDocument[]>(cacheKey)
+  if (cached) return cached
+
+  const products = await Product.find({
+    status: 'active',
+    isActive: true,
+    ratingsAverage: { $gte: 4 },
+    ratingsCount: { $gte: 1 },
+  })
+    .sort({ ratingsAverage: -1, views: -1 })
+    .limit(limit)
+    .populate('sellerId', 'firstName lastName username')
+    .lean({ virtuals: true })
+
+  // Fallback: if fewer than requested, fill with newest active products
+  if (products.length < limit) {
+    const needed = limit - products.length
+    const existingIds = products.map((p) => (p as unknown as { _id: mongoose.Types.ObjectId })._id)
+    const extras = await Product.find({
+      status: 'active',
+      isActive: true,
+      _id: { $nin: existingIds },
+    } as object)
+      .sort({ createdAt: -1 })
+      .limit(needed)
+      .populate('sellerId', 'firstName lastName username')
+      .lean({ virtuals: true })
+    products.push(...extras)
+  }
+
+  await cacheSet(cacheKey, products, 300)
+  return products
+}
+
+// ─── Related products (same category, excluding current product) ──────────────
+export const getRelatedProducts = async (productId: string, limit = 8) => {
+  if (!mongoose.isValidObjectId(productId)) throw new AppError('Invalid product ID', 400)
+
+  const product = await Product.findOne({ _id: productId, status: 'active', isActive: true }).lean()
+  if (!product) throw new AppError('Product not found', 404)
+
+  const cacheKey = `products:related:${productId}:${limit}`
+  const cached = await cacheGet<IProductDocument[]>(cacheKey)
+  if (cached) return cached
+
+  const related = await Product.find({
+    status: 'active',
+    isActive: true,
+    _id: { $ne: new mongoose.Types.ObjectId(productId) },
+    category: product.category,
+  })
+    .sort({ ratingsAverage: -1, views: -1 })
+    .limit(limit)
+    .populate('sellerId', 'firstName lastName username')
+    .lean({ virtuals: true })
+
+  await cacheSet(cacheKey, related, 180)
+  return related
+}
+
+// ─── List all active categories with product counts ───────────────────────────
+export const getCategories = async () => {
+  const cacheKey = 'products:categories'
+  const cached = await cacheGet<{ category: string; count: number }[]>(cacheKey)
+  if (cached) return cached
+
+  const result = await Product.aggregate<{ category: string; count: number }>([
+    { $match: { status: 'active', isActive: true } },
+    { $group: { _id: '$category', count: { $sum: 1 } } },
+    { $sort: { count: -1 } },
+    { $project: { _id: 0, category: '$_id', count: 1 } },
+  ])
+
+  await cacheSet(cacheKey, result, 300)
+  return result
+}
+
+// ─── List all active brands (optionally filtered by category) ─────────────────
+export const getBrands = async (category?: string) => {
+  const cacheKey = `products:brands:${category ?? 'all'}`
+  const cached = await cacheGet<{ brand: string; count: number }[]>(cacheKey)
+  if (cached) return cached
+
+  const match: Record<string, unknown> = { status: 'active', isActive: true, brand: { $nin: [null, ''] } }
+  if (category) match.category = category
+
+  const result = await Product.aggregate<{ brand: string; count: number }>([
+    { $match: match },
+    { $group: { _id: '$brand', count: { $sum: 1 } } },
+    { $sort: { count: -1 } },
+    { $limit: 50 },
+    { $project: { _id: 0, brand: '$_id', count: 1 } },
+  ])
+
+  await cacheSet(cacheKey, result, 300)
+  return result
+}
+
+// ─── Autocomplete suggestions (fast title/brand prefix search) ────────────────
+export const getSearchSuggestions = async (q: string, limit = 8): Promise<string[]> => {
+  if (!q || q.trim().length < 1) return []
+
+  const safe = q.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const cacheKey = `products:suggestions:${safe.toLowerCase()}:${limit}`
+  const cached = await cacheGet<string[]>(cacheKey)
+  if (cached) return cached
+
+  const docs = await Product.find(
+    {
+      status: 'active',
+      isActive: true,
+      title: { $regex: safe, $options: 'i' },
+    },
+    { title: 1 },
+  )
+    .limit(limit)
+    .lean()
+
+  const suggestions = [...new Set(docs.map((d) => d.title))].slice(0, limit)
+  await cacheSet(cacheKey, suggestions, 60)
+  return suggestions
+}

@@ -2,6 +2,7 @@ import mongoose from 'mongoose'
 import { Cart, type ICartDocument } from './cart.model.js'
 import { Checkout } from '../checkout/checkout.model.js'
 import { Product } from '../product/product.model.js'
+import { SaveForLater } from '../saveForLater/saveForLater.model.js'
 import { AppError } from '../../middlewares/error.middleware.js'
 import type {
   AddToCartInput,
@@ -173,6 +174,103 @@ export const clearCart = async (userId: string): Promise<ICartDocument> => {
   await cart.save()
   void invalidateCheckout(userId)
   return cart
+}
+
+// ─── POST /cart/save-for-later ────────────────────────────────────────────────
+export const saveForLater = async (userId: string, productId: string): Promise<ICartDocument> => {
+  if (!mongoose.isValidObjectId(productId)) throw new AppError('Invalid product ID', 400)
+
+  const cart = await Cart.findOne({ userId: uid(userId) })
+  if (!cart) throw new AppError('Cart not found', 404)
+
+  const itemIdx = cart.items.findIndex((i) => i.productId.toString() === productId)
+  if (itemIdx < 0) throw new AppError('Item not in cart', 404)
+
+  cart.items.splice(itemIdx, 1)
+  recalculate(cart)
+  await cart.save()
+  void invalidateCheckout(userId)
+
+  // Add to save-for-later list (dedup)
+  await SaveForLater.findOneAndUpdate(
+    { userId: uid(userId) },
+    {
+      $setOnInsert: { userId: uid(userId) },
+      $addToSet: { items: { productId: new mongoose.Types.ObjectId(productId), savedAt: new Date() } },
+    },
+    { upsert: true },
+  )
+
+  await cart.populate('items.productId', PRODUCT_POPULATE)
+  return cart
+}
+
+// ─── GET /cart/save-for-later ─────────────────────────────────────────────────
+export const getSavedItems = async (userId: string) => {
+  const doc = await SaveForLater.findOne({ userId: uid(userId) })
+    .populate('items.productId', PRODUCT_POPULATE)
+    .lean()
+  return doc?.items ?? []
+}
+
+// ─── POST /cart/restore ───────────────────────────────────────────────────────
+export const restoreSavedItem = async (
+  userId: string,
+  productId: string,
+): Promise<ICartDocument> => {
+  if (!mongoose.isValidObjectId(productId)) throw new AppError('Invalid product ID', 400)
+
+  const sfl = await SaveForLater.findOne({ userId: uid(userId) })
+  if (!sfl) throw new AppError('No saved items', 404)
+
+  const itemIdx = sfl.items.findIndex((i) => i.productId.toString() === productId)
+  if (itemIdx < 0) throw new AppError('Item not in saved list', 404)
+
+  // Verify product still active
+  const product = await Product.findOne({ _id: productId, status: 'active', isActive: true })
+  if (!product) throw new AppError('Product no longer available', 404)
+
+  const effectivePrice =
+    product.discountPrice && product.discountPrice < product.price
+      ? product.discountPrice
+      : product.price
+
+  sfl.items.splice(itemIdx, 1)
+  await sfl.save()
+
+  let cart = await Cart.findOne({ userId: uid(userId) })
+  if (!cart) cart = new Cart({ userId: uid(userId), items: [] })
+
+  const existing = cart.items.findIndex((i) => i.productId.toString() === productId)
+  if (existing >= 0) {
+    cart.items[existing].quantity = Math.min(
+      cart.items[existing].quantity + 1,
+      product.stockQuantity,
+    )
+  } else {
+    if (cart.items.length >= MAX_CART_ITEMS)
+      throw new AppError(`Cart cannot exceed ${MAX_CART_ITEMS} items`, 400)
+    cart.items.push({
+      productId: new mongoose.Types.ObjectId(productId),
+      quantity: 1,
+      itemPrice: effectivePrice,
+    })
+  }
+
+  recalculate(cart)
+  await cart.save()
+  void invalidateCheckout(userId)
+  await cart.populate('items.productId', PRODUCT_POPULATE)
+  return cart
+}
+
+// ─── DELETE /cart/save-for-later/:productId ───────────────────────────────────
+export const removeSavedItem = async (userId: string, productId: string): Promise<void> => {
+  if (!mongoose.isValidObjectId(productId)) throw new AppError('Invalid product ID', 400)
+  await SaveForLater.findOneAndUpdate(
+    { userId: uid(userId) },
+    { $pull: { items: { productId: new mongoose.Types.ObjectId(productId) } } },
+  )
 }
 
 // ─── POST /cart/sync  (guest → server merge on login) ────────────────────────

@@ -43,6 +43,27 @@ export const dashboardService = {
       .then((res: { data: { data: { inWishlist: boolean } } }) => res.data.data.inWishlist)
   },
 
+  moveWishlistToCart(productId: string): Promise<unknown> {
+    return api.post(`/dashboard/wishlist/${productId}/move-to-cart`).then(unwrap)
+  },
+
+  // ── Save for Later ────────────────────────────────────────────────────────────
+  getSavedItems(): Promise<IProduct[]> {
+    return api.get('/cart/save-for-later').then(unwrap<IProduct[]>)
+  },
+
+  saveForLater(productId: string): Promise<unknown> {
+    return api.post(`/cart/save-for-later/${productId}`).then(unwrap)
+  },
+
+  restoreSavedItem(productId: string): Promise<unknown> {
+    return api.post(`/cart/restore/${productId}`).then(unwrap)
+  },
+
+  removeSavedItem(productId: string): Promise<void> {
+    return api.delete(`/cart/save-for-later/${productId}`).then(() => undefined)
+  },
+
   // ── Notifications ─────────────────────────────────────────────────────────────
   getNotifications(params?: { page?: number; limit?: number }): Promise<{
     data: { notifications: INotification[]; total: number; unread: number }

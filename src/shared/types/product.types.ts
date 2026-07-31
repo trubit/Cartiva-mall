@@ -36,8 +36,29 @@ export interface IReview {
   title?: string
   body: string
   isVerified: boolean
+  helpfulVotes: string[]
+  reportedBy: string[]
+  sellerReply?: string
+  sellerReplyAt?: string
   createdAt: string
   updatedAt: string
+}
+
+export interface IAnswer {
+  _id: string
+  userId: string | IPublicUser
+  answer: string
+  likes: string[]
+  createdAt: string
+}
+
+export interface IQuestion {
+  _id: string
+  productId: string
+  userId: string | IPublicUser
+  question: string
+  answers: IAnswer[]
+  createdAt: string
 }
 
 export interface ProductFilters {

@@ -2,6 +2,18 @@ import { Router } from 'express'
 import { authenticate, authorize } from '../middlewares/auth.middleware.js'
 import * as adminController from '../modules/admin/admin.controller.js'
 import { approve, block } from '../modules/product/product.controller.js'
+import {
+  listCoupons,
+  createCoupon,
+  updateCoupon,
+  deleteCoupon,
+  toggleCoupon,
+  listPromotions,
+  createPromotion,
+  updatePromotion,
+  deletePromotion,
+  togglePromotion,
+} from '../modules/coupon/coupon.controller.js'
 import { dashboardLimiter, adminLimiter } from '../middlewares/rateLimiter.middleware.js'
 import { validate } from '../middlewares/validate.middleware.js'
 import { z } from 'zod'
@@ -65,5 +77,19 @@ router.get('/audit-logs', adminController.getAuditLogs)
 
 // ─── Reports ──────────────────────────────────────────────────────────────────
 router.get('/reports', dashboardLimiter, adminController.getReports)
+
+// ─── Coupons ──────────────────────────────────────────────────────────────────
+router.get('/coupons', listCoupons)
+router.post('/coupons', createCoupon)
+router.put('/coupons/:id', updateCoupon)
+router.delete('/coupons/:id', deleteCoupon)
+router.patch('/coupons/:id/toggle', toggleCoupon)
+
+// ─── Promotions ───────────────────────────────────────────────────────────────
+router.get('/promotions', listPromotions)
+router.post('/promotions', createPromotion)
+router.put('/promotions/:id', updatePromotion)
+router.delete('/promotions/:id', deletePromotion)
+router.patch('/promotions/:id/toggle', togglePromotion)
 
 export default router

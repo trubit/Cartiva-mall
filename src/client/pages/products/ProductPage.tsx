@@ -1,23 +1,53 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { FiShoppingCart, FiMinus, FiPlus, FiArrowLeft } from 'react-icons/fi'
-import { useProduct, useProductReviews, useAddReview } from '../../hooks/useProducts.js'
+import {
+  FiShoppingCart,
+  FiMinus,
+  FiPlus,
+  FiArrowLeft,
+  FiThumbsUp,
+  FiFlag,
+  FiMessageCircle,
+  FiChevronDown,
+  FiChevronUp,
+} from 'react-icons/fi'
+import {
+  useProduct,
+  useProductReviews,
+  useAddReview,
+  useVoteHelpful,
+  useReportReview,
+  useQuestions,
+  useAddQuestion,
+  useAddAnswer,
+} from '../../hooks/useProducts.js'
 import { useAuthStore } from '../../store/authStore.js'
 import { useCart } from '../../hooks/useCart.js'
 import ImageGallery from '../../components/product/ImageGallery/index.js'
 import RatingStars from '../../components/product/RatingStars/index.js'
 import PriceTag from '../../components/product/PriceTag/index.js'
 import ProductBadges from '../../components/product/Badge/index.js'
+import RelatedProducts from '../../components/product/RelatedProducts/index.js'
+import QuickViewModal from '../../components/product/QuickViewModal/index.js'
+import { dashboardService } from '../../services/dashboardService.js'
+import type { IQuestion } from '../../../shared/types/product.types.js'
+import { useFrequentlyBoughtTogether, useTrackBehavior } from '../../hooks/useRecommendations.js'
+import ProductCarousel from '../../components/product/ProductCarousel/index.js'
 
 function ReviewSection({ productId }: { productId: string }) {
   const { data } = useProductReviews(productId)
   const { mutate, isPending } = useAddReview(productId)
+  const { mutate: vote } = useVoteHelpful(productId)
+  const { mutate: report } = useReportReview(productId)
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const user = useAuthStore((s) => s.user)
   const reviews = data?.data ?? []
   const [rating, setRating] = useState(5)
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
   const [submitted, setSubmitted] = useState(false)
+  const [starFilter, setStarFilter] = useState<number | null>(null)
+  const [reported, setReported] = useState<Set<string>>(new Set())
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -33,12 +63,21 @@ function ReviewSection({ productId }: { productId: string }) {
     )
   }
 
+  const handleReport = (reviewId: string) => {
+    if (reported.has(reviewId)) return
+    report(reviewId, {
+      onSuccess: () => setReported((prev) => new Set(prev).add(reviewId)),
+    })
+  }
+
   const avg = reviews.length ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : 0
 
   const ratingDist = [5, 4, 3, 2, 1].map((star) => {
     const count = reviews.filter((r) => r.rating === star).length
     return { star, count, pct: reviews.length ? (count / reviews.length) * 100 : 0 }
   })
+
+  const visible = starFilter ? reviews.filter((r) => r.rating === starFilter) : reviews
 
   return (
     <div style={{ marginTop: '3rem' }}>
@@ -49,35 +88,66 @@ function ReviewSection({ productId }: { productId: string }) {
           <div style={{ textAlign: 'center', minWidth: 80 }}>
             <div className="review-summary__avg">{avg.toFixed(1)}</div>
             <RatingStars value={avg} size="md" />
-            <div
-              style={{
-                fontSize: 'var(--text-xs)',
-                color: 'var(--color-neutral-500)',
-                marginTop: 4,
-              }}
-            >
+            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-neutral-500)', marginTop: 4 }}>
               {reviews.length} review{reviews.length !== 1 ? 's' : ''}
             </div>
           </div>
           <div className="review-summary__bars">
             {ratingDist.map(({ star, count, pct }) => (
-              <div key={star} className="review-bar">
+              <button
+                key={star}
+                className="review-bar"
+                onClick={() => setStarFilter(starFilter === star ? null : star)}
+                style={{
+                  background: starFilter === star ? 'var(--color-brand-light)' : 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  width: '100%',
+                  textAlign: 'left',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '2px 4px',
+                }}
+              >
                 <RatingStars value={star} max={1} size="sm" />
                 <span>{star}</span>
                 <div className="review-bar__track">
                   <div className="review-bar__fill" style={{ width: `${pct}%` }} />
                 </div>
                 <span>{count}</span>
-              </div>
+              </button>
             ))}
           </div>
         </div>
       )}
 
+      {starFilter && (
+        <div style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-neutral-500)' }}>
+            Showing {starFilter}-star reviews ({visible.length})
+          </span>
+          <button
+            onClick={() => setStarFilter(null)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--color-brand-accent)',
+              cursor: 'pointer',
+              fontSize: 'var(--text-xs)',
+              fontWeight: 600,
+            }}
+          >
+            Clear filter
+          </button>
+        </div>
+      )}
+
       <div>
-        {reviews.map((r) => {
-          const user = typeof r.userId === 'object' ? r.userId : null
-          const name = user ? `${user.firstName} ${user.lastName}` : 'Customer'
+        {visible.map((r) => {
+          const rUser = typeof r.userId === 'object' ? r.userId : null
+          const name = rUser ? `${rUser.firstName} ${rUser.lastName}` : 'Customer'
+          const myId = user?._id ?? ''
+          const iVoted = r.helpfulVotes?.includes(myId)
+
           return (
             <div key={r._id} className="review-card">
               <div className="review-card__header">
@@ -92,14 +162,85 @@ function ReviewSection({ productId }: { productId: string }) {
                   <RatingStars value={r.rating} size="sm" />
                 </div>
               </div>
+              {r.isVerified && (
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-success)', marginBottom: 4 }}>
+                  ✓ Verified Purchase
+                </div>
+              )}
               {r.title && <div className="review-card__title">{r.title}</div>}
               <div className="review-card__body">{r.body}</div>
+
+              {r.sellerReply && (
+                <div
+                  style={{
+                    marginTop: 8,
+                    padding: '0.625rem 0.875rem',
+                    background: 'var(--color-neutral-50)',
+                    borderLeft: '3px solid var(--color-brand-accent)',
+                    borderRadius: '0 var(--radius-md) var(--radius-md) 0',
+                    fontSize: 'var(--text-sm)',
+                  }}
+                >
+                  <span style={{ fontWeight: 600, marginRight: 6 }}>Seller reply:</span>
+                  {r.sellerReply}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: 12, marginTop: 10, alignItems: 'center' }}>
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-neutral-400)' }}>
+                  Helpful?
+                </span>
+                <button
+                  onClick={() => isAuthenticated && vote(r._id)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    background: iVoted ? 'var(--color-brand-light)' : 'none',
+                    border: '1px solid var(--color-neutral-200)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '3px 8px',
+                    fontSize: 'var(--text-xs)',
+                    cursor: isAuthenticated ? 'pointer' : 'default',
+                    color: iVoted ? 'var(--color-brand-accent)' : 'var(--color-neutral-500)',
+                    fontWeight: iVoted ? 600 : 400,
+                  }}
+                  title={isAuthenticated ? undefined : 'Sign in to vote'}
+                >
+                  <FiThumbsUp size={11} />
+                  {r.helpfulVotes?.length ?? 0}
+                </button>
+                {isAuthenticated && !reported.has(r._id) && (
+                  <button
+                    onClick={() => handleReport(r._id)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 3,
+                      background: 'none',
+                      border: 'none',
+                      padding: '3px 6px',
+                      fontSize: 'var(--text-xs)',
+                      cursor: 'pointer',
+                      color: 'var(--color-neutral-400)',
+                    }}
+                    title="Report this review"
+                  >
+                    <FiFlag size={11} /> Report
+                  </button>
+                )}
+                {reported.has(r._id) && (
+                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-neutral-400)' }}>
+                    Reported
+                  </span>
+                )}
+              </div>
             </div>
           )
         })}
-        {reviews.length === 0 && (
+        {visible.length === 0 && (
           <p style={{ color: 'var(--color-neutral-500)', fontSize: 'var(--text-sm)' }}>
-            No reviews yet. Be the first to review this product!
+            {starFilter ? `No ${starFilter}-star reviews yet.` : 'No reviews yet. Be the first to review this product!'}
           </p>
         )}
       </div>
@@ -120,14 +261,7 @@ function ReviewSection({ productId }: { productId: string }) {
             style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}
           >
             <div>
-              <label
-                style={{
-                  fontSize: 'var(--text-sm)',
-                  fontWeight: 600,
-                  display: 'block',
-                  marginBottom: 6,
-                }}
-              >
+              <label style={{ fontSize: 'var(--text-sm)', fontWeight: 600, display: 'block', marginBottom: 6 }}>
                 Rating
               </label>
               <div style={{ display: 'flex', gap: 4 }}>
@@ -151,18 +285,9 @@ function ReviewSection({ productId }: { productId: string }) {
               </div>
             </div>
             <div>
-              <label
-                style={{
-                  fontSize: 'var(--text-sm)',
-                  fontWeight: 600,
-                  display: 'block',
-                  marginBottom: 6,
-                }}
-              >
+              <label style={{ fontSize: 'var(--text-sm)', fontWeight: 600, display: 'block', marginBottom: 6 }}>
                 Title{' '}
-                <span style={{ fontWeight: 400, color: 'var(--color-neutral-400)' }}>
-                  (optional)
-                </span>
+                <span style={{ fontWeight: 400, color: 'var(--color-neutral-400)' }}>(optional)</span>
               </label>
               <input
                 type="text"
@@ -174,14 +299,7 @@ function ReviewSection({ productId }: { productId: string }) {
               />
             </div>
             <div>
-              <label
-                style={{
-                  fontSize: 'var(--text-sm)',
-                  fontWeight: 600,
-                  display: 'block',
-                  marginBottom: 6,
-                }}
-              >
+              <label style={{ fontSize: 'var(--text-sm)', fontWeight: 600, display: 'block', marginBottom: 6 }}>
                 Review
               </label>
               <textarea
@@ -222,13 +340,7 @@ function ReviewSection({ productId }: { productId: string }) {
       )}
 
       {!isAuthenticated && (
-        <p
-          style={{
-            marginTop: '1.5rem',
-            fontSize: 'var(--text-sm)',
-            color: 'var(--color-neutral-500)',
-          }}
-        >
+        <p style={{ marginTop: '1.5rem', fontSize: 'var(--text-sm)', color: 'var(--color-neutral-500)' }}>
           <Link to="/login" style={{ color: 'var(--color-brand-accent)', fontWeight: 600 }}>
             Sign in
           </Link>{' '}
@@ -239,11 +351,237 @@ function ReviewSection({ productId }: { productId: string }) {
   )
 }
 
+function QASection({ productId }: { productId: string }) {
+  const { data: questions = [] } = useQuestions(productId)
+  const { mutate: askQuestion, isPending: isAsking } = useAddQuestion(productId)
+  const { mutate: answerQ, isPending: isAnswering } = useAddAnswer(productId)
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+
+  const [newQ, setNewQ] = useState('')
+  const [openAnswers, setOpenAnswers] = useState<Set<string>>(new Set())
+  const [answerText, setAnswerText] = useState<Record<string, string>>({})
+
+  const toggleAnswers = (qId: string) => {
+    setOpenAnswers((prev) => {
+      const next = new Set(prev)
+      next.has(qId) ? next.delete(qId) : next.add(qId)
+      return next
+    })
+  }
+
+  const handleAsk = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (newQ.trim().length < 10) return
+    askQuestion(newQ, { onSuccess: () => setNewQ('') })
+  }
+
+  const handleAnswer = (qId: string) => {
+    const text = answerText[qId] ?? ''
+    if (text.trim().length < 2) return
+    answerQ({ questionId: qId, answer: text }, { onSuccess: () => setAnswerText((p) => ({ ...p, [qId]: '' })) })
+  }
+
+  return (
+    <div style={{ marginTop: '3rem' }}>
+      <h3 style={{ fontWeight: 700, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <FiMessageCircle size={18} /> Questions & Answers
+        <span style={{ fontSize: 'var(--text-sm)', fontWeight: 400, color: 'var(--color-neutral-400)' }}>
+          ({questions.length})
+        </span>
+      </h3>
+
+      {(questions as IQuestion[]).map((q) => {
+        const qUser = typeof q.userId === 'object' ? q.userId : null
+        const qName = qUser ? `${qUser.firstName} ${qUser.lastName}` : 'Customer'
+        const open = openAnswers.has(q._id)
+
+        return (
+          <div
+            key={q._id}
+            style={{
+              borderBottom: '1px solid var(--color-neutral-100)',
+              paddingBottom: '1rem',
+              marginBottom: '1rem',
+            }}
+          >
+            <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+              <span
+                style={{
+                  fontWeight: 700,
+                  fontSize: 'var(--text-sm)',
+                  color: 'var(--color-brand-accent)',
+                  minWidth: 16,
+                }}
+              >
+                Q
+              </span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)', lineHeight: 1.5 }}>
+                  {q.question}
+                </div>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-neutral-400)', marginTop: 2 }}>
+                  {qName} · {new Date(q.createdAt).toLocaleDateString()}
+                </div>
+
+                <button
+                  onClick={() => toggleAnswers(q._id)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: 'var(--text-xs)',
+                    color: 'var(--color-brand-accent)',
+                    fontWeight: 600,
+                    marginTop: 6,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    padding: 0,
+                  }}
+                >
+                  {q.answers.length} answer{q.answers.length !== 1 ? 's' : ''}
+                  {open ? <FiChevronUp size={12} /> : <FiChevronDown size={12} />}
+                </button>
+
+                {open && (
+                  <div style={{ marginTop: 8 }}>
+                    {q.answers.map((a) => {
+                      const aUser = typeof a.userId === 'object' ? a.userId : null
+                      const aName = aUser ? `${aUser.firstName} ${aUser.lastName}` : 'Community'
+                      return (
+                        <div
+                          key={a._id}
+                          style={{
+                            display: 'flex',
+                            gap: 8,
+                            marginBottom: 8,
+                            paddingLeft: 8,
+                            borderLeft: '2px solid var(--color-neutral-200)',
+                          }}
+                        >
+                          <span style={{ fontWeight: 700, fontSize: 'var(--text-sm)', color: 'var(--color-neutral-500)', minWidth: 16 }}>
+                            A
+                          </span>
+                          <div>
+                            <div style={{ fontSize: 'var(--text-sm)', lineHeight: 1.5 }}>{a.answer}</div>
+                            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-neutral-400)', marginTop: 2 }}>
+                              {aName} · {new Date(a.createdAt).toLocaleDateString()}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+
+                    {q.answers.length === 0 && (
+                      <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-neutral-400)', marginBottom: 8 }}>
+                        No answers yet.
+                      </p>
+                    )}
+
+                    {isAuthenticated && (
+                      <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                        <input
+                          type="text"
+                          className="form-control"
+                          placeholder="Write an answer…"
+                          value={answerText[q._id] ?? ''}
+                          onChange={(e) => setAnswerText((p) => ({ ...p, [q._id]: e.target.value }))}
+                          style={{ flex: 1, fontSize: 'var(--text-sm)' }}
+                        />
+                        <button
+                          onClick={() => handleAnswer(q._id)}
+                          disabled={isAnswering || (answerText[q._id] ?? '').trim().length < 2}
+                          className="btn btn-primary"
+                          style={{ fontSize: 'var(--text-xs)', whiteSpace: 'nowrap' }}
+                        >
+                          Post
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )
+      })}
+
+      {questions.length === 0 && (
+        <p style={{ color: 'var(--color-neutral-500)', fontSize: 'var(--text-sm)', marginBottom: '1rem' }}>
+          No questions yet. Ask the first one!
+        </p>
+      )}
+
+      {isAuthenticated ? (
+        <form
+          onSubmit={handleAsk}
+          style={{
+            marginTop: '1rem',
+            padding: '1.25rem',
+            background: 'var(--color-neutral-50)',
+            borderRadius: 'var(--radius-xl)',
+            border: '1px solid var(--color-neutral-200)',
+          }}
+        >
+          <label style={{ fontWeight: 600, fontSize: 'var(--text-sm)', display: 'block', marginBottom: 8 }}>
+            Ask a Question
+          </label>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Type your question (min 10 characters)…"
+              value={newQ}
+              minLength={10}
+              maxLength={500}
+              onChange={(e) => setNewQ(e.target.value)}
+              style={{ flex: 1 }}
+            />
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={isAsking || newQ.trim().length < 10}
+              style={{ whiteSpace: 'nowrap' }}
+            >
+              {isAsking ? 'Posting…' : 'Ask'}
+            </button>
+          </div>
+        </form>
+      ) : (
+        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-neutral-500)', marginTop: '0.75rem' }}>
+          <Link to="/login" style={{ color: 'var(--color-brand-accent)', fontWeight: 600 }}>
+            Sign in
+          </Link>{' '}
+          to ask or answer questions.
+        </p>
+      )}
+    </div>
+  )
+}
+
 export default function ProductPage() {
   const { id } = useParams<{ id: string }>()
   const { data: product, isLoading, isError } = useProduct(id ?? '')
   const { addToCart } = useCart()
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const [qty, setQty] = useState(1)
+  const { data: fbt = [] } = useFrequentlyBoughtTogether(id ?? '', 8)
+  const { mutate: trackBehavior } = useTrackBehavior()
+  const [fbtQuickView, setFbtQuickView] = useState<import('../../../shared/types/product.types.js').IProduct | null>(null)
+
+  // Track recently viewed + view behaviour event (fire-and-forget)
+  useEffect(() => {
+    if (product?._id) {
+      if (isAuthenticated) {
+        dashboardService.trackRecentlyViewed(product._id).catch(() => {})
+        trackBehavior({
+          eventType: 'view',
+          productId: product._id,
+          category: product.category,
+        })
+      }
+    }
+  }, [product?._id, isAuthenticated])
 
   if (isLoading) {
     return (
@@ -441,6 +779,26 @@ export default function ProductPage() {
       </div>
 
       <ReviewSection productId={product._id} />
+      <QASection productId={product._id} />
+
+      {fbt.length > 0 && (
+        <section style={{ marginTop: '2.5rem' }}>
+          <div className="section-hd" style={{ marginBottom: '1rem' }}>
+            <div>
+              <div className="section-hd__label" style={{ color: '#b45309' }}>Customers Also Bought</div>
+              <h2 className="section-hd__title" style={{ fontSize: 'var(--text-xl)' }}>
+                Frequently Bought Together
+              </h2>
+            </div>
+          </div>
+          <ProductCarousel products={fbt} onQuickView={setFbtQuickView} />
+          {fbtQuickView && (
+            <QuickViewModal product={fbtQuickView} onClose={() => setFbtQuickView(null)} />
+          )}
+        </section>
+      )}
+
+      <RelatedProducts productId={product._id} category={product.category} />
 
       <div style={{ marginTop: '2rem' }}>
         <Link

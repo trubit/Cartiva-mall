@@ -1,5 +1,5 @@
 import mongoose from 'mongoose'
-import { Review, type IReviewDocument } from './review.model.js'
+import { Review, Question, type IReviewDocument, type IQuestionDocument } from './review.model.js'
 import { Product } from '../product/product.model.js'
 import { AppError } from '../../middlewares/error.middleware.js'
 import type { PaginationMeta } from '../../../../src/shared/types/api.types.js'
@@ -102,4 +102,98 @@ export const deleteReview = async (
   if (!review) throw new AppError('Review not found or access denied', 404)
 
   await recalculateRatings(review.productId.toString())
+}
+
+// ─── Helpful vote (toggle) ────────────────────────────────────────────────────
+export const voteHelpful = async (
+  reviewId: string,
+  userId: string,
+): Promise<{ helpfulCount: number; voted: boolean }> => {
+  if (!mongoose.isValidObjectId(reviewId)) throw new AppError('Invalid review ID', 400)
+
+  const review = await Review.findById(reviewId)
+  if (!review) throw new AppError('Review not found', 404)
+
+  const uid = new mongoose.Types.ObjectId(userId)
+  const alreadyVoted = review.helpfulVotes.some((v) => v.equals(uid))
+
+  if (alreadyVoted) {
+    review.helpfulVotes = review.helpfulVotes.filter((v) => !v.equals(uid))
+  } else {
+    review.helpfulVotes.push(uid)
+  }
+  await review.save()
+
+  return { helpfulCount: review.helpfulVotes.length, voted: !alreadyVoted }
+}
+
+// ─── Report review ────────────────────────────────────────────────────────────
+export const reportReview = async (reviewId: string, userId: string): Promise<void> => {
+  if (!mongoose.isValidObjectId(reviewId)) throw new AppError('Invalid review ID', 400)
+
+  const review = await Review.findById(reviewId)
+  if (!review) throw new AppError('Review not found', 404)
+
+  const uid = new mongoose.Types.ObjectId(userId)
+  if (!review.reportedBy.some((r) => r.equals(uid))) {
+    review.reportedBy.push(uid)
+    await review.save()
+  }
+}
+
+// ─── Q&A: get questions for a product ────────────────────────────────────────
+export const getQuestions = async (productId: string): Promise<IQuestionDocument[]> => {
+  if (!mongoose.isValidObjectId(productId)) throw new AppError('Invalid product ID', 400)
+
+  return Question.find({ productId: new mongoose.Types.ObjectId(productId) })
+    .sort({ createdAt: -1 })
+    .populate('userId', 'firstName lastName username profileImage')
+    .populate('answers.userId', 'firstName lastName username profileImage')
+    .lean() as unknown as IQuestionDocument[]
+}
+
+// ─── Q&A: ask a question ──────────────────────────────────────────────────────
+export const addQuestion = async (
+  productId: string,
+  userId: string,
+  question: string,
+): Promise<IQuestionDocument> => {
+  if (!mongoose.isValidObjectId(productId)) throw new AppError('Invalid product ID', 400)
+
+  const product = await Product.findOne({ _id: productId, status: 'active', isActive: true })
+  if (!product) throw new AppError('Product not found', 404)
+
+  const q = await Question.create({
+    productId: new mongoose.Types.ObjectId(productId),
+    userId: new mongoose.Types.ObjectId(userId),
+    question: question.trim(),
+  })
+
+  return q.populate('userId', 'firstName lastName username profileImage')
+}
+
+// ─── Q&A: answer a question ───────────────────────────────────────────────────
+export const addAnswer = async (
+  questionId: string,
+  userId: string,
+  answer: string,
+): Promise<IQuestionDocument> => {
+  if (!mongoose.isValidObjectId(questionId)) throw new AppError('Invalid question ID', 400)
+
+  const q = await Question.findById(questionId)
+  if (!q) throw new AppError('Question not found', 404)
+
+  q.answers.push({
+    _id: new mongoose.Types.ObjectId(),
+    userId: new mongoose.Types.ObjectId(userId),
+    answer: answer.trim(),
+    likes: [],
+    createdAt: new Date(),
+  })
+  await q.save()
+
+  return q.populate([
+    { path: 'userId', select: 'firstName lastName username profileImage' },
+    { path: 'answers.userId', select: 'firstName lastName username profileImage' },
+  ])
 }

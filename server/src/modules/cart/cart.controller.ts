@@ -75,3 +75,61 @@ export const syncCart = async (req: Request, res: Response, next: NextFunction):
     next(err)
   }
 }
+
+export const saveForLater = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const cart = await cartService.saveForLater(
+      req.user!.userId,
+      req.params['productId'] as string,
+    )
+    sendSuccess(res, cart, 'Item saved for later')
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const getSavedItems = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const items = await cartService.getSavedItems(req.user!.userId)
+    sendSuccess(res, items, 'Saved items fetched')
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const restoreSavedItem = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const cart = await cartService.restoreSavedItem(
+      req.user!.userId,
+      req.params['productId'] as string,
+    )
+    sendSuccess(res, cart, 'Item restored to cart')
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const removeSavedItem = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    await cartService.removeSavedItem(req.user!.userId, req.params['productId'] as string)
+    sendSuccess(res, null, 'Saved item removed')
+  } catch (err) {
+    next(err)
+  }
+}

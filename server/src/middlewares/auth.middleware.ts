@@ -75,3 +75,27 @@ export const authorize =
     if (!roles.includes(req.user.role)) return next(new AppError('Access denied', 403))
     next()
   }
+
+// Attaches req.user when a valid token is present; continues without error otherwise.
+// Use for endpoints that personalize their response when authenticated but are also
+// publicly accessible.
+export const optionalAuthenticate = async (
+  req: Request,
+  _res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const authHeader = req.headers.authorization
+    const tokenFromHeader = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
+    const tokenFromCookie = (req.cookies as Record<string, string> | undefined)?.access_token
+    const token = tokenFromHeader ?? tokenFromCookie ?? null
+    if (!token) return next()
+
+    const payload = await verifyWithCache(token)
+    const isBlocked = await cacheGet<boolean>(`blocklist:user:${payload.userId}`)
+    if (!isBlocked) req.user = payload
+  } catch {
+    // Ignore invalid tokens on optional auth routes
+  }
+  next()
+}

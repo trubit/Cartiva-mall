@@ -7,6 +7,10 @@ export interface IReviewDocument extends Document {
   title?: string
   body: string
   isVerified: boolean
+  helpfulVotes: Types.ObjectId[]
+  reportedBy: Types.ObjectId[]
+  sellerReply?: string
+  sellerReplyAt?: Date
   createdAt: Date
   updatedAt: Date
 }
@@ -24,6 +28,10 @@ const reviewSchema = new mongoose.Schema<IReviewDocument>(
     title: { type: String, trim: true, maxlength: 120 },
     body: { type: String, required: true, trim: true, minlength: 10, maxlength: 2000 },
     isVerified: { type: Boolean, default: false },
+    helpfulVotes: { type: [mongoose.Schema.Types.ObjectId], ref: 'User', default: [] },
+    reportedBy: { type: [mongoose.Schema.Types.ObjectId], ref: 'User', default: [] },
+    sellerReply: { type: String, trim: true, maxlength: 2000 },
+    sellerReplyAt: { type: Date },
   },
   {
     timestamps: true,
@@ -39,5 +47,47 @@ const reviewSchema = new mongoose.Schema<IReviewDocument>(
 
 reviewSchema.index({ productId: 1, userId: 1 }, { unique: true })
 reviewSchema.index({ productId: 1, createdAt: -1 })
+reviewSchema.index({ productId: 1, helpfulVotes: -1 })
 
 export const Review = mongoose.model<IReviewDocument>('Review', reviewSchema)
+
+// ─── Q&A: Questions ───────────────────────────────────────────────────────────
+export interface IQuestionDocument extends Document {
+  productId: Types.ObjectId
+  userId: Types.ObjectId
+  question: string
+  answers: IAnswerSubDoc[]
+  createdAt: Date
+}
+
+export interface IAnswerSubDoc {
+  _id: Types.ObjectId
+  userId: Types.ObjectId
+  answer: string
+  likes: Types.ObjectId[]
+  createdAt: Date
+}
+
+const answerSchema = new mongoose.Schema<IAnswerSubDoc>(
+  {
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    answer: { type: String, required: true, trim: true, minlength: 2, maxlength: 2000 },
+    likes: { type: [mongoose.Schema.Types.ObjectId], ref: 'User', default: [] },
+    createdAt: { type: Date, default: Date.now },
+  },
+  { _id: true },
+)
+
+const questionSchema = new mongoose.Schema<IQuestionDocument>(
+  {
+    productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true, index: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    question: { type: String, required: true, trim: true, minlength: 10, maxlength: 500 },
+    answers: { type: [answerSchema], default: [] },
+  },
+  { timestamps: true },
+)
+
+questionSchema.index({ productId: 1, createdAt: -1 })
+
+export const Question = mongoose.model<IQuestionDocument>('Question', questionSchema)

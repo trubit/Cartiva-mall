@@ -21,6 +21,9 @@ import paymentRoutes from './routes/payment.routes.js'
 import dashboardRoutes from './routes/dashboard.routes.js'
 import adminRoutes from './routes/admin.routes.js'
 import sellerRoutes from './routes/seller.routes.js'
+import inventoryRoutes from './routes/inventory.routes.js'
+import recommendationRoutes from './routes/recommendation.routes.js'
+import { getActivePromotions } from './modules/coupon/coupon.controller.js'
 import * as paymentController from './modules/payment/payment.controller.js'
 
 const app = express()
@@ -101,6 +104,9 @@ app.use(`${API_PREFIX}/payment`, paymentRoutes)
 app.use(`${API_PREFIX}/dashboard`, dashboardRoutes)
 app.use(`${API_PREFIX}/seller`, sellerRoutes)
 app.use(`${API_PREFIX}/admin`, adminRoutes)
+app.use(`${API_PREFIX}/inventory`, inventoryRoutes)
+app.use(`${API_PREFIX}/recommendations`, recommendationRoutes)
+app.get(`${API_PREFIX}/promotions`, getActivePromotions)
 
 // ─── Error Handling ───────────────────────────────────────────────────────────
 app.use(notFound)

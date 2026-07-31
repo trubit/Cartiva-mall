@@ -18,6 +18,7 @@ const ProductsPage = lazy(() => import('../pages/products/ProductsPage.js'))
 const ProductPage = lazy(() => import('../pages/products/ProductPage.js'))
 const SearchResults = lazy(() => import('../pages/products/SearchResults.js'))
 const CategoryPage = lazy(() => import('../pages/products/CategoryPage.js'))
+const DealsPage = lazy(() => import('../pages/products/DealsPage.js'))
 const CartPage = lazy(() => import('../pages/cart/CartPage.js'))
 const CheckoutPage = lazy(() => import('../pages/checkout/CheckoutPage.js'))
 const OrdersPage = lazy(() => import('../pages/orders/OrdersPage.js'))
@@ -52,6 +53,7 @@ const SellerOrders = lazy(() => import('../pages/seller/SellerOrders/index.js'))
 const SellerAnalytics = lazy(() => import('../pages/seller/SellerAnalytics/index.js'))
 const SellerSettings = lazy(() => import('../pages/seller/SellerSettings/index.js'))
 const SellerPayouts = lazy(() => import('../pages/seller/SellerPayouts/index.js'))
+const SellerInventory = lazy(() => import('../pages/seller/SellerInventory.js'))
 
 // Dashboard pages
 const DashboardLayout = lazy(() => import('../pages/dashboard/DashboardLayout/index.js'))
@@ -70,6 +72,8 @@ const AdminUsers = lazy(() => import('../pages/admin/AdminUsers/index.js'))
 const AdminSellers = lazy(() => import('../pages/admin/AdminSellers/index.js'))
 const AdminProducts = lazy(() => import('../pages/admin/AdminProducts/index.js'))
 const AdminOrders = lazy(() => import('../pages/admin/AdminOrders/index.js'))
+const AdminInventory = lazy(() => import('../pages/admin/AdminInventory/index.js'))
+const AdminPromotions = lazy(() => import('../pages/admin/AdminPromotions/index.js'))
 const AdminAnalytics = lazy(() => import('../pages/admin/AdminAnalytics/index.js'))
 const AdminReports = lazy(() => import('../pages/admin/AdminReports/index.js'))
 const AdminSettings = lazy(() => import('../pages/admin/AdminSettings/index.js'))
@@ -112,6 +116,7 @@ export default function AppRouter() {
           <Route path="/products" element={<ProductsPage />} />
           <Route path="/products/:id" element={<ProductPage />} />
           <Route path="/search" element={<SearchResults />} />
+          <Route path="/deals" element={<DealsPage />} />
           <Route path="/category/:category" element={<CategoryPage />} />
           <Route path="/cart" element={<CartPage />} />
           <Route
@@ -206,6 +211,7 @@ export default function AppRouter() {
             <Route path="orders" element={<SellerOrders />} />
             <Route path="analytics" element={<SellerAnalytics />} />
             <Route path="payouts" element={<SellerPayouts />} />
+            <Route path="inventory" element={<SellerInventory />} />
             <Route path="settings" element={<SellerSettings />} />
           </Route>
 
@@ -223,6 +229,8 @@ export default function AppRouter() {
             <Route path="sellers" element={<AdminSellers />} />
             <Route path="products" element={<AdminProducts />} />
             <Route path="orders" element={<AdminOrders />} />
+            <Route path="inventory" element={<AdminInventory />} />
+            <Route path="promotions" element={<AdminPromotions />} />
             <Route path="analytics" element={<AdminAnalytics />} />
             <Route path="reports" element={<AdminReports />} />
             <Route path="settings" element={<AdminSettings />} />

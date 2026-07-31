@@ -12,6 +12,8 @@ import {
   FiSettings,
   FiGlobe,
   FiCheck,
+  FiGrid,
+  FiHeart,
 } from 'react-icons/fi'
 import { useAuthStore } from '../../store/authStore.js'
 import { useCartStore } from '../../store/cartStore.js'
@@ -290,6 +292,20 @@ export default function Navbar() {
                         {isAuthenticated ? (
                           <>
                             <Link
+                              to="/dashboard"
+                              className="amz-account-dropdown__link"
+                              onClick={() => setAccountMenuOpen(false)}
+                            >
+                              <FiGrid size={13} /> My Dashboard
+                            </Link>
+                            <Link
+                              to="/dashboard/wishlist"
+                              className="amz-account-dropdown__link"
+                              onClick={() => setAccountMenuOpen(false)}
+                            >
+                              <FiHeart size={13} /> Wishlist
+                            </Link>
+                            <Link
                               to="/profile"
                               className="amz-account-dropdown__link"
                               onClick={() => setAccountMenuOpen(false)}
@@ -402,7 +418,7 @@ export default function Navbar() {
                 {CATEGORY_ICONS[cat]} {cat}
               </Link>
             ))}
-            <Link to="/products?isFeatured=true" className="amz-nav__item amz-nav__item--highlight">
+            <Link to="/deals" className="amz-nav__item amz-nav__item--highlight">
               {t.nav_todays_deals}
             </Link>
           </div>
@@ -492,7 +508,7 @@ export default function Navbar() {
             <div className="amz-mobile-menu__divider" />
             <div className="amz-mobile-menu__section-title">{t.mob_help}</div>
             <Link
-              to="/products?isFeatured=true"
+              to="/deals"
               className="amz-mobile-menu__link"
               onClick={() => setMobileMenuOpen(false)}
             >
@@ -507,6 +523,20 @@ export default function Navbar() {
             </Link>
             {isAuthenticated ? (
               <>
+                <Link
+                  to="/dashboard"
+                  className="amz-mobile-menu__link"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  My Dashboard
+                </Link>
+                <Link
+                  to="/dashboard/wishlist"
+                  className="amz-mobile-menu__link"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Wishlist
+                </Link>
                 <Link
                   to="/profile"
                   className="amz-mobile-menu__link"

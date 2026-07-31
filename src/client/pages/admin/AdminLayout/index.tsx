@@ -8,6 +8,8 @@ import {
   FiBarChart2,
   FiFileText,
   FiSettings,
+  FiArchive,
+  FiTag,
 } from 'react-icons/fi'
 import { useAdminStats, useAdminFraudAlerts } from '../../../hooks/useAdmin.js'
 import { useIsMobile } from '../../../hooks/useBreakpoint.js'
@@ -23,6 +25,8 @@ const NAV_MANAGE = [
   { to: '/admin/sellers', end: false, Icon: FiBriefcase, label: 'Sellers' },
   { to: '/admin/products', end: false, Icon: FiPackage, label: 'Products' },
   { to: '/admin/orders', end: false, Icon: FiShoppingBag, label: 'Orders' },
+  { to: '/admin/inventory', end: false, Icon: FiArchive, label: 'Inventory' },
+  { to: '/admin/promotions', end: false, Icon: FiTag, label: 'Promotions' },
 ]
 const NAV_SYSTEM = [{ to: '/admin/settings', end: false, Icon: FiSettings, label: 'Settings' }]
 

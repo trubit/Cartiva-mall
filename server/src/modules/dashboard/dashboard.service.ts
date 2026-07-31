@@ -123,6 +123,23 @@ export const checkWishlist = async (userId: string, productId: string): Promise<
   return Boolean(exists)
 }
 
+export const moveWishlistToCart = async (userId: string, productId: string) => {
+  const { addToCart } = await import('../cart/cart.service.js')
+  const oid = new mongoose.Types.ObjectId(productId)
+
+  const wishlist = await Wishlist.findOne({ userId })
+  if (!wishlist) throw new AppError('Wishlist not found', 404)
+
+  const inWishlist = wishlist.items.some((i) => i.productId.toString() === productId)
+  if (!inWishlist) throw new AppError('Product not in wishlist', 404)
+
+  const cart = await addToCart(userId, { productId, quantity: 1 })
+
+  await Wishlist.findOneAndUpdate({ userId }, { $pull: { items: { productId: oid } } })
+
+  return cart
+}
+
 // ─── Notifications ────────────────────────────────────────────────────────────
 export const getNotifications = async (
   userId: string,

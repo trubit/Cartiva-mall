@@ -19,4 +19,10 @@ router.delete('/remove/:productId', cartController.removeFromCart)
 router.delete('/clear', cartController.clearCart)
 router.post('/sync', validate(syncCartSchema), cartController.syncCart)
 
+// ─── Save for Later ───────────────────────────────────────────────────────────
+router.get('/save-for-later', cartController.getSavedItems)
+router.post('/save-for-later/:productId', cartController.saveForLater)
+router.post('/restore/:productId', cartController.restoreSavedItem)
+router.delete('/save-for-later/:productId', cartController.removeSavedItem)
+
 export default router

@@ -12,6 +12,12 @@ import {
   blockProduct,
   getSellerProducts,
   getFeaturedProducts,
+  getTrendingProducts,
+  getRecommendedProducts,
+  getRelatedProducts,
+  getCategories,
+  getBrands,
+  getSearchSuggestions,
 } from './product.service.js'
 import { sendSuccess, sendCreated, sendNoContent } from '../../utils/response.js'
 import { uploadImagePath, isCloudinaryConfigured } from '../../config/cloudinary.js'
@@ -169,6 +175,90 @@ export const uploadImages = async (
       await Promise.allSettled(files.map((f) => unlink(f.path)))
     }
     sendSuccess(res, { urls: uploads.map((u) => u.url) }, 'Images uploaded')
+  } catch (err) {
+    next(err)
+  }
+}
+
+// ─── Discovery ────────────────────────────────────────────────────────────────
+export const trendingProducts = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const limit = Math.min(50, Math.max(1, parseInt((req.query.limit as string) ?? '12', 10) || 12))
+    const products = await getTrendingProducts(limit)
+    sendSuccess(res, products, 'Trending products')
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const recommendedProducts = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const limit = Math.min(50, Math.max(1, parseInt((req.query.limit as string) ?? '12', 10) || 12))
+    const products = await getRecommendedProducts(limit)
+    sendSuccess(res, products, 'Recommended products')
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const relatedProducts = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const limit = Math.min(20, Math.max(1, parseInt((req.query.limit as string) ?? '8', 10) || 8))
+    const products = await getRelatedProducts(req.params['id'] as string, limit)
+    sendSuccess(res, products, 'Related products')
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const listCategories = async (
+  _req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const categories = await getCategories()
+    sendSuccess(res, categories, 'Categories fetched')
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const listBrands = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const category = req.query.category as string | undefined
+    const brands = await getBrands(category)
+    sendSuccess(res, brands, 'Brands fetched')
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const searchSuggestions = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const q = (req.query.q as string) ?? ''
+    const suggestions = await getSearchSuggestions(q)
+    sendSuccess(res, suggestions, 'Suggestions')
   } catch (err) {
     next(err)
   }

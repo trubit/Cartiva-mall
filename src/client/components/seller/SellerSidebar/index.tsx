@@ -7,12 +7,14 @@ import {
   FiDollarSign,
   FiSettings,
   FiExternalLink,
+  FiArchive,
 } from 'react-icons/fi'
 import Logo from '../../ui/Logo/index.js'
 
 const NAV = [
   { to: '/seller', end: true, Icon: FiGrid, label: 'Dashboard' },
   { to: '/seller/products', end: false, Icon: FiPackage, label: 'Products' },
+  { to: '/seller/inventory', end: false, Icon: FiArchive, label: 'Inventory' },
   { to: '/seller/orders', end: false, Icon: FiShoppingBag, label: 'Orders' },
   { to: '/seller/analytics', end: false, Icon: FiBarChart2, label: 'Analytics' },
   { to: '/seller/payouts', end: false, Icon: FiDollarSign, label: 'Payouts' },

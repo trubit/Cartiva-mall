@@ -12,6 +12,12 @@ import {
 import {
   listProducts,
   featuredProducts,
+  trendingProducts,
+  recommendedProducts,
+  relatedProducts,
+  listCategories,
+  listBrands,
+  searchSuggestions,
   getProduct,
   search,
   byCategory,
@@ -23,13 +29,27 @@ import {
   block,
   uploadImages,
 } from '../modules/product/product.controller.js'
-import { addReview, listReviews, removeReview } from '../modules/review/review.controller.js'
+import {
+  addReview,
+  listReviews,
+  removeReview,
+  helpfulVote,
+  flagReview,
+  listQuestions,
+  createQuestion,
+  createAnswer,
+} from '../modules/review/review.controller.js'
 
 const router = Router()
 
 // ─── Public ────────────────────────────────────────────────────────────────────
 router.get('/', searchLimiter, validate(productFiltersSchema, 'query'), listProducts)
 router.get('/featured', featuredProducts)
+router.get('/trending', trendingProducts)
+router.get('/recommended', recommendedProducts)
+router.get('/categories', listCategories)
+router.get('/brands', listBrands)
+router.get('/suggestions', searchLimiter, searchSuggestions)
 router.get('/search', searchLimiter, validate(productFiltersSchema, 'query'), search)
 router.get(
   '/category/:category',
@@ -39,10 +59,18 @@ router.get(
 )
 router.get('/:id', getProduct)
 router.get('/:id/reviews', listReviews)
+router.get('/:id/related', relatedProducts)
 
-// ─── Authenticated reviews ─────────────────────────────────────────────────────
+// ─── Public reviews & Q&A ─────────────────────────────────────────────────────
+router.get('/:id/questions', listQuestions)
+
+// ─── Authenticated reviews & Q&A ──────────────────────────────────────────────
 router.post('/:id/review', authenticate, validate(reviewSchema), addReview)
 router.delete('/:id/reviews/:reviewId', authenticate, removeReview)
+router.post('/:id/reviews/:reviewId/helpful', authenticate, helpfulVote)
+router.post('/:id/reviews/:reviewId/report', authenticate, flagReview)
+router.post('/:id/questions', authenticate, createQuestion)
+router.post('/:id/questions/:questionId/answers', authenticate, createAnswer)
 
 // ─── Seller ────────────────────────────────────────────────────────────────────
 router.post(

@@ -99,3 +99,13 @@ export const checkoutLimiter = rateLimit({
   legacyHeaders: false,
   message: { success: false, message: 'Too many checkout requests — please slow down' },
 })
+
+/** Behaviour tracking events — higher frequency than typical API calls */
+export const trackLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 200,
+  store: makeStore('rl:track:'),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many tracking events — slow down' },
+})

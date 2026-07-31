@@ -86,6 +86,22 @@ export const checkWishlist = async (
   }
 }
 
+export const moveWishlistToCart = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const cart = await dashboardService.moveWishlistToCart(
+      req.user!.userId,
+      String(req.params['productId']),
+    )
+    sendSuccess(res, cart, 'Moved to cart')
+  } catch (err) {
+    next(err)
+  }
+}
+
 // ─── Notifications ────────────────────────────────────────────────────────────
 export const getNotifications = async (
   req: Request,

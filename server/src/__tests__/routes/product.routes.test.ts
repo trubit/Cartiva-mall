@@ -34,6 +34,7 @@ vi.mock('../../middlewares/rateLimiter.middleware.js', () => {
     checkoutLimiter: pass,
     paymentLimiter: pass,
     adminLimiter: pass,
+    trackLimiter: pass,
   }
 })
 

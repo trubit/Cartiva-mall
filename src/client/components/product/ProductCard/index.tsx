@@ -3,6 +3,7 @@ import { FiShoppingCart, FiEye } from 'react-icons/fi'
 import RatingStars from '../RatingStars/index.js'
 import PriceTag from '../PriceTag/index.js'
 import ProductBadges from '../Badge/index.js'
+import WishlistButton from '../WishlistButton/index.js'
 import { useCart } from '../../../hooks/useCart.js'
 import type { IProduct } from '../../../../shared/types/product.types.js'
 import { getImageUrl } from '../../../utils/image.js'
@@ -33,6 +34,9 @@ export default function ProductCard({ product, onQuickView }: ProductCardProps) 
       {/* Image */}
       <div className="product-card__img-wrap">
         <ProductBadges product={product} />
+        <div style={{ position: 'absolute', top: 8, right: 8, zIndex: 2 }}>
+          <WishlistButton productId={product._id} size={15} />
+        </div>
 
         {getImageUrl(product.images[0]) ? (
           <img

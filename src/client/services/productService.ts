@@ -1,5 +1,5 @@
 import api from './api.js'
-import type { IProduct, IReview, ProductFilters } from '../../shared/types/product.types.js'
+import type { IProduct, IReview, IQuestion, ProductFilters } from '../../shared/types/product.types.js'
 import type { ApiResponse } from '../../shared/types/api.types.js'
 
 interface ProductsResponse {
@@ -122,5 +122,78 @@ export const productService = {
 
   deleteReview: async (productId: string, reviewId: string): Promise<void> => {
     await api.delete(`/products/${productId}/reviews/${reviewId}`)
+  },
+
+  voteHelpful: async (
+    productId: string,
+    reviewId: string,
+  ): Promise<{ helpfulCount: number; voted: boolean }> => {
+    const res = await api.post<ApiResponse<{ helpfulCount: number; voted: boolean }>>(
+      `/products/${productId}/reviews/${reviewId}/helpful`,
+    )
+    return res.data.data!
+  },
+
+  reportReview: async (productId: string, reviewId: string): Promise<void> => {
+    await api.post(`/products/${productId}/reviews/${reviewId}/report`)
+  },
+
+  getQuestions: async (productId: string): Promise<IQuestion[]> => {
+    const res = await api.get<ApiResponse<IQuestion[]>>(`/products/${productId}/questions`)
+    return res.data.data ?? []
+  },
+
+  addQuestion: async (productId: string, question: string): Promise<IQuestion> => {
+    const res = await api.post<ApiResponse<IQuestion>>(`/products/${productId}/questions`, {
+      question,
+    })
+    return res.data.data!
+  },
+
+  addAnswer: async (productId: string, questionId: string, answer: string): Promise<IQuestion> => {
+    const res = await api.post<ApiResponse<IQuestion>>(
+      `/products/${productId}/questions/${questionId}/answers`,
+      { answer },
+    )
+    return res.data.data!
+  },
+
+  getTrending: async (limit = 12): Promise<IProduct[]> => {
+    const res = await api.get<ApiResponse<IProduct[]>>(`/products/trending?limit=${limit}`)
+    return res.data.data ?? []
+  },
+
+  getRecommended: async (limit = 12): Promise<IProduct[]> => {
+    const res = await api.get<ApiResponse<IProduct[]>>(`/products/recommended?limit=${limit}`)
+    return res.data.data ?? []
+  },
+
+  getRelated: async (productId: string, limit = 8): Promise<IProduct[]> => {
+    const res = await api.get<ApiResponse<IProduct[]>>(
+      `/products/${productId}/related?limit=${limit}`,
+    )
+    return res.data.data ?? []
+  },
+
+  getCategories: async (): Promise<{ category: string; count: number }[]> => {
+    const res =
+      await api.get<ApiResponse<{ category: string; count: number }[]>>('/products/categories')
+    return res.data.data ?? []
+  },
+
+  getBrands: async (category?: string): Promise<{ brand: string; count: number }[]> => {
+    const url = category
+      ? `/products/brands?category=${encodeURIComponent(category)}`
+      : '/products/brands'
+    const res = await api.get<ApiResponse<{ brand: string; count: number }[]>>(url)
+    return res.data.data ?? []
+  },
+
+  getSuggestions: async (q: string): Promise<string[]> => {
+    if (!q || q.trim().length < 2) return []
+    const res = await api.get<ApiResponse<string[]>>(
+      `/products/suggestions?q=${encodeURIComponent(q)}`,
+    )
+    return res.data.data ?? []
   },
 }

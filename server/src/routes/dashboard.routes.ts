@@ -21,6 +21,7 @@ router.get('/wishlist', dashboardController.getWishlist)
 router.post('/wishlist', validate(addWishlistSchema), dashboardController.addToWishlist)
 router.get('/wishlist/:productId/check', dashboardController.checkWishlist)
 router.delete('/wishlist/:productId', dashboardController.removeFromWishlist)
+router.post('/wishlist/:productId/move-to-cart', dashboardController.moveWishlistToCart)
 
 // ── Notifications ─────────────────────────────────────────────────────────────
 router.get('/notifications', dashboardController.getNotifications)
