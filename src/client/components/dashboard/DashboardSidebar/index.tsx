@@ -8,6 +8,9 @@ import {
   FiUser,
   FiShield,
   FiShoppingBag,
+  FiTruck,
+  FiRotateCcw,
+  FiMessageSquare,
 } from 'react-icons/fi'
 import { useDashboardStore } from '../../../store/dashboardStore.js'
 import type { IUser } from '../../../../shared/types/user.types.js'
@@ -21,6 +24,9 @@ const NAV_ITEMS = [
   { label: 'My Orders', icon: FiShoppingBag, to: '/orders' },
   { label: 'Wishlist', icon: FiHeart, to: '/dashboard/wishlist' },
   { label: 'Notifications', icon: FiBell, to: '/dashboard/notifications', badge: true },
+  { label: 'Messages', icon: FiMessageSquare, to: '/messages' },
+  { label: 'Shipments', icon: FiTruck, to: '/dashboard/shipments' },
+  { label: 'Returns', icon: FiRotateCcw, to: '/dashboard/returns' },
   { label: 'Payments', icon: FiCreditCard, to: '/dashboard/payments' },
   { label: 'Recently Viewed', icon: FiEye, to: '/dashboard/recently-viewed' },
 ]

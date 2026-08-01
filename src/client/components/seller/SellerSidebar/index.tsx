@@ -8,10 +8,15 @@ import {
   FiSettings,
   FiExternalLink,
   FiArchive,
+  FiShield,
+  FiGlobe,
+  FiTrendingUp,
+  FiCreditCard,
+  FiFileText,
 } from 'react-icons/fi'
 import Logo from '../../ui/Logo/index.js'
 
-const NAV = [
+const NAV_STORE = [
   { to: '/seller', end: true, Icon: FiGrid, label: 'Dashboard' },
   { to: '/seller/products', end: false, Icon: FiPackage, label: 'Products' },
   { to: '/seller/inventory', end: false, Icon: FiArchive, label: 'Inventory' },
@@ -20,6 +25,17 @@ const NAV = [
   { to: '/seller/payouts', end: false, Icon: FiDollarSign, label: 'Payouts' },
   { to: '/seller/settings', end: false, Icon: FiSettings, label: 'Settings' },
 ]
+
+const NAV_VENDOR = [
+  { to: '/seller/verification', end: false, Icon: FiShield, label: 'Verification' },
+  { to: '/seller/storefront', end: false, Icon: FiGlobe, label: 'Storefront' },
+  { to: '/seller/commissions', end: false, Icon: FiTrendingUp, label: 'Commissions' },
+  { to: '/seller/vendor-payouts', end: false, Icon: FiCreditCard, label: 'Vendor Payouts' },
+  { to: '/seller/documents', end: false, Icon: FiFileText, label: 'Documents' },
+]
+
+// Keep for mobile tab strip (store nav only)
+const NAV = NAV_STORE
 
 const SIDEBAR_BG = '#0B2D3D'
 const ACCENT = '#007185'
@@ -117,6 +133,25 @@ export default function SellerSidebar() {
         {NAV.slice(4).map(({ to, end, Icon, label }) => (
           <SidebarLink key={to} to={to} end={end} Icon={Icon} label={label} />
         ))}
+
+        <p
+          style={{
+            fontSize: '0.62rem',
+            fontWeight: 700,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: GROUP_COLOR,
+            padding: '0.75rem 1.25rem 0.25rem',
+            marginTop: '0.5rem',
+            margin: 0,
+            borderTop: `1px solid ${BORDER}`,
+          }}
+        >
+          Vendor Hub
+        </p>
+        {NAV_VENDOR.map(({ to, end, Icon, label }) => (
+          <SidebarLink key={to} to={to} end={end} Icon={Icon} label={label} />
+        ))}
       </nav>
 
       {/* Footer link */}
@@ -140,6 +175,8 @@ export default function SellerSidebar() {
 }
 
 // ─── Mobile tab strip ─────────────────────────────────────────────────────────
+const NAV_MOBILE = [...NAV_STORE, ...NAV_VENDOR]
+
 export function SellerMobileNav() {
   return (
     <nav
@@ -153,7 +190,7 @@ export function SellerMobileNav() {
         flexShrink: 0,
       }}
     >
-      {NAV.map(({ to, end, Icon, label }) => (
+      {NAV_MOBILE.map(({ to, end, Icon, label }) => (
         <NavLink
           key={to}
           to={to}

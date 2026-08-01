@@ -22,6 +22,7 @@ import { useT } from '../../i18n/useT.js'
 import { PRODUCT_CATEGORIES, ROLES } from '../../../shared/constants/index.js'
 import Logo from '../ui/Logo/index.js'
 import { useLogout } from '../../hooks/useAuth.js'
+import NotificationBell from './NotificationBell/index.js'
 
 const CATEGORY_ICONS: Record<string, string> = {
   Electronics: '💻',
@@ -377,6 +378,9 @@ export default function Navbar() {
                 <span className="amz-action-link__top">{t.nav_returns}</span>
                 <span className="amz-action-link__bottom">{t.nav_orders}</span>
               </Link>
+
+              {/* Notifications */}
+              {isAuthenticated && <NotificationBell />}
 
               {/* Cart */}
               <Link to="/cart" className="amz-cart-link">

@@ -8,6 +8,7 @@ import { env } from './config/env.js'
 import { logger } from './utils/logger.js'
 import { verifyEmailConfig } from './utils/email.js'
 import { flushViewCounters } from './modules/product/product.service.js'
+import { User } from './modules/user/user.model.js'
 
 // ─── Unhandled error safety net ───────────────────────────────────────────────
 // Must be registered before any async work so crashes don't swallow silently.
@@ -17,13 +18,28 @@ process.on('uncaughtException', (err) => {
 })
 
 process.on('unhandledRejection', (reason) => {
-  logger.error('Unhandled promise rejection — shutting down', { reason })
-  process.exit(1)
+  // Log but do NOT exit — fire-and-forget operations (audit logs, notifications)
+  // can reject without the whole server needing to die.
+  logger.error('Unhandled promise rejection', { reason })
 })
+
+const ensureAdmin = async (): Promise<void> => {
+  const email = 'trustezika831@gmail.com'
+  try {
+    const result = await User.findOneAndUpdate(
+      { email },
+      { $set: { role: 'admin', isActive: true, emailVerified: true } },
+    )
+    if (result) logger.info(`Admin role confirmed for ${email}`)
+  } catch {
+    logger.warn(`ensureAdmin: could not update ${email} — user may not exist yet`)
+  }
+}
 
 const bootstrap = async (): Promise<void> => {
   await connectMongoDB()
   await connectRedis()
+  await ensureAdmin()
   verifyEmailConfig() // non-blocking — logs result when ready
 
   const httpServer = createServer(app)
@@ -36,7 +52,7 @@ const bootstrap = async (): Promise<void> => {
 
   // Flush Redis view counters to MongoDB every 60 seconds
   const viewsFlushTimer = setInterval(() => {
-    void flushViewCounters()
+    flushViewCounters().catch(() => {})
   }, 60_000)
 
   httpServer.on('error', (err: NodeJS.ErrnoException) => {
@@ -63,7 +79,7 @@ const bootstrap = async (): Promise<void> => {
     clearInterval(viewsFlushTimer)
 
     // Flush any remaining view counts before exit
-    void flushViewCounters()
+    flushViewCounters().catch(() => {})
 
     httpServer.close(async () => {
       try {

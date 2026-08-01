@@ -13,10 +13,12 @@ export const getSocket = (): Socket => {
   return socket
 }
 
-export const connectSocket = (userId: string): void => {
+// Server verifies the access token and extracts userId to join the correct room.
+// Never pass userId directly — the server must validate identity via JWT.
+export const connectSocket = (accessToken: string): void => {
   const s = getSocket()
   if (!s.connected) s.connect()
-  s.emit('join:user', userId)
+  s.emit('join:user', accessToken)
 }
 
 export const disconnectSocket = (): void => {

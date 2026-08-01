@@ -10,10 +10,15 @@ export const makeStore = (prefix: string) => {
   try {
     return new RedisStore({
       prefix,
-      sendCommand: (...args: string[]) =>
-        (redis.call(...(args as [string, ...string[]])) as Promise<RedisReply>).catch(
-          () => null as unknown as RedisReply,
-        ),
+      sendCommand: (...args: string[]) => {
+        try {
+          return (redis.call(...(args as [string, ...string[]])) as Promise<RedisReply>).catch(
+            () => null as unknown as RedisReply,
+          )
+        } catch {
+          return Promise.resolve(null as unknown as RedisReply)
+        }
+      },
     })
   } catch {
     return undefined
@@ -98,6 +103,16 @@ export const checkoutLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many checkout requests — please slow down' },
+})
+
+/** Messaging — generous for chat but prevents spam floods */
+export const messageLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  store: makeStore('rl:msg:'),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many messages — slow down' },
 })
 
 /** Behaviour tracking events — higher frequency than typical API calls */

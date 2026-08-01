@@ -77,6 +77,24 @@ const AdminPromotions = lazy(() => import('../pages/admin/AdminPromotions/index.
 const AdminAnalytics = lazy(() => import('../pages/admin/AdminAnalytics/index.js'))
 const AdminReports = lazy(() => import('../pages/admin/AdminReports/index.js'))
 const AdminSettings = lazy(() => import('../pages/admin/AdminSettings/index.js'))
+const AdminShipping = lazy(() => import('../pages/admin/AdminShipping/index.js'))
+const AdminReturns = lazy(() => import('../pages/admin/AdminReturns/index.js'))
+const AdminVendors = lazy(() => import('../pages/admin/AdminVendors/index.js'))
+const AdminVendorApproval = lazy(() => import('../pages/admin/AdminVendorApproval/index.js'))
+
+// Phase 17-21 pages
+const ShipmentTracking = lazy(() => import('../pages/dashboard/ShipmentTracking/index.js'))
+const ReturnsPage = lazy(() => import('../pages/dashboard/ReturnsPage/index.js'))
+const MessagingPage = lazy(() => import('../pages/messaging/MessagingPage/index.js'))
+
+// Phase 21 vendor pages
+const VendorRegistration = lazy(() => import('../pages/seller/VendorRegistration/index.js'))
+const VendorOnboarding = lazy(() => import('../pages/seller/VendorOnboarding/index.js'))
+const VendorVerification = lazy(() => import('../pages/seller/VendorVerification/index.js'))
+const StorefrontBuilder = lazy(() => import('../pages/seller/StorefrontBuilder/index.js'))
+const CommissionDashboard = lazy(() => import('../pages/seller/CommissionDashboard/index.js'))
+const PayoutDashboard = lazy(() => import('../pages/seller/PayoutDashboard/index.js'))
+const DocumentManager = lazy(() => import('../pages/seller/DocumentManager/index.js'))
 
 const SuspenseWrap = ({ children }: { children: React.ReactNode }) => (
   <Suspense fallback={<LoadingSpinner fullscreen />}>{children}</Suspense>
@@ -213,7 +231,30 @@ export default function AppRouter() {
             <Route path="payouts" element={<SellerPayouts />} />
             <Route path="inventory" element={<SellerInventory />} />
             <Route path="settings" element={<SellerSettings />} />
+            <Route path="verification" element={<VendorVerification />} />
+            <Route path="storefront" element={<StorefrontBuilder />} />
+            <Route path="commissions" element={<CommissionDashboard />} />
+            <Route path="vendor-payouts" element={<PayoutDashboard />} />
+            <Route path="documents" element={<DocumentManager />} />
           </Route>
+
+          {/* Vendor registration/onboarding — full screen, PrivateRoute not SellerRoute */}
+          <Route
+            path="/seller/register"
+            element={
+              <PrivateRoute>
+                <VendorRegistration />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/seller/onboarding"
+            element={
+              <PrivateRoute>
+                <VendorOnboarding />
+              </PrivateRoute>
+            }
+          />
 
           {/* Admin dashboard */}
           <Route
@@ -234,6 +275,10 @@ export default function AppRouter() {
             <Route path="analytics" element={<AdminAnalytics />} />
             <Route path="reports" element={<AdminReports />} />
             <Route path="settings" element={<AdminSettings />} />
+            <Route path="shipping" element={<AdminShipping />} />
+            <Route path="returns" element={<AdminReturns />} />
+            <Route path="vendors" element={<AdminVendors />} />
+            <Route path="vendor-approvals" element={<AdminVendorApproval />} />
           </Route>
 
           {/* Profile — nested layout with sidebar, inside MainLayout for navbar */}
@@ -269,7 +314,19 @@ export default function AppRouter() {
             <Route path="recently-viewed" element={<RecentlyViewedPage />} />
             <Route path="account" element={<AccountSettingsPage />} />
             <Route path="security" element={<SecurityPage />} />
+            <Route path="shipments" element={<ShipmentTracking />} />
+            <Route path="returns" element={<ReturnsPage />} />
           </Route>
+
+          {/* Messaging */}
+          <Route
+            path="/messages"
+            element={
+              <PrivateRoute>
+                <MessagingPage />
+              </PrivateRoute>
+            }
+          />
         </Route>
 
         {/* Auth — full screen */}

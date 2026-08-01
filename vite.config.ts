@@ -5,7 +5,7 @@ import type { ServerResponse } from 'http'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const serverPort = parseInt(env.PORT ?? '5001', 10)
+  const serverPort = parseInt(env.PORT ?? '5000', 10)
   const clientPort = env.CLIENT_URL ? parseInt(new URL(env.CLIENT_URL).port, 10) : 5170
 
   return {

@@ -60,6 +60,34 @@ export const initSockets = (httpServer: HttpServer): SocketServer => {
       }
     })
 
+    // ── Messaging room management ───────────────────────────────────────────
+    socket.on('join:conversation', (conversationId: unknown) => {
+      if (typeof conversationId !== 'string' || !socket.data.userId) return
+      socket.join(`conversation:${conversationId}`)
+    })
+
+    socket.on('leave:conversation', (conversationId: unknown) => {
+      if (typeof conversationId !== 'string') return
+      socket.leave(`conversation:${conversationId}`)
+    })
+
+    // Typing indicators — broadcast to conversation room excluding sender
+    socket.on('typing:start', (conversationId: unknown) => {
+      if (typeof conversationId !== 'string' || !socket.data.userId) return
+      socket.to(`conversation:${conversationId}`).emit('typing:start', {
+        userId: socket.data.userId as string,
+        conversationId,
+      })
+    })
+
+    socket.on('typing:stop', (conversationId: unknown) => {
+      if (typeof conversationId !== 'string' || !socket.data.userId) return
+      socket.to(`conversation:${conversationId}`).emit('typing:stop', {
+        userId: socket.data.userId as string,
+        conversationId,
+      })
+    })
+
     socket.on('disconnect', () => {
       logger.debug(`Socket disconnected: ${socket.id}`)
     })

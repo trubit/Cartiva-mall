@@ -1,11 +1,12 @@
 import { Link, useLocation } from 'react-router-dom'
-import { FiHome, FiSearch, FiShoppingCart, FiUser, FiGrid } from 'react-icons/fi'
+import { FiHome, FiSearch, FiShoppingCart, FiUser, FiGrid, FiMessageSquare } from 'react-icons/fi'
 import { useCartStore } from '../../store/cartStore.js'
 import { useAuthStore } from '../../store/authStore.js'
 
 const NAV_ITEMS = [
   { to: '/', icon: FiHome, label: 'Home', exact: true },
   { to: '/products', icon: FiSearch, label: 'Shop', exact: false },
+  { to: '/messages', icon: FiMessageSquare, label: 'Messages', exact: false, authRequired: true },
   { to: '/cart', icon: FiShoppingCart, label: 'Cart', exact: false },
   { to: '/profile', icon: FiUser, label: 'Account', exact: false },
 ]
@@ -25,7 +26,8 @@ export default function BottomNav() {
 
   return (
     <nav className="mobile-bottom-nav" aria-label="Mobile navigation">
-      {NAV_ITEMS.map(({ to, icon: Icon, label, exact }) => {
+      {NAV_ITEMS.map(({ to, icon: Icon, label, exact, authRequired }) => {
+        if (authRequired && !isAuthenticated) return null
         const isAccount = label === 'Account'
         const href = isAccount ? accountTo : to
         const DisplayIcon = isAccount ? AccountIcon : Icon

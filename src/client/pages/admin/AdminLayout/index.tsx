@@ -10,6 +10,10 @@ import {
   FiSettings,
   FiArchive,
   FiTag,
+  FiTruck,
+  FiRotateCcw,
+  FiBox,
+  FiUserCheck,
 } from 'react-icons/fi'
 import { useAdminStats, useAdminFraudAlerts } from '../../../hooks/useAdmin.js'
 import { useIsMobile } from '../../../hooks/useBreakpoint.js'
@@ -28,9 +32,15 @@ const NAV_MANAGE = [
   { to: '/admin/inventory', end: false, Icon: FiArchive, label: 'Inventory' },
   { to: '/admin/promotions', end: false, Icon: FiTag, label: 'Promotions' },
 ]
+const NAV_OPERATIONS = [
+  { to: '/admin/shipping', end: false, Icon: FiTruck, label: 'Shipping' },
+  { to: '/admin/returns', end: false, Icon: FiRotateCcw, label: 'Returns' },
+  { to: '/admin/vendors', end: false, Icon: FiBox, label: 'Vendors' },
+  { to: '/admin/vendor-approvals', end: false, Icon: FiUserCheck, label: 'Vendor Approvals' },
+]
 const NAV_SYSTEM = [{ to: '/admin/settings', end: false, Icon: FiSettings, label: 'Settings' }]
 
-const NAV_ALL = [...NAV_OVERVIEW, ...NAV_MANAGE, ...NAV_SYSTEM]
+const NAV_ALL = [...NAV_OVERVIEW, ...NAV_MANAGE, ...NAV_OPERATIONS, ...NAV_SYSTEM]
 
 // ─── inline style constants ─────────────────────────────────────────────────
 const SIDEBAR_BG = '#131921'
@@ -148,6 +158,30 @@ export default function AdminLayout() {
               Manage
             </p>
             {NAV_MANAGE.map(({ to, end, Icon, label }) => (
+              <SidebarLink
+                key={to}
+                to={to}
+                end={end}
+                Icon={Icon}
+                label={label}
+                badge={getBadge(label)}
+              />
+            ))}
+
+            <p
+              style={{
+                fontSize: '0.62rem',
+                fontWeight: 700,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: GROUP_COLOR,
+                padding: '0.75rem 1.25rem 0.25rem',
+                margin: 0,
+              }}
+            >
+              Operations
+            </p>
+            {NAV_OPERATIONS.map(({ to, end, Icon, label }) => (
               <SidebarLink
                 key={to}
                 to={to}

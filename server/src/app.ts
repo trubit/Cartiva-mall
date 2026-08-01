@@ -23,6 +23,12 @@ import adminRoutes from './routes/admin.routes.js'
 import sellerRoutes from './routes/seller.routes.js'
 import inventoryRoutes from './routes/inventory.routes.js'
 import recommendationRoutes from './routes/recommendation.routes.js'
+import notificationRoutes from './routes/notification.routes.js'
+import messagingRoutes from './routes/messaging.routes.js'
+import shippingRoutes from './routes/shipping.routes.js'
+import returnsRoutes from './routes/returns.routes.js'
+import vendorRoutes from './routes/vendor.routes.js'
+import vendorsRoutes from './routes/vendors.routes.js'
 import { getActivePromotions } from './modules/coupon/coupon.controller.js'
 import * as paymentController from './modules/payment/payment.controller.js'
 
@@ -107,6 +113,12 @@ app.use(`${API_PREFIX}/admin`, adminRoutes)
 app.use(`${API_PREFIX}/inventory`, inventoryRoutes)
 app.use(`${API_PREFIX}/recommendations`, recommendationRoutes)
 app.get(`${API_PREFIX}/promotions`, getActivePromotions)
+app.use(`${API_PREFIX}/notifications`, notificationRoutes)
+app.use(`${API_PREFIX}/messaging`, messagingRoutes)
+app.use(`${API_PREFIX}/shipments`, shippingRoutes)
+app.use(`${API_PREFIX}/returns`, returnsRoutes)
+app.use(`${API_PREFIX}/vendor`, vendorRoutes)
+app.use(`${API_PREFIX}/vendors`, vendorsRoutes)
 
 // ─── Error Handling ───────────────────────────────────────────────────────────
 app.use(notFound)
