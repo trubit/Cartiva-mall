@@ -37,11 +37,7 @@ export const getUnreadCount = async (
   }
 }
 
-export const markRead = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-): Promise<void> => {
+export const markRead = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const id = req.params['id'] as string
     await notificationService.markRead(id, req.user!.userId)

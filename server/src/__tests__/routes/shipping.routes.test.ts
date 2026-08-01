@@ -84,7 +84,10 @@ describe('POST /shipments (auth required)', () => {
 describe('PUT /shipments/:id/status (auth required)', () => {
   it('returns 401 without token', async () => {
     const fakeId = new mongoose.Types.ObjectId().toHexString()
-    const res = await request(app).put(`${BASE}/${fakeId}/status`).send({ status: 'in_transit' }).expect(401)
+    const res = await request(app)
+      .put(`${BASE}/${fakeId}/status`)
+      .send({ status: 'in_transit' })
+      .expect(401)
     expect(res.body.success).toBe(false)
   })
 })

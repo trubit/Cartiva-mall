@@ -13,7 +13,11 @@ const intQ = (v: unknown, d: number) => {
 
 // ─── Returns ─────────────────────────────────────────────────────────────────
 
-export const submitReturn = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const submitReturn = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const { orderId, type, reason, description, items } = req.body as {
       orderId: string
@@ -22,14 +26,24 @@ export const submitReturn = async (req: Request, res: Response, next: NextFuncti
       description?: string
       items: { sku: string; quantity: number; reason: ReturnReason }[]
     }
-    const data = await returnsService.submitReturn(req.user!.userId, { orderId, type, reason, description, items })
+    const data = await returnsService.submitReturn(req.user!.userId, {
+      orderId,
+      type,
+      reason,
+      description,
+      items,
+    })
     sendCreated(res, data, 'Return request submitted')
   } catch (err) {
     next(err)
   }
 }
 
-export const listReturns = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const listReturns = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const data = await returnsService.listReturns(
       req.user!.userId,
@@ -45,14 +59,22 @@ export const listReturns = async (req: Request, res: Response, next: NextFunctio
 
 export const getReturn = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const data = await returnsService.getReturn(req.params['id'] as string, req.user!.userId, req.user!.role)
+    const data = await returnsService.getReturn(
+      req.params['id'] as string,
+      req.user!.userId,
+      req.user!.role,
+    )
     sendSuccess(res, data, 'Return')
   } catch (err) {
     next(err)
   }
 }
 
-export const updateReturnStatus = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const updateReturnStatus = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const { status, refundAmount, adminNotes, sellerResponse } = req.body as {
       status: Parameters<typeof returnsService.updateReturnStatus>[1]
@@ -74,7 +96,11 @@ export const updateReturnStatus = async (req: Request, res: Response, next: Next
 
 // ─── Disputes ─────────────────────────────────────────────────────────────────
 
-export const openDispute = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const openDispute = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const { orderId, returnId, type, description, respondentId } = req.body as {
       orderId: string
@@ -83,14 +109,24 @@ export const openDispute = async (req: Request, res: Response, next: NextFunctio
       description: string
       respondentId: string
     }
-    const data = await returnsService.openDispute(req.user!.userId, { orderId, returnId, type, description, respondentId })
+    const data = await returnsService.openDispute(req.user!.userId, {
+      orderId,
+      returnId,
+      type,
+      description,
+      respondentId,
+    })
     sendCreated(res, data, 'Dispute opened')
   } catch (err) {
     next(err)
   }
 }
 
-export const listDisputes = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const listDisputes = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const data = await returnsService.listDisputes(
       req.user!.userId,
@@ -104,7 +140,11 @@ export const listDisputes = async (req: Request, res: Response, next: NextFuncti
   }
 }
 
-export const addDisputeMessage = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const addDisputeMessage = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const { content } = req.body as { content: string }
     const data = await returnsService.addDisputeMessage(
@@ -119,7 +159,11 @@ export const addDisputeMessage = async (req: Request, res: Response, next: NextF
   }
 }
 
-export const resolveDispute = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const resolveDispute = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const { resolution, notes } = req.body as { resolution: DisputeResolution; notes: string }
     const data = await returnsService.resolveDispute(req.params['id'] as string, resolution, notes)

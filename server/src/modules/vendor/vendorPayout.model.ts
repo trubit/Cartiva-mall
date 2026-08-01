@@ -52,4 +52,7 @@ const vendorPayoutSchema = new Schema<IVendorPayoutDocument>(
 vendorPayoutSchema.index({ vendorId: 1, createdAt: -1 })
 vendorPayoutSchema.index({ status: 1 })
 
-export const VendorPayout = mongoose.model<IVendorPayoutDocument>('VendorPayout', vendorPayoutSchema)
+export const VendorPayout = mongoose.model<IVendorPayoutDocument>(
+  'VendorPayout',
+  vendorPayoutSchema,
+)

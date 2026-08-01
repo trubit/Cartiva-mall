@@ -47,7 +47,15 @@ const shipmentEventSchema = new mongoose.Schema<IShipmentEvent>(
   {
     status: {
       type: String,
-      enum: ['pending', 'picked_up', 'in_transit', 'out_for_delivery', 'delivered', 'failed', 'cancelled'],
+      enum: [
+        'pending',
+        'picked_up',
+        'in_transit',
+        'out_for_delivery',
+        'delivered',
+        'failed',
+        'cancelled',
+      ],
       required: true,
     },
     location: { type: String, trim: true },
@@ -77,7 +85,15 @@ const shipmentSchema = new mongoose.Schema<IShipmentDocument>(
     sellerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     status: {
       type: String,
-      enum: ['pending', 'picked_up', 'in_transit', 'out_for_delivery', 'delivered', 'failed', 'cancelled'],
+      enum: [
+        'pending',
+        'picked_up',
+        'in_transit',
+        'out_for_delivery',
+        'delivered',
+        'failed',
+        'cancelled',
+      ],
       default: 'pending',
       index: true,
     },

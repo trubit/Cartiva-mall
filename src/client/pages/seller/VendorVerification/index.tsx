@@ -104,7 +104,9 @@ export default function VendorVerification() {
 
   const { vendor, verification } = data
   const overallStatus = verification?.overallStatus ?? 'unverified'
-  const overallLabel = overallStatus.replace('_', ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())
+  const overallLabel = overallStatus
+    .replace('_', ' ')
+    .replace(/\b\w/g, (c: string) => c.toUpperCase())
 
   const vendorStatusPill =
     vendor.status === 'active'

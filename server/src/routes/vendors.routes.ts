@@ -1,7 +1,11 @@
 import { Router } from 'express'
 import { vendorsController as ctrl } from '../modules/vendor/vendors.controller.js'
 import { authenticate, authorize } from '../middlewares/auth.middleware.js'
-import { adminLimiter, uploadLimiter, dashboardLimiter } from '../middlewares/rateLimiter.middleware.js'
+import {
+  adminLimiter,
+  uploadLimiter,
+  dashboardLimiter,
+} from '../middlewares/rateLimiter.middleware.js'
 
 const router = Router()
 
@@ -9,10 +13,28 @@ const router = Router()
 router.get('/storefront/:slug', ctrl.getStorefrontBySlug)
 
 // ─── Admin-only (static paths before /:id param routes) ──────────────────────
-router.get('/admin/pending', authenticate, authorize('admin'), adminLimiter, ctrl.getPendingApprovals)
+router.get(
+  '/admin/pending',
+  authenticate,
+  authorize('admin'),
+  adminLimiter,
+  ctrl.getPendingApprovals,
+)
 router.get('/admin/all', authenticate, authorize('admin'), adminLimiter, ctrl.listAllVendors)
-router.put('/documents/:documentId/review', authenticate, authorize('admin'), adminLimiter, ctrl.reviewDocument)
-router.put('/payouts/:payoutId/process', authenticate, authorize('admin'), adminLimiter, ctrl.processPayout)
+router.put(
+  '/documents/:documentId/review',
+  authenticate,
+  authorize('admin'),
+  adminLimiter,
+  ctrl.reviewDocument,
+)
+router.put(
+  '/payouts/:payoutId/process',
+  authenticate,
+  authorize('admin'),
+  adminLimiter,
+  ctrl.processPayout,
+)
 
 // ─── Authenticated vendor operations ─────────────────────────────────────────
 router.post('/register', authenticate, ctrl.register)

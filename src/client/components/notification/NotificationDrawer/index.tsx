@@ -186,7 +186,9 @@ export default function NotificationDrawer({ open, onClose }: Props) {
             flexShrink: 0,
           }}
         >
-          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#111827' }}>Notifications</h2>
+          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#111827' }}>
+            Notifications
+          </h2>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             {items.some((n) => !n.read) && (
               <button
@@ -205,7 +207,13 @@ export default function NotificationDrawer({ open, onClose }: Props) {
             <button
               onClick={onClose}
               aria-label="Close"
-              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#374151' }}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: 4,
+                color: '#374151',
+              }}
             >
               <FiX size={20} />
             </button>
@@ -215,7 +223,9 @@ export default function NotificationDrawer({ open, onClose }: Props) {
         {/* List */}
         <div style={{ flex: 1, overflowY: 'auto' }}>
           {listQuery.isPending && (
-            <p style={{ textAlign: 'center', padding: 24, color: '#9ca3af', fontSize: 13 }}>Loading…</p>
+            <p style={{ textAlign: 'center', padding: 24, color: '#9ca3af', fontSize: 13 }}>
+              Loading…
+            </p>
           )}
           {!listQuery.isPending && items.length === 0 && (
             <p style={{ textAlign: 'center', padding: 32, color: '#9ca3af', fontSize: 13 }}>

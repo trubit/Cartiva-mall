@@ -64,5 +64,7 @@ const vendorProfileSchema = new Schema<IVendorProfileDocument>(
   { timestamps: true },
 )
 
-
-export const VendorProfile = mongoose.model<IVendorProfileDocument>('VendorProfile', vendorProfileSchema)
+export const VendorProfile = mongoose.model<IVendorProfileDocument>(
+  'VendorProfile',
+  vendorProfileSchema,
+)

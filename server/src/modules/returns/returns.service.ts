@@ -4,7 +4,11 @@ import { Order } from '../order/order.model.js'
 import { AppError } from '../../middlewares/error.middleware.js'
 import { notificationService } from '../notification/notification.service.js'
 import { emitToUser } from '../../sockets/index.js'
-import { RETURN_WINDOW_DAYS, RETURNABLE_STATUSES, type ReturnReason } from '../../../../src/shared/constants/index.js'
+import {
+  RETURN_WINDOW_DAYS,
+  RETURNABLE_STATUSES,
+  type ReturnReason,
+} from '../../../../src/shared/constants/index.js'
 
 export const returnsService = {
   async submitReturn(
@@ -27,8 +31,7 @@ export const returnsService = {
     }
 
     // Check return window
-    const daysSinceDelivery =
-      (Date.now() - order.updatedAt.getTime()) / (1000 * 60 * 60 * 24)
+    const daysSinceDelivery = (Date.now() - order.updatedAt.getTime()) / (1000 * 60 * 60 * 24)
     if (daysSinceDelivery > RETURN_WINDOW_DAYS) {
       throw new AppError(`Return window of ${RETURN_WINDOW_DAYS} days has expired`, 400)
     }
@@ -62,19 +65,16 @@ export const returnsService = {
     })
 
     // Mirror into Order's embedded returnRequest
-    await Order.updateOne(
-      { _id: input.orderId } as object,
-      {
-        $set: {
-          returnRequest: {
-            reason: input.reason,
-            description: input.description,
-            status: 'pending',
-            requestedAt: new Date(),
-          },
+    await Order.updateOne({ _id: input.orderId } as object, {
+      $set: {
+        returnRequest: {
+          reason: input.reason,
+          description: input.description,
+          status: 'pending',
+          requestedAt: new Date(),
         },
       },
-    )
+    })
 
     void notificationService.create({
       userId,
@@ -104,9 +104,7 @@ export const returnsService = {
   },
 
   async getReturn(id: string, userId: string, role: string) {
-    const ret = await Return.findById(id)
-      .populate('orderId', 'orderNumber grandTotal items')
-      .lean()
+    const ret = await Return.findById(id).populate('orderId', 'orderNumber grandTotal items').lean()
     if (!ret) throw new AppError('Return not found', 404)
     if (role !== 'admin' && String(ret.userId) !== userId) throw new AppError('Access denied', 403)
     return ret
@@ -130,11 +128,16 @@ export const returnsService = {
 
     // Mirror to Order
     const orderReturnStatus =
-      status === 'approved' ? 'approved' : status === 'rejected' ? 'rejected' : status === 'refunded' || status === 'completed' ? 'completed' : 'pending'
-    await Order.updateOne(
-      { _id: ret.orderId } as object,
-      { $set: { 'returnRequest.status': orderReturnStatus } },
-    )
+      status === 'approved'
+        ? 'approved'
+        : status === 'rejected'
+          ? 'rejected'
+          : status === 'refunded' || status === 'completed'
+            ? 'completed'
+            : 'pending'
+    await Order.updateOne({ _id: ret.orderId } as object, {
+      $set: { 'returnRequest.status': orderReturnStatus },
+    })
 
     const order = ret.orderId as unknown as { orderNumber: string; userId: string }
     const titles: Partial<Record<ReturnStatus, string>> = {
@@ -234,14 +237,21 @@ export const returnsService = {
       throw new AppError('Dispute is closed', 400)
     }
 
-    const msgRole = role === 'admin' ? 'admin' : String(dispute.complainantId) === userId ? 'buyer' : 'seller'
-    dispute.messages.push({ senderId: dispute.complainantId, role: msgRole, content: content.trim(), createdAt: new Date() })
+    const msgRole =
+      role === 'admin' ? 'admin' : String(dispute.complainantId) === userId ? 'buyer' : 'seller'
+    dispute.messages.push({
+      senderId: dispute.complainantId,
+      role: msgRole,
+      content: content.trim(),
+      createdAt: new Date(),
+    })
     await dispute.save()
 
     // Notify the other party
-    const notifyId = String(dispute.complainantId) === userId
-      ? String(dispute.respondentId)
-      : String(dispute.complainantId)
+    const notifyId =
+      String(dispute.complainantId) === userId
+        ? String(dispute.respondentId)
+        : String(dispute.complainantId)
     void notificationService.create({
       userId: notifyId,
       type: 'order',
@@ -253,11 +263,7 @@ export const returnsService = {
     return dispute
   },
 
-  async resolveDispute(
-    id: string,
-    resolution: DisputeResolution,
-    notes: string,
-  ) {
+  async resolveDispute(id: string, resolution: DisputeResolution, notes: string) {
     const dispute = await Dispute.findById(id)
     if (!dispute) throw new AppError('Dispute not found', 404)
 

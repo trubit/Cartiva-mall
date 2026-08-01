@@ -42,25 +42,22 @@ export const shippingService = {
     })
 
     // Update order tracking info
-    await Order.updateOne(
-      { _id: orderId } as object,
-      {
-        $set: {
-          'tracking.trackingNumber': trackingNumber,
-          'tracking.carrier': input.carrier,
-          ...(input.estimatedDelivery
-            ? { 'tracking.estimatedDeliveryDate': new Date(input.estimatedDelivery) }
-            : {}),
-        },
-        $push: {
-          'tracking.events': {
-            status: 'pending',
-            description: 'Label created',
-            timestamp: new Date(),
-          },
+    await Order.updateOne({ _id: orderId } as object, {
+      $set: {
+        'tracking.trackingNumber': trackingNumber,
+        'tracking.carrier': input.carrier,
+        ...(input.estimatedDelivery
+          ? { 'tracking.estimatedDeliveryDate': new Date(input.estimatedDelivery) }
+          : {}),
+      },
+      $push: {
+        'tracking.events': {
+          status: 'pending',
+          description: 'Label created',
+          timestamp: new Date(),
         },
       },
-    )
+    })
 
     void notificationService.create({
       userId: order.userId,
@@ -77,7 +74,11 @@ export const shippingService = {
   async getShipment(shipmentId: string, userId: string, role: string) {
     const shipment = await Shipment.findById(shipmentId).lean()
     if (!shipment) throw new AppError('Shipment not found', 404)
-    if (role !== 'admin' && String(shipment.userId) !== userId && String(shipment.sellerId) !== userId) {
+    if (
+      role !== 'admin' &&
+      String(shipment.userId) !== userId &&
+      String(shipment.sellerId) !== userId
+    ) {
       throw new AppError('Access denied', 403)
     }
     return shipment
@@ -121,7 +122,12 @@ export const shippingService = {
     return { items, total, page, pages: Math.ceil(total / limit) }
   },
 
-  async updateStatus(shipmentId: string, status: ShipmentStatus, description: string, location?: string) {
+  async updateStatus(
+    shipmentId: string,
+    status: ShipmentStatus,
+    description: string,
+    location?: string,
+  ) {
     const shipment = await Shipment.findById(shipmentId)
     if (!shipment) throw new AppError('Shipment not found', 404)
 
@@ -132,13 +138,24 @@ export const shippingService = {
     await shipment.save()
 
     // Mirror tracking event into Order
-    await Order.updateOne(
-      { _id: shipment.orderId } as object,
-      {
-        $set: { orderStatus: status === 'delivered' ? 'delivered' : status === 'out_for_delivery' ? 'outForDelivery' : undefined },
-        $push: { 'tracking.events': { status, description, ...(location ? { location } : {}), timestamp: new Date() } },
+    await Order.updateOne({ _id: shipment.orderId } as object, {
+      $set: {
+        orderStatus:
+          status === 'delivered'
+            ? 'delivered'
+            : status === 'out_for_delivery'
+              ? 'outForDelivery'
+              : undefined,
       },
-    )
+      $push: {
+        'tracking.events': {
+          status,
+          description,
+          ...(location ? { location } : {}),
+          timestamp: new Date(),
+        },
+      },
+    })
 
     // Notify buyer of meaningful status changes
     const notifTitles: Partial<Record<ShipmentStatus, string>> = {

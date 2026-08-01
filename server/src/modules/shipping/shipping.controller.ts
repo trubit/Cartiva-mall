@@ -9,9 +9,16 @@ const intQ = (v: unknown, d: number) => {
   return isNaN(n) ? d : n
 }
 
-export const createShipment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const createShipment = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
-    const { orderId, carrier, estimatedDelivery, shippingCost, weight } = req.body as Record<string, string>
+    const { orderId, carrier, estimatedDelivery, shippingCost, weight } = req.body as Record<
+      string,
+      string
+    >
     const data = await shippingService.createShipment(orderId, req.user!.userId, {
       carrier,
       estimatedDelivery,
@@ -25,7 +32,11 @@ export const createShipment = async (req: Request, res: Response, next: NextFunc
   }
 }
 
-export const getShipment = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getShipment = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const data = await shippingService.getShipment(
       req.params['id'] as string,
@@ -38,7 +49,11 @@ export const getShipment = async (req: Request, res: Response, next: NextFunctio
   }
 }
 
-export const trackByNumber = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const trackByNumber = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const data = await shippingService.getByTrackingNumber(req.params['trackingNumber'] as string)
     sendSuccess(res, data, 'Tracking info')
@@ -47,7 +62,11 @@ export const trackByNumber = async (req: Request, res: Response, next: NextFunct
   }
 }
 
-export const listMyShipments = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const listMyShipments = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const data = await shippingService.listForUser(
       req.user!.userId,
@@ -60,7 +79,11 @@ export const listMyShipments = async (req: Request, res: Response, next: NextFun
   }
 }
 
-export const listAllShipments = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const listAllShipments = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const rawStatus = Array.isArray(req.query.status)
       ? (req.query.status[0] as string)
@@ -76,7 +99,11 @@ export const listAllShipments = async (req: Request, res: Response, next: NextFu
   }
 }
 
-export const updateShipmentStatus = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const updateShipmentStatus = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const { status, description, location } = req.body as {
       status: ShipmentStatus

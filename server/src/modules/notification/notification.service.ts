@@ -54,10 +54,7 @@ export const notificationService = {
   },
 
   async markAllRead(userId: string) {
-    const result = await Notification.updateMany(
-      { userId, read: false } as object,
-      { read: true },
-    )
+    const result = await Notification.updateMany({ userId, read: false } as object, { read: true })
     return result.modifiedCount
   },
 

@@ -17,11 +17,40 @@ export interface IVendorSubscriptionDocument extends Document {
   updatedAt: Date
 }
 
-const PLAN_DEFAULTS: Record<SubscriptionPlan, { monthlyFee: number; productLimit: number; commissionRate: number; features: string[] }> = {
-  free: { monthlyFee: 0, productLimit: 10, commissionRate: 15, features: ['basic_listing', 'standard_support'] },
-  basic: { monthlyFee: 29, productLimit: 100, commissionRate: 12, features: ['basic_listing', 'analytics', 'standard_support'] },
-  professional: { monthlyFee: 79, productLimit: 1000, commissionRate: 10, features: ['advanced_listing', 'analytics', 'priority_support', 'promotions'] },
-  enterprise: { monthlyFee: 199, productLimit: -1, commissionRate: 8, features: ['unlimited_listing', 'advanced_analytics', 'dedicated_support', 'promotions', 'api_access'] },
+const PLAN_DEFAULTS: Record<
+  SubscriptionPlan,
+  { monthlyFee: number; productLimit: number; commissionRate: number; features: string[] }
+> = {
+  free: {
+    monthlyFee: 0,
+    productLimit: 10,
+    commissionRate: 15,
+    features: ['basic_listing', 'standard_support'],
+  },
+  basic: {
+    monthlyFee: 29,
+    productLimit: 100,
+    commissionRate: 12,
+    features: ['basic_listing', 'analytics', 'standard_support'],
+  },
+  professional: {
+    monthlyFee: 79,
+    productLimit: 1000,
+    commissionRate: 10,
+    features: ['advanced_listing', 'analytics', 'priority_support', 'promotions'],
+  },
+  enterprise: {
+    monthlyFee: 199,
+    productLimit: -1,
+    commissionRate: 8,
+    features: [
+      'unlimited_listing',
+      'advanced_analytics',
+      'dedicated_support',
+      'promotions',
+      'api_access',
+    ],
+  },
 }
 
 export const getPlanDefaults = (plan: SubscriptionPlan) => PLAN_DEFAULTS[plan]
@@ -45,7 +74,12 @@ const subscriptionSchema = new mongoose.Schema<IVendorSubscriptionDocument>(
   },
   {
     timestamps: true,
-    toJSON: { transform: (_doc, ret: Record<string, unknown>) => { delete ret.__v; return ret } },
+    toJSON: {
+      transform: (_doc, ret: Record<string, unknown>) => {
+        delete ret.__v
+        return ret
+      },
+    },
   },
 )
 

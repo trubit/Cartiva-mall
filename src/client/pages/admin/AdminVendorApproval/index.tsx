@@ -51,9 +51,7 @@ function ApprovalCard({
             {vendor.businessName}
           </p>
           <p style={{ fontSize: '0.78rem', color: TEXT_MUTED, margin: '3px 0 0' }}>
-            {user
-              ? `${user.firstName} ${user.lastName} · ${user.email}`
-              : String(vendor.userId)}
+            {user ? `${user.firstName} ${user.lastName} · ${user.email}` : String(vendor.userId)}
           </p>
           <p
             style={{
@@ -63,8 +61,7 @@ function ApprovalCard({
               textTransform: 'capitalize',
             }}
           >
-            {vendor.businessType} &middot; Applied{' '}
-            {new Date(vendor.createdAt).toLocaleDateString()}
+            {vendor.businessType} &middot; Applied {new Date(vendor.createdAt).toLocaleDateString()}
           </p>
         </div>
         <span
@@ -212,7 +209,9 @@ export default function AdminVendorApproval() {
             Vendor Approval Queue
           </h1>
           <p style={{ fontSize: '0.85rem', color: TEXT_MUTED, margin: '4px 0 0' }}>
-            {data?.total ? `${data.total} pending application${data.total !== 1 ? 's' : ''}` : 'Review and approve vendor applications'}
+            {data?.total
+              ? `${data.total} pending application${data.total !== 1 ? 's' : ''}`
+              : 'Review and approve vendor applications'}
           </p>
         </div>
         <div
@@ -265,9 +264,7 @@ export default function AdminVendorApproval() {
       ))}
 
       {pages > 1 && (
-        <div
-          style={{ display: 'flex', justifyContent: 'center', gap: 10, marginTop: 24 }}
-        >
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginTop: 24 }}>
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}

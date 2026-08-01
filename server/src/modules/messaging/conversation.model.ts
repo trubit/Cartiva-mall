@@ -19,7 +19,10 @@ const conversationSchema = new mongoose.Schema<IConversationDocument>(
       type: [mongoose.Schema.Types.ObjectId],
       ref: 'User',
       required: true,
-      validate: { validator: (v: unknown[]) => v.length >= 2, message: 'Need at least 2 participants' },
+      validate: {
+        validator: (v: unknown[]) => v.length >= 2,
+        message: 'Need at least 2 participants',
+      },
     },
     productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
     orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
@@ -45,4 +48,7 @@ conversationSchema.index({ participants: 1, lastMessageAt: -1 })
 conversationSchema.index({ orderId: 1 }, { sparse: true })
 conversationSchema.index({ productId: 1 }, { sparse: true })
 
-export const Conversation = mongoose.model<IConversationDocument>('Conversation', conversationSchema)
+export const Conversation = mongoose.model<IConversationDocument>(
+  'Conversation',
+  conversationSchema,
+)

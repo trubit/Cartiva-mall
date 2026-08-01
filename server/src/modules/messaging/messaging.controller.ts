@@ -15,11 +15,11 @@ export const startConversation = async (
 ): Promise<void> => {
   try {
     const { recipientId, productId, orderId, subject } = req.body as Record<string, string>
-    const convo = await messagingService.getOrCreateConversation(
-      req.user!.userId,
-      recipientId,
-      { productId, orderId, subject },
-    )
+    const convo = await messagingService.getOrCreateConversation(req.user!.userId, recipientId, {
+      productId,
+      orderId,
+      subject,
+    })
     sendCreated(res, convo, 'Conversation ready')
   } catch (err) {
     next(err)

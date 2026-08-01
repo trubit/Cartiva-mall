@@ -101,8 +101,16 @@ export default function StorefrontBuilder() {
         </div>
       </div>
 
-      {error && <div className="sl-alert sl-alert--error" style={{ marginBottom: 20 }}>{error}</div>}
-      {saved && <div className="sl-alert sl-alert--info" style={{ marginBottom: 20 }}>Storefront saved successfully!</div>}
+      {error && (
+        <div className="sl-alert sl-alert--error" style={{ marginBottom: 20 }}>
+          {error}
+        </div>
+      )}
+      {saved && (
+        <div className="sl-alert sl-alert--info" style={{ marginBottom: 20 }}>
+          Storefront saved successfully!
+        </div>
+      )}
 
       <form onSubmit={submit} className="seller-form">
         <div className="seller-form__section">
@@ -123,7 +131,13 @@ export default function StorefrontBuilder() {
             <div className="seller-form__field">
               <label className="sl-form-label">Slug (URL) *</label>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: '0.75rem', color: 'var(--color-neutral-400)', whiteSpace: 'nowrap' }}>
+                <span
+                  style={{
+                    fontSize: '0.75rem',
+                    color: 'var(--color-neutral-400)',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
                   /store/
                 </span>
                 <input

@@ -79,8 +79,15 @@ const returnSchema = new mongoose.Schema<IReturnDocument>(
     status: {
       type: String,
       enum: [
-        'submitted', 'under_review', 'approved', 'rejected',
-        'awaiting_shipment', 'in_transit', 'received', 'refunded', 'completed',
+        'submitted',
+        'under_review',
+        'approved',
+        'rejected',
+        'awaiting_shipment',
+        'in_transit',
+        'received',
+        'refunded',
+        'completed',
       ],
       default: 'submitted',
       index: true,

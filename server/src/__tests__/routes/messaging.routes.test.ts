@@ -54,7 +54,10 @@ beforeAll(async () => {
 
 describe('POST /messaging/conversations (auth required)', () => {
   it('returns 401 without token', async () => {
-    const res = await request(app).post(`${BASE}/conversations`).send({ recipientId: 'abc' }).expect(401)
+    const res = await request(app)
+      .post(`${BASE}/conversations`)
+      .send({ recipientId: 'abc' })
+      .expect(401)
     expect(res.body.success).toBe(false)
   })
 })
@@ -76,7 +79,10 @@ describe('GET /messaging/conversations/:id (auth required)', () => {
 
 describe('POST /messaging/messages (auth required)', () => {
   it('returns 401 without token', async () => {
-    const res = await request(app).post(`${BASE}/messages`).send({ conversationId: 'x', content: 'hi' }).expect(401)
+    const res = await request(app)
+      .post(`${BASE}/messages`)
+      .send({ conversationId: 'x', content: 'hi' })
+      .expect(401)
     expect(res.body.success).toBe(false)
   })
 })
@@ -92,7 +98,10 @@ describe('GET /messaging/messages/:conversationId (auth required)', () => {
 describe('PUT /messaging/messages/:id (auth required)', () => {
   it('returns 401 without token', async () => {
     const fakeId = new mongoose.Types.ObjectId().toHexString()
-    const res = await request(app).put(`${BASE}/messages/${fakeId}`).send({ content: 'edit' }).expect(401)
+    const res = await request(app)
+      .put(`${BASE}/messages/${fakeId}`)
+      .send({ content: 'edit' })
+      .expect(401)
     expect(res.body.success).toBe(false)
   })
 })

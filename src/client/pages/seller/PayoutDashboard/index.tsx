@@ -159,8 +159,16 @@ export default function PayoutDashboard() {
                     </select>
                   </div>
                 </div>
-                {error && <div className="sl-alert sl-alert--error" style={{ marginTop: 12 }}>{error}</div>}
-                {success && <div className="sl-alert sl-alert--info" style={{ marginTop: 12 }}>Payout requested successfully!</div>}
+                {error && (
+                  <div className="sl-alert sl-alert--error" style={{ marginTop: 12 }}>
+                    {error}
+                  </div>
+                )}
+                {success && (
+                  <div className="sl-alert sl-alert--info" style={{ marginTop: 12 }}>
+                    Payout requested successfully!
+                  </div>
+                )}
               </div>
               <div className="seller-form__actions">
                 <button
@@ -170,7 +178,11 @@ export default function PayoutDashboard() {
                 >
                   Cancel
                 </button>
-                <button type="submit" className="sl-btn sl-btn--primary" disabled={request.isPending}>
+                <button
+                  type="submit"
+                  className="sl-btn sl-btn--primary"
+                  disabled={request.isPending}
+                >
                   {request.isPending ? 'Requesting…' : 'Submit Request'}
                 </button>
               </div>

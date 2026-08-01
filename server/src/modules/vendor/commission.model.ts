@@ -27,14 +27,24 @@ const commissionSchema = new mongoose.Schema<ICommissionDocument>(
     commissionAmount: { type: Number, required: true, min: 0 },
     platformAmount: { type: Number, required: true, min: 0 },
     sellerEarning: { type: Number, required: true, min: 0 },
-    status: { type: String, enum: ['pending', 'calculated', 'paid'], default: 'pending', index: true },
+    status: {
+      type: String,
+      enum: ['pending', 'calculated', 'paid'],
+      default: 'pending',
+      index: true,
+    },
     payoutId: { type: mongoose.Schema.Types.ObjectId, ref: 'VendorPayout' },
     periodStart: { type: Date, required: true },
     periodEnd: { type: Date, required: true },
   },
   {
     timestamps: true,
-    toJSON: { transform: (_doc, ret: Record<string, unknown>) => { delete ret.__v; return ret } },
+    toJSON: {
+      transform: (_doc, ret: Record<string, unknown>) => {
+        delete ret.__v
+        return ret
+      },
+    },
   },
 )
 

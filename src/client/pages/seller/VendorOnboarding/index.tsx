@@ -86,7 +86,8 @@ export default function VendorOnboarding() {
                 height: 4,
                 flex: 1,
                 borderRadius: 999,
-                background: i <= step ? 'var(--color-primary, #007185)' : 'var(--color-neutral-200)',
+                background:
+                  i <= step ? 'var(--color-primary, #007185)' : 'var(--color-neutral-200)',
                 transition: 'background 0.2s',
               }}
             />

@@ -127,7 +127,9 @@ export default function DocumentManager() {
                   <select
                     className="form-select"
                     value={form.type}
-                    onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as DocumentType }))}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, type: e.target.value as DocumentType }))
+                    }
                   >
                     {DOC_TYPES.map((d) => (
                       <option key={d.value} value={d.value}>
@@ -157,8 +159,16 @@ export default function DocumentManager() {
                   />
                 </div>
               </div>
-              {error && <div className="sl-alert sl-alert--error" style={{ marginTop: 12 }}>{error}</div>}
-              {success && <div className="sl-alert sl-alert--info" style={{ marginTop: 12 }}>Document uploaded successfully!</div>}
+              {error && (
+                <div className="sl-alert sl-alert--error" style={{ marginTop: 12 }}>
+                  {error}
+                </div>
+              )}
+              {success && (
+                <div className="sl-alert sl-alert--info" style={{ marginTop: 12 }}>
+                  Document uploaded successfully!
+                </div>
+              )}
             </div>
             <div className="seller-form__actions">
               <button type="submit" className="sl-btn sl-btn--primary" disabled={upload.isPending}>

@@ -9,7 +9,11 @@ const intQ = (v: unknown, d: number) => {
   return isNaN(n) ? d : n
 }
 
-export const getMySubscription = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getMySubscription = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const data = await vendorService.getSubscription(req.user!.userId)
     sendSuccess(res, data, 'Subscription')
@@ -28,7 +32,11 @@ export const subscribe = async (req: Request, res: Response, next: NextFunction)
   }
 }
 
-export const cancelSubscription = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const cancelSubscription = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const data = await vendorService.cancelSubscription(req.user!.userId)
     sendSuccess(res, data, 'Subscription cancelled')
@@ -37,7 +45,11 @@ export const cancelSubscription = async (req: Request, res: Response, next: Next
   }
 }
 
-export const getMyCommissions = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getMyCommissions = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const data = await vendorService.getCommissions(
       req.user!.userId,
@@ -51,7 +63,11 @@ export const getMyCommissions = async (req: Request, res: Response, next: NextFu
   }
 }
 
-export const getMyStats = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getMyStats = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const data = await vendorService.getVendorStats(req.user!.userId)
     sendSuccess(res, data, 'Vendor stats')
@@ -61,7 +77,11 @@ export const getMyStats = async (req: Request, res: Response, next: NextFunction
 }
 
 // Admin
-export const listVendors = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const listVendors = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const rawStatus = Array.isArray(req.query.status)
       ? (req.query.status[0] as string)
@@ -77,16 +97,27 @@ export const listVendors = async (req: Request, res: Response, next: NextFunctio
   }
 }
 
-export const suspendVendor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const suspendVendor = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
-    const data = await vendorService.suspendVendor(req.params['sellerId'] as string, req.user!.userId)
+    const data = await vendorService.suspendVendor(
+      req.params['sellerId'] as string,
+      req.user!.userId,
+    )
     sendSuccess(res, data, 'Vendor suspended')
   } catch (err) {
     next(err)
   }
 }
 
-export const reinstateVendor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const reinstateVendor = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const data = await vendorService.reinstateVendor(req.params['sellerId'] as string)
     sendSuccess(res, data, 'Vendor reinstated')
@@ -95,7 +126,11 @@ export const reinstateVendor = async (req: Request, res: Response, next: NextFun
   }
 }
 
-export const getVendorCommissions = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const getVendorCommissions = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   try {
     const data = await vendorService.getCommissions(
       req.params['sellerId'] as string,

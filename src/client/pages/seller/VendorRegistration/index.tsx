@@ -75,7 +75,8 @@ export default function VendorRegistration() {
                 height: 4,
                 flex: 1,
                 borderRadius: 999,
-                background: i <= step ? 'var(--color-primary, #007185)' : 'var(--color-neutral-200)',
+                background:
+                  i <= step ? 'var(--color-primary, #007185)' : 'var(--color-neutral-200)',
                 transition: 'background 0.2s',
               }}
             />
@@ -147,7 +148,8 @@ export default function VendorRegistration() {
               </p>
             </div>
             <p style={{ fontSize: '0.78rem', color: 'var(--color-neutral-400)' }}>
-              Your application will be reviewed by our team. You will receive a notification once a decision is made.
+              Your application will be reviewed by our team. You will receive a notification once a
+              decision is made.
             </p>
           </div>
         )}

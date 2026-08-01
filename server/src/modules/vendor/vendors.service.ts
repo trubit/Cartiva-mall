@@ -20,7 +20,9 @@ const audit = (
   action: AuditAction,
   performedBy: string,
   metadata?: Record<string, unknown>,
-) => { VendorAudit.create({ vendorId, action, performedBy, metadata }).catch(() => {}) }
+) => {
+  VendorAudit.create({ vendorId, action, performedBy, metadata }).catch(() => {})
+}
 
 const notify = (args: Parameters<typeof notificationService.create>[0]) =>
   notificationService.create(args).catch(() => {})

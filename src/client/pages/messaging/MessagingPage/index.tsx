@@ -64,13 +64,7 @@ function ConversationList({
   )
 }
 
-function ChatPanel({
-  conversationId,
-  onBack,
-}: {
-  conversationId: string
-  onBack?: () => void
-}) {
+function ChatPanel({ conversationId, onBack }: { conversationId: string; onBack?: () => void }) {
   const [text, setText] = useState('')
   const { isPending } = useMessages(conversationId)
   const sendMessage = useSendMessage()
@@ -242,15 +236,15 @@ export default function MessagingPage() {
         }}
       >
         {activeId ? (
-          <ChatPanel
-            key={activeId}
-            conversationId={activeId}
-            onBack={() => setActiveId(null)}
-          />
+          <ChatPanel key={activeId} conversationId={activeId} onBack={() => setActiveId(null)} />
         ) : (
           <>
             <div
-              style={{ padding: '14px 16px', borderBottom: '1px solid var(--border-color, #eee)', flexShrink: 0 }}
+              style={{
+                padding: '14px 16px',
+                borderBottom: '1px solid var(--border-color, #eee)',
+                flexShrink: 0,
+              }}
             >
               <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>Messages</h2>
             </div>
@@ -285,7 +279,13 @@ export default function MessagingPage() {
           flexDirection: 'column',
         }}
       >
-        <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border-color, #eee)', flexShrink: 0 }}>
+        <div
+          style={{
+            padding: '14px 16px',
+            borderBottom: '1px solid var(--border-color, #eee)',
+            flexShrink: 0,
+          }}
+        >
           <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>Messages</h2>
         </div>
         <div style={{ flex: 1, overflowY: 'auto' }}>

@@ -77,7 +77,10 @@ describe('GET /returns/:id (auth required)', () => {
 describe('PUT /returns/:id/status (auth required)', () => {
   it('returns 401 without token', async () => {
     const fakeId = new mongoose.Types.ObjectId().toHexString()
-    const res = await request(app).put(`${BASE}/${fakeId}/status`).send({ status: 'approved' }).expect(401)
+    const res = await request(app)
+      .put(`${BASE}/${fakeId}/status`)
+      .send({ status: 'approved' })
+      .expect(401)
     expect(res.body.success).toBe(false)
   })
 })
@@ -99,7 +102,10 @@ describe('GET /returns/disputes (auth required)', () => {
 describe('POST /returns/disputes/:id/messages (auth required)', () => {
   it('returns 401 without token', async () => {
     const fakeId = new mongoose.Types.ObjectId().toHexString()
-    const res = await request(app).post(`${BASE}/disputes/${fakeId}/messages`).send({ content: 'test' }).expect(401)
+    const res = await request(app)
+      .post(`${BASE}/disputes/${fakeId}/messages`)
+      .send({ content: 'test' })
+      .expect(401)
     expect(res.body.success).toBe(false)
   })
 })
@@ -107,7 +113,10 @@ describe('POST /returns/disputes/:id/messages (auth required)', () => {
 describe('PUT /returns/disputes/:id/resolve (auth required)', () => {
   it('returns 401 without token', async () => {
     const fakeId = new mongoose.Types.ObjectId().toHexString()
-    const res = await request(app).put(`${BASE}/disputes/${fakeId}/resolve`).send({ resolution: 'buyer_favor' }).expect(401)
+    const res = await request(app)
+      .put(`${BASE}/disputes/${fakeId}/resolve`)
+      .send({ resolution: 'buyer_favor' })
+      .expect(401)
     expect(res.body.success).toBe(false)
   })
 })

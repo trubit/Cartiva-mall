@@ -28,7 +28,14 @@ const vendorStorefrontSchema = new Schema<IVendorStorefrontDocument>(
   {
     vendorId: { type: Schema.Types.ObjectId, ref: 'Vendor', required: true, unique: true },
     name: { type: String, required: true, trim: true, maxlength: 200 },
-    slug: { type: String, required: true, unique: true, lowercase: true, trim: true, maxlength: 100 },
+    slug: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+      maxlength: 100,
+    },
     description: { type: String, maxlength: 3000 },
     logo: { type: String, maxlength: 500 },
     banner: { type: String, maxlength: 500 },
@@ -47,7 +54,6 @@ const vendorStorefrontSchema = new Schema<IVendorStorefrontDocument>(
   },
   { timestamps: true },
 )
-
 
 export const VendorStorefront = mongoose.model<IVendorStorefrontDocument>(
   'VendorStorefront',

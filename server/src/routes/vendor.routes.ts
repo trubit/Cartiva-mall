@@ -16,6 +16,11 @@ router.get('/stats', authenticate, dashboardLimiter, vendorCtrl.getMyStats)
 router.get('/admin/list', authenticate, adminLimiter, vendorCtrl.listVendors)
 router.put('/admin/:sellerId/suspend', authenticate, adminLimiter, vendorCtrl.suspendVendor)
 router.put('/admin/:sellerId/reinstate', authenticate, adminLimiter, vendorCtrl.reinstateVendor)
-router.get('/admin/:sellerId/commissions', authenticate, adminLimiter, vendorCtrl.getVendorCommissions)
+router.get(
+  '/admin/:sellerId/commissions',
+  authenticate,
+  adminLimiter,
+  vendorCtrl.getVendorCommissions,
+)
 
 export default router

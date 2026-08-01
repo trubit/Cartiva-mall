@@ -1,4 +1,8 @@
-import { VendorSubscription, getPlanDefaults, type SubscriptionPlan } from './vendorSubscription.model.js'
+import {
+  VendorSubscription,
+  getPlanDefaults,
+  type SubscriptionPlan,
+} from './vendorSubscription.model.js'
 import { Commission } from './commission.model.js'
 import { User } from '../user/user.model.js'
 import { AppError } from '../../middlewares/error.middleware.js'
@@ -17,10 +21,9 @@ export const vendorService = {
 
   async subscribePlan(sellerId: string, plan: SubscriptionPlan) {
     // Deactivate any existing active subscription
-    await VendorSubscription.updateMany(
-      { sellerId, status: 'active' } as object,
-      { $set: { status: 'cancelled' } },
-    )
+    await VendorSubscription.updateMany({ sellerId, status: 'active' } as object, {
+      $set: { status: 'cancelled' },
+    })
 
     const defaults = getPlanDefaults(plan)
     const startDate = new Date()
@@ -62,7 +65,7 @@ export const vendorService = {
     const sub = await this.getSubscription(sellerId)
     const rate = sub?.commissionRate ?? 15 // default 15% if no subscription
 
-    const commissionAmount = Math.round((saleAmount * rate) / 100 * 100) / 100
+    const commissionAmount = Math.round(((saleAmount * rate) / 100) * 100) / 100
     const sellerEarning = Math.round((saleAmount - commissionAmount) * 100) / 100
 
     const now = new Date()
@@ -144,10 +147,9 @@ export const vendorService = {
       { new: true },
     )
     if (!user) throw new AppError('Vendor not found', 404)
-    await VendorSubscription.updateMany(
-      { sellerId, status: 'active' } as object,
-      { $set: { status: 'suspended' } },
-    )
+    await VendorSubscription.updateMany({ sellerId, status: 'active' } as object, {
+      $set: { status: 'suspended' },
+    })
     void notificationService.create({
       userId: sellerId,
       type: 'security',
@@ -158,11 +160,7 @@ export const vendorService = {
   },
 
   async reinstateVendor(sellerId: string) {
-    const user = await User.findByIdAndUpdate(
-      sellerId,
-      { $set: { isActive: true } },
-      { new: true },
-    )
+    const user = await User.findByIdAndUpdate(sellerId, { $set: { isActive: true } }, { new: true })
     if (!user) throw new AppError('Vendor not found', 404)
     void notificationService.create({
       userId: sellerId,
