@@ -21,6 +21,7 @@ interface EventSystemState {
 }
 
 let socket: Socket | null = null
+let connectionAttempts = 0
 const MAX_ATTEMPTS = 5
 
 export const useEventSystemStore = create<EventSystemState>((set) => ({
