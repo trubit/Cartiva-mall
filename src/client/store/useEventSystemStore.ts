@@ -21,7 +21,7 @@ interface EventSystemState {
 }
 
 let socket: Socket | null = null
-let connectionAttempts = 0
+let _connectionAttempts = 0
 const MAX_ATTEMPTS = 5
 
 export const useEventSystemStore = create<EventSystemState>((set) => ({
@@ -83,7 +83,7 @@ export const useEventSystemStore = create<EventSystemState>((set) => ({
       socket = null
     }
 
-    connectionAttempts = 0
+    _connectionAttempts = 0
 
     // IMPORTANT: Start with 'polling' first — this completes the Socket.IO
     // handshake over HTTP before upgrading to WebSocket. Attempting WebSocket
@@ -103,7 +103,7 @@ export const useEventSystemStore = create<EventSystemState>((set) => ({
     })
 
     socket.on('connect', () => {
-      connectionAttempts = 0
+      _connectionAttempts = 0
       set({ socketConnected: true })
     })
 
@@ -115,7 +115,7 @@ export const useEventSystemStore = create<EventSystemState>((set) => ({
     })
 
     socket.on('connect_error', () => {
-      connectionAttempts++
+      _connectionAttempts++
       set({ socketConnected: false })
       // Stop attempting after max retries — stream simply shows as offline
     })
@@ -134,7 +134,7 @@ export const useEventSystemStore = create<EventSystemState>((set) => ({
       socket.removeAllListeners()
       socket.disconnect()
       socket = null
-      connectionAttempts = 0
+      _connectionAttempts = 0
       set({ socketConnected: false })
     }
   },
