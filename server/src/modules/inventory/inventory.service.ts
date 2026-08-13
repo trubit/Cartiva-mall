@@ -72,7 +72,10 @@ export const updateWarehouse = async (
   id: string,
   data: Partial<IWarehouseDocument>,
 ): Promise<IWarehouseDocument> => {
-  const wh = await Warehouse.findByIdAndUpdate(id, data, { new: true, runValidators: true })
+  const wh = await Warehouse.findByIdAndUpdate(id, data, {
+    returnDocument: 'after',
+    runValidators: true,
+  })
   if (!wh) throw new AppError('Warehouse not found', 404)
   return wh
 }
@@ -129,7 +132,7 @@ export const upsertInventory = async (
   const inv = await Inventory.findOneAndUpdate(
     { productId: uid(productId), warehouseId: uid(warehouseId) },
     { quantity, lowStockThreshold },
-    { upsert: true, new: true, runValidators: true },
+    { upsert: true, returnDocument: 'after', runValidators: true },
   )
 
   await logMovement(productId, warehouseId, 'adjustment', delta, createdBy, {
@@ -237,7 +240,7 @@ export const confirmReservation = async (
     const inv = await Inventory.findOneAndUpdate(
       { productId: uid(item.productId), warehouseId: uid(item.warehouseId) },
       { $inc: { quantity: -item.quantity, reservedQuantity: -item.quantity } },
-      { new: true },
+      { returnDocument: 'after' },
     )
     if (inv) {
       await checkAndCreateAlerts(inv)

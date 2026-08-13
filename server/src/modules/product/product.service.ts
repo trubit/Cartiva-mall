@@ -295,7 +295,7 @@ export const approveProduct = async (id: string): Promise<IProductDocument> => {
   const product = await Product.findByIdAndUpdate(
     id,
     { status: 'active', isActive: true },
-    { new: true, returnDocument: 'after' },
+    { returnDocument: 'after' },
   )
   if (!product) throw new AppError('Product not found', 404)
   await invalidateProductCache(id)
@@ -309,7 +309,7 @@ export const blockProduct = async (id: string): Promise<IProductDocument> => {
   const product = await Product.findByIdAndUpdate(
     id,
     { status: 'blocked', isActive: false },
-    { new: true, returnDocument: 'after' },
+    { returnDocument: 'after' },
   )
   if (!product) throw new AppError('Product not found', 404)
   await invalidateProductCache(id)

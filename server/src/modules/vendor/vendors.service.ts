@@ -112,7 +112,7 @@ export const vendorsService = {
     const profile = await VendorProfile.findOneAndUpdate(
       { vendorId } as object,
       { $set: profileUpdate },
-      { new: true, upsert: true },
+      { returnDocument: 'after', upsert: true },
     )
 
     audit(vendorId, 'profile_updated', userId)
@@ -173,7 +173,7 @@ export const vendorsService = {
     const storefront = await VendorStorefront.findOneAndUpdate(
       { vendorId } as object,
       { $set: { ...data, slug, vendorId } },
-      { new: true, upsert: true, setDefaultsOnInsert: true },
+      { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true },
     )
 
     audit(vendorId, isNew ? 'storefront_created' : 'storefront_updated', userId)
@@ -429,7 +429,7 @@ export const vendorsService = {
           rejectionReason: undefined,
         },
       },
-      { new: true },
+      { returnDocument: 'after' },
     ).populate('userId', 'firstName lastName email')
 
     if (!vendor) throw new AppError('Vendor not found', 404)
@@ -455,7 +455,7 @@ export const vendorsService = {
     const vendor = await Vendor.findByIdAndUpdate(
       vendorId,
       { $set: { status: 'rejected', isApproved: false, rejectionReason: reason } },
-      { new: true },
+      { returnDocument: 'after' },
     )
     if (!vendor) throw new AppError('Vendor not found', 404)
 
@@ -476,7 +476,7 @@ export const vendorsService = {
     const vendor = await Vendor.findByIdAndUpdate(
       vendorId,
       { $set: { status: 'suspended', suspensionReason: reason } },
-      { new: true },
+      { returnDocument: 'after' },
     )
     if (!vendor) throw new AppError('Vendor not found', 404)
 
@@ -497,7 +497,7 @@ export const vendorsService = {
     const vendor = await Vendor.findByIdAndUpdate(
       vendorId,
       { $set: { status: 'active', suspensionReason: undefined } },
-      { new: true },
+      { returnDocument: 'after' },
     )
     if (!vendor) throw new AppError('Vendor not found', 404)
 
@@ -519,7 +519,7 @@ export const vendorsService = {
     const vendor = await Vendor.findByIdAndUpdate(
       vendorId,
       { $set: { status: 'blacklisted', blacklistReason: reason, isApproved: false } },
-      { new: true },
+      { returnDocument: 'after' },
     )
     if (!vendor) throw new AppError('Vendor not found', 404)
 
@@ -552,7 +552,7 @@ export const vendorsService = {
           rejectionReason: rejectionReason ?? undefined,
         },
       },
-      { new: true },
+      { returnDocument: 'after' },
     )
     if (!doc) throw new AppError('Document not found', 404)
 
@@ -584,7 +584,7 @@ export const vendorsService = {
           processedBy: adminId,
         },
       },
-      { new: true },
+      { returnDocument: 'after' },
     )
     if (!payout) throw new AppError('Payout not found', 404)
 

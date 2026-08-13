@@ -9,6 +9,13 @@ import { logger } from './utils/logger.js'
 import { verifyEmailConfig } from './utils/email.js'
 import { flushViewCounters } from './modules/product/product.service.js'
 import { User } from './modules/user/user.model.js'
+import { seedDefaultPermissions } from './modules/iam/iam.service.js'
+import { seedDefaultAccounts } from './modules/finance/finance.service.js'
+import { startWorkflowWorker, stopWorkflowWorker } from './queue/workflow.queue.js'
+import { startIamWorker, stopIamWorker } from './queue/iam.queue.js'
+import { startWebhookWorker, stopWebhookWorker } from './queue/webhook.queue.js'
+import { startEventBusWorker, stopEventBusWorker } from './queue/eventBus.queue.js'
+import { startGodModeWorker, stopGodModeWorker } from './queue/godmode.queue.js'
 
 // ─── Unhandled error safety net ───────────────────────────────────────────────
 // Must be registered before any async work so crashes don't swallow silently.
@@ -40,6 +47,13 @@ const bootstrap = async (): Promise<void> => {
   await connectMongoDB()
   await connectRedis()
   await ensureAdmin()
+  seedDefaultPermissions().catch(() => {})
+  seedDefaultAccounts().catch(() => {})
+  startWorkflowWorker()
+  startIamWorker()
+  startWebhookWorker()
+  startEventBusWorker()
+  startGodModeWorker().catch(() => {})
   verifyEmailConfig() // non-blocking — logs result when ready
 
   const httpServer = createServer(app)
@@ -85,6 +99,11 @@ const bootstrap = async (): Promise<void> => {
       try {
         await mongoose.connection.close()
         logger.info('MongoDB connection closed')
+        await stopWorkflowWorker()
+        await stopIamWorker()
+        await stopWebhookWorker()
+        await stopEventBusWorker()
+        await stopGodModeWorker()
         await redis.quit()
         logger.info('Redis connection closed')
         logger.info('Graceful shutdown complete')

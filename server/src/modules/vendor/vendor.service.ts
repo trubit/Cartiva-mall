@@ -53,7 +53,7 @@ export const vendorService = {
     const sub = await VendorSubscription.findOneAndUpdate(
       { sellerId, status: 'active' } as object,
       { $set: { status: 'cancelled' } },
-      { new: true },
+      { returnDocument: 'after' },
     )
     if (!sub) throw new AppError('No active subscription found', 404)
     return sub
@@ -144,7 +144,7 @@ export const vendorService = {
     const user = await User.findByIdAndUpdate(
       sellerId,
       { $set: { isActive: false } },
-      { new: true },
+      { returnDocument: 'after' },
     )
     if (!user) throw new AppError('Vendor not found', 404)
     await VendorSubscription.updateMany({ sellerId, status: 'active' } as object, {
@@ -160,7 +160,11 @@ export const vendorService = {
   },
 
   async reinstateVendor(sellerId: string) {
-    const user = await User.findByIdAndUpdate(sellerId, { $set: { isActive: true } }, { new: true })
+    const user = await User.findByIdAndUpdate(
+      sellerId,
+      { $set: { isActive: true } },
+      { returnDocument: 'after' },
+    )
     if (!user) throw new AppError('Vendor not found', 404)
     void notificationService.create({
       userId: sellerId,

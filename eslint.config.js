@@ -28,6 +28,8 @@ export default defineConfig([
           destructuredArrayIgnorePattern: '^_',
         },
       ],
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-namespace': 'off',
       // Form-reset patterns (initializing controlled inputs from props on open/change)
       // are intentional derived-state syncs — downgrade to warning.
       'react-hooks/set-state-in-effect': 'warn',

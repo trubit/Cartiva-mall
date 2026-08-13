@@ -10,6 +10,17 @@ export default defineConfig({
     setupFiles: ['./tests/setup/client.setup.ts'],
     include: ['src/client/**/*.{test,spec}.{ts,tsx}', 'src/shared/**/*.{test,spec}.ts'],
     exclude: ['node_modules', 'dist'],
+
+    // Use 'threads' pool. On Windows, the default 'forks' pool creates child
+    // processes which are slow to start and hit the worker startup timeout.
+    pool: 'threads',
+    fileParallelism: false,
+    isolate: false,
+
+    // Allow more time for the jsdom + MSW environment to initialise
+    testTimeout: 30000,
+    hookTimeout: 30000,
+
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov', 'html'],

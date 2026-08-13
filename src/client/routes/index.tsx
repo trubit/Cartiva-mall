@@ -87,6 +87,26 @@ const ShipmentTracking = lazy(() => import('../pages/dashboard/ShipmentTracking/
 const ReturnsPage = lazy(() => import('../pages/dashboard/ReturnsPage/index.js'))
 const MessagingPage = lazy(() => import('../pages/messaging/MessagingPage/index.js'))
 
+// Phase 22-25 admin pages
+const FinanceDashboard = lazy(() => import('../pages/admin/FinanceDashboard/index.js'))
+const AnalyticsDashboard = lazy(() => import('../pages/admin/AnalyticsDashboard/index.js'))
+const ForecastDashboard = lazy(() => import('../pages/admin/ForecastDashboard/index.js'))
+const WorkflowManager = lazy(() => import('../pages/admin/WorkflowManager/index.js'))
+
+// Phase 26 admin pages
+const IamDashboard = lazy(() => import('../pages/admin/IamDashboard/index.js'))
+
+// Phase 27 & 28 admin pages
+const DeveloperDashboard = lazy(
+  () => import('../pages/admin/DeveloperPlatform/DeveloperDashboard.js'),
+)
+const EventMonitorDashboard = lazy(
+  () => import('../pages/admin/EventSystem/EventMonitorDashboard.js'),
+)
+
+// Phase 29 admin page
+const GodModeDashboard = lazy(() => import('../pages/admin/GodModeDashboard/index.js'))
+
 // Phase 21 vendor pages
 const VendorRegistration = lazy(() => import('../pages/seller/VendorRegistration/index.js'))
 const VendorOnboarding = lazy(() => import('../pages/seller/VendorOnboarding/index.js'))
@@ -279,6 +299,14 @@ export default function AppRouter() {
             <Route path="returns" element={<AdminReturns />} />
             <Route path="vendors" element={<AdminVendors />} />
             <Route path="vendor-approvals" element={<AdminVendorApproval />} />
+            <Route path="finance" element={<FinanceDashboard />} />
+            <Route path="analytics-bi" element={<AnalyticsDashboard />} />
+            <Route path="forecasting" element={<ForecastDashboard />} />
+            <Route path="workflows" element={<WorkflowManager />} />
+            <Route path="iam" element={<IamDashboard />} />
+            <Route path="developer-platform" element={<DeveloperDashboard />} />
+            <Route path="event-system" element={<EventMonitorDashboard />} />
+            <Route path="godmode" element={<GodModeDashboard />} />
           </Route>
 
           {/* Profile — nested layout with sidebar, inside MainLayout for navbar */}

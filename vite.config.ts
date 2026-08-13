@@ -8,6 +8,8 @@ export default defineConfig(({ mode }) => {
   const serverPort = parseInt(env.PORT ?? '5000', 10)
   const clientPort = env.CLIENT_URL ? parseInt(new URL(env.CLIENT_URL).port, 10) : 5170
 
+  const backendTarget = `http://localhost:${serverPort}`
+
   return {
     plugins: [react()],
     resolve: {
@@ -29,7 +31,7 @@ export default defineConfig(({ mode }) => {
       host: true,
       proxy: {
         '/api': {
-          target: `http://localhost:${serverPort}`,
+          target: backendTarget,
           changeOrigin: true,
           configure: (proxy) => {
             proxy.on('error', (_err, _req, res) => {
@@ -46,10 +48,21 @@ export default defineConfig(({ mode }) => {
             })
           },
         },
+        // Proxy ALL Socket.IO traffic (including namespace handshakes) to the backend.
+        // ws: true enables WebSocket upgrade proxying.
+        // Socket.IO always uses /socket.io as the HTTP path regardless of namespace.
         '/socket.io': {
-          target: `http://localhost:${serverPort}`,
+          target: backendTarget,
           ws: true,
           changeOrigin: true,
+          configure: (proxy) => {
+            proxy.on('error', (err) => {
+              // Suppress noisy "socket hang up" errors during WS upgrade in dev
+              if ((err as NodeJS.ErrnoException).code !== 'ECONNRESET') {
+                console.warn('[socket.io proxy error]', err.message)
+              }
+            })
+          },
         },
       },
     },

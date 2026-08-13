@@ -29,6 +29,17 @@ import shippingRoutes from './routes/shipping.routes.js'
 import returnsRoutes from './routes/returns.routes.js'
 import vendorRoutes from './routes/vendor.routes.js'
 import vendorsRoutes from './routes/vendors.routes.js'
+import financeRoutes from './routes/finance.routes.js'
+import analyticsRoutes from './routes/analytics.routes.js'
+import forecastRoutes from './routes/forecast.routes.js'
+import workflowRoutes from './routes/workflow.routes.js'
+import iamRoutes from './routes/iam.routes.js'
+import developerRoutes from './routes/developer.routes.js'
+import integrationRoutes from './routes/integration.routes.js'
+import apiManagementRoutes from './routes/apiManagement.routes.js'
+import eventSystemRoutes from './routes/eventSystem.routes.js'
+import godmodeRoutes from './routes/godmode.routes.js'
+import { apiGatewayMiddleware } from './middlewares/apiGateway.middleware.js'
 import { getActivePromotions } from './modules/coupon/coupon.controller.js'
 import * as paymentController from './modules/payment/payment.controller.js'
 
@@ -43,7 +54,14 @@ app.set('trust proxy', 1)
 app.use(
   helmet({
     contentSecurityPolicy: {
-      directives: { defaultSrc: ["'none'"] },
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+        imgSrc: ["'self'", 'data:', 'https:'],
+        connectSrc: ["'self'", 'ws:', 'wss:'],
+      },
     },
   }),
 )
@@ -119,6 +137,19 @@ app.use(`${API_PREFIX}/shipments`, shippingRoutes)
 app.use(`${API_PREFIX}/returns`, returnsRoutes)
 app.use(`${API_PREFIX}/vendor`, vendorRoutes)
 app.use(`${API_PREFIX}/vendors`, vendorsRoutes)
+app.use(`${API_PREFIX}/finance`, financeRoutes)
+app.use(`${API_PREFIX}/analytics`, analyticsRoutes)
+app.use(`${API_PREFIX}/forecast`, forecastRoutes)
+app.use(`${API_PREFIX}/workflows`, workflowRoutes)
+app.use(`${API_PREFIX}/iam`, iamRoutes)
+app.use(`${API_PREFIX}/developer`, developerRoutes)
+app.use(`${API_PREFIX}/integrations`, integrationRoutes)
+app.use(`${API_PREFIX}/api-management`, apiManagementRoutes)
+app.use(`${API_PREFIX}/event-system`, eventSystemRoutes)
+app.use(`${API_PREFIX}/godmode`, godmodeRoutes)
+
+// Apply API Gateway middleware to all API routes
+app.use(`${API_PREFIX}`, apiGatewayMiddleware)
 
 // ─── Error Handling ───────────────────────────────────────────────────────────
 app.use(notFound)

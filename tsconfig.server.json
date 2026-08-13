@@ -7,6 +7,8 @@
     "moduleResolution": "NodeNext",
     "types": ["node"],
     "skipLibCheck": true,
+    "composite": true,
+    "rootDir": ".",
 
     "outDir": "./dist/server",
     "declaration": true,

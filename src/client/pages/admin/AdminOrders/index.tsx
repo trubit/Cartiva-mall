@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { FiSearch } from 'react-icons/fi'
 import { useAdminOrders, useAdminUpdateOrderStatus } from '../../../hooks/useAdmin.js'
 import { formatCurrency, formatDate } from '../../../../shared/helpers/index.js'
@@ -185,20 +185,19 @@ export default function AdminOrders() {
               {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
                 .filter((p) => p === 1 || p === pagination.totalPages || Math.abs(p - page) <= 1)
                 .map((p, i, arr) => (
-                  <>
+                  <React.Fragment key={p}>
                     {i > 0 && (arr[i - 1] as number) < p - 1 && (
                       <span key={`e${i}`} style={{ padding: '0 4px' }}>
                         …
                       </span>
                     )}
                     <button
-                      key={p}
                       className={`admin-pagination__btn${p === page ? ' admin-pagination__btn--active' : ''}`}
                       onClick={() => setPage(p)}
                     >
                       {p}
                     </button>
-                  </>
+                  </React.Fragment>
                 ))}
               <button
                 className="admin-pagination__btn"

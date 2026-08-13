@@ -14,6 +14,14 @@ import {
   FiRotateCcw,
   FiBox,
   FiUserCheck,
+  FiDollarSign,
+  FiPieChart,
+  FiTrendingUp,
+  FiZap,
+  FiShield,
+  FiCode,
+  FiRadio,
+  FiCpu,
 } from 'react-icons/fi'
 import { useAdminStats, useAdminFraudAlerts } from '../../../hooks/useAdmin.js'
 import { useIsMobile } from '../../../hooks/useBreakpoint.js'
@@ -38,9 +46,25 @@ const NAV_OPERATIONS = [
   { to: '/admin/vendors', end: false, Icon: FiBox, label: 'Vendors' },
   { to: '/admin/vendor-approvals', end: false, Icon: FiUserCheck, label: 'Vendor Approvals' },
 ]
+const NAV_ENTERPRISE = [
+  { to: '/admin/godmode', end: false, Icon: FiCpu, label: 'God-Mode AI' },
+  { to: '/admin/finance', end: false, Icon: FiDollarSign, label: 'Finance' },
+  { to: '/admin/analytics-bi', end: false, Icon: FiPieChart, label: 'BI & Analytics' },
+  { to: '/admin/forecasting', end: false, Icon: FiTrendingUp, label: 'Forecasting' },
+  { to: '/admin/workflows', end: false, Icon: FiZap, label: 'Workflows' },
+  { to: '/admin/iam', end: false, Icon: FiShield, label: 'IAM & Security' },
+  { to: '/admin/developer-platform', end: false, Icon: FiCode, label: 'Developer Platform' },
+  { to: '/admin/event-system', end: false, Icon: FiRadio, label: 'Event System' },
+]
 const NAV_SYSTEM = [{ to: '/admin/settings', end: false, Icon: FiSettings, label: 'Settings' }]
 
-const NAV_ALL = [...NAV_OVERVIEW, ...NAV_MANAGE, ...NAV_OPERATIONS, ...NAV_SYSTEM]
+const NAV_ALL = [
+  ...NAV_OVERVIEW,
+  ...NAV_MANAGE,
+  ...NAV_OPERATIONS,
+  ...NAV_ENTERPRISE,
+  ...NAV_SYSTEM,
+]
 
 // ─── inline style constants ─────────────────────────────────────────────────
 const SIDEBAR_BG = '#131921'
@@ -190,6 +214,23 @@ export default function AdminLayout() {
                 label={label}
                 badge={getBadge(label)}
               />
+            ))}
+
+            <p
+              style={{
+                fontSize: '0.62rem',
+                fontWeight: 700,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: GROUP_COLOR,
+                padding: '0.75rem 1.25rem 0.25rem',
+                margin: 0,
+              }}
+            >
+              Enterprise
+            </p>
+            {NAV_ENTERPRISE.map(({ to, end, Icon, label }) => (
+              <SidebarLink key={to} to={to} end={end} Icon={Icon} label={label} badge={null} />
             ))}
 
             <p

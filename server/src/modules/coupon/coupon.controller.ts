@@ -47,7 +47,7 @@ export const updateCoupon = async (
 ): Promise<void> => {
   try {
     const coupon = await Coupon.findByIdAndUpdate(req.params['id'], req.body, {
-      new: true,
+      returnDocument: 'after',
       runValidators: true,
     })
     if (!coupon) throw new AppError('Coupon not found', 404)
@@ -136,7 +136,7 @@ export const updatePromotion = async (
 ): Promise<void> => {
   try {
     const promo = await Promotion.findByIdAndUpdate(req.params['id'], req.body, {
-      new: true,
+      returnDocument: 'after',
       runValidators: true,
     })
     if (!promo) throw new AppError('Promotion not found', 404)

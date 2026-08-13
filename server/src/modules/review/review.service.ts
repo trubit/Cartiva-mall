@@ -47,7 +47,7 @@ export const addOrUpdateReview = async (
       productId: new mongoose.Types.ObjectId(productId),
       userId: new mongoose.Types.ObjectId(userId),
     },
-    { upsert: true, new: true, runValidators: true },
+    { upsert: true, returnDocument: 'after', runValidators: true },
   )
 
   await recalculateRatings(productId)

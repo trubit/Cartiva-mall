@@ -6,7 +6,14 @@ import { verifyAccessToken } from '../utils/jwt.js'
 import { env } from '../config/env.js'
 import { logger } from '../utils/logger.js'
 
+import { initEventMonitorSocket } from './eventMonitor.socket.js'
+
 let io: SocketServer | null = null
+
+export const getSocketIO = (): SocketServer => {
+  if (!io) throw new Error('Socket.IO not initialized')
+  return io
+}
 
 export const initSockets = (httpServer: HttpServer): SocketServer => {
   io = new SocketServer(httpServer, {
@@ -19,6 +26,9 @@ export const initSockets = (httpServer: HttpServer): SocketServer => {
     pingTimeout: 60_000,
     pingInterval: 25_000,
   })
+
+  // Initialize event monitor namespace
+  initEventMonitorSocket(io)
 
   // Use Redis adapter so events are routed across all Node.js cluster workers.
   // If Redis is unavailable, the in-process adapter is used as a fallback

@@ -49,7 +49,7 @@ export const notificationService = {
     return Notification.findOneAndUpdate(
       { _id: id, userId } as object,
       { read: true },
-      { new: true },
+      { returnDocument: 'after' },
     )
   },
 

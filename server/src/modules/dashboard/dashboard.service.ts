@@ -106,7 +106,7 @@ export const addToWishlist = async (userId: string, productId: string) => {
   const wishlist = await Wishlist.findOneAndUpdate(
     { userId },
     { $addToSet: { items: { productId: oid, addedAt: new Date() } } },
-    { upsert: true, new: true },
+    { upsert: true, returnDocument: 'after' },
   )
 
   return wishlist
@@ -172,7 +172,7 @@ export const markNotificationRead = async (userId: string, notificationId: strin
   const notification = await Notification.findOneAndUpdate(
     { _id: notificationId, userId },
     { read: true },
-    { new: true },
+    { returnDocument: 'after' },
   )
   if (!notification) throw new AppError('Notification not found', 404)
   return notification
@@ -251,7 +251,7 @@ export const updateSettings = async (userId: string, input: DashboardSettingsInp
   const user = await User.findByIdAndUpdate(
     userId,
     { $set: input },
-    { new: true, runValidators: true },
+    { returnDocument: 'after', runValidators: true },
   )
   if (!user) throw new AppError('User not found', 404)
   return user
