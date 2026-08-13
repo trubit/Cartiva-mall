@@ -21,7 +21,7 @@ interface EventJobData {
 
 export const enqueueDomainEvent = async (event: IDomainEvent): Promise<void> => {
   try {
-    await eventBusQueue.add(
+    const pushPromise = eventBusQueue.add(
       'process-domain-event',
       { event },
       {
@@ -31,6 +31,10 @@ export const enqueueDomainEvent = async (event: IDomainEvent): Promise<void> => 
         removeOnFail: 5000,
       },
     )
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Redis enqueue timeout')), 500),
+    )
+    await Promise.race([pushPromise, timeoutPromise])
   } catch (err: any) {
     logger.warn(
       `EventBus queue push skipped (Redis/BullMQ offline or version mismatch): ${err.message}`,
