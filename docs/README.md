@@ -54,4 +54,5 @@ Welcome to the comprehensive technical documentation for **Cartiva Mall (truson-
 - [PHASE_30_AUDIT_REPORT.md](PHASE_30_AUDIT_REPORT.md) — Phase 30 comprehensive system audit.
 - [PHASE_50_VALIDATION_REPORT.md](PHASE_50_VALIDATION_REPORT.md) — Phase 50 full-system concurrency, multi-tenant isolation & scale benchmark report.
 - [PHASE_51_FINAL_AUDIT_REPORT.md](PHASE_51_FINAL_AUDIT_REPORT.md) — Phase 51 pre-deployment certification report.
+- [PHASE_52_PRODUCTION_DEPLOYMENT_REPORT.md](PHASE_52_PRODUCTION_DEPLOYMENT_REPORT.md) — Phase 52 final production deployment, live validation, monitoring & handover report.
 - [SCALABILITY_REPORT.md](SCALABILITY_REPORT.md) — Production scale benchmarks and resilience report.
