@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer'
+import nodemailer, { type Transporter } from 'nodemailer'
 import { env } from '../config/env.js'
 import { logger } from './logger.js'
 import { callBrevo } from './circuit-breakers.js'
@@ -72,7 +72,7 @@ const sendViaBrevoSMTP = async (options: MailOptions): Promise<void> => {
 }
 
 // ─── Ethereal Fallback (Tier 3 Dev Preview) ────────────────────────────────────
-let _ethereal: nodemailer.Transporter | null = null
+let _ethereal: Transporter | null = null
 
 const sendViaEthereal = async (options: MailOptions): Promise<void> => {
   if (!_ethereal) {
