@@ -1595,3 +1595,316 @@
     padding: 0.75rem 1.1rem;
   }
 }
+
+/* ── Payout & Withdrawal UI Styles ────────────────────────────────────────── */
+.sl-payout-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+@media (max-width: 900px) {
+  .sl-payout-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sl-bank-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  background: var(--color-white, #fff);
+  border: 1px solid var(--color-neutral-200, #e5e7eb);
+  border-radius: var(--radius-xl, 12px);
+  margin-bottom: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+[data-theme='dark'] .sl-bank-card {
+  background: #1e293b;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.sl-bank-card--selected {
+  border-color: #007185;
+  background: rgba(0, 113, 133, 0.04);
+}
+
+[data-theme='dark'] .sl-bank-card--selected {
+  border-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.08);
+}
+
+.sl-bank-card__info {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.sl-bank-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #0b2d3d, #007185);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.sl-bank-card__name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin: 0;
+  color: var(--color-neutral-900, #0f172a);
+}
+
+[data-theme='dark'] .sl-bank-card__name {
+  color: #f8fafc;
+}
+
+.sl-bank-card__number {
+  font-size: 0.8rem;
+  color: var(--color-neutral-500, #64748b);
+  margin: 0;
+}
+
+.sl-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.sl-badge--completed {
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+}
+
+.sl-badge--processing {
+  background: rgba(59, 130, 246, 0.12);
+  color: #3b82f6;
+}
+
+.sl-badge--pending {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+}
+
+.sl-badge--failed,
+.sl-badge--reversed {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+}
+
+.sl-badge--default {
+  background: rgba(0, 113, 133, 0.1);
+  color: #007185;
+}
+
+[data-theme='dark'] .sl-badge--default {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+}
+
+.sl-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1050;
+  padding: 1rem;
+}
+
+.sl-modal {
+  background: var(--color-white, #fff);
+  border-radius: var(--radius-2xl, 16px);
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+}
+
+[data-theme='dark'] .sl-modal {
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sl-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--color-neutral-100, #f1f5f9);
+}
+
+[data-theme='dark'] .sl-modal__header {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.sl-modal__title {
+  font-size: 1.2rem;
+  font-weight: 800;
+  margin: 0;
+  color: var(--color-neutral-900, #0f172a);
+}
+
+[data-theme='dark'] .sl-modal__title {
+  color: #f8fafc;
+}
+
+.sl-modal__close {
+  background: transparent;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  color: var(--color-neutral-400, #94a3b8);
+  padding: 0.25rem;
+  border-radius: 6px;
+  display: flex;
+}
+
+.sl-modal__close:hover {
+  color: var(--color-neutral-800, #1e293b);
+}
+
+.sl-modal__body {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.sl-modal__footer {
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid var(--color-neutral-100, #f1f5f9);
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+[data-theme='dark'] .sl-modal__footer {
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+.sl-amount-presets {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.sl-amount-preset-btn {
+  padding: 0.45rem 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border-radius: 8px;
+  background: var(--color-neutral-100, #f1f5f9);
+  border: 1px solid var(--color-neutral-200, #e2e8f0);
+  color: var(--color-neutral-700, #334155);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sl-amount-preset-btn:hover {
+  background: #007185;
+  border-color: #007185;
+  color: #fff;
+}
+
+[data-theme='dark'] .sl-amount-preset-btn {
+  background: #1e293b;
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #cbd5e1;
+}
+
+[data-theme='dark'] .sl-amount-preset-btn:hover {
+  background: #38bdf8;
+  border-color: #38bdf8;
+  color: #0f172a;
+}
+
+.sl-summary-box {
+  background: var(--color-neutral-50, #f8fafc);
+  border: 1px solid var(--color-neutral-200, #e2e8f0);
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+[data-theme='dark'] .sl-summary-box {
+  background: rgba(30, 41, 59, 0.6);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.sl-summary-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+  color: var(--color-neutral-600, #475569);
+}
+
+[data-theme='dark'] .sl-summary-row {
+  color: #94a3b8;
+}
+
+.sl-summary-row--total {
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--color-neutral-900, #0f172a);
+  margin-bottom: 0;
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--color-neutral-200, #e2e8f0);
+}
+
+[data-theme='dark'] .sl-summary-row--total {
+  color: #f8fafc;
+  border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+.sl-tab-nav {
+  display: flex;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--color-neutral-200, #e2e8f0);
+  padding: 0 1.5rem;
+  margin-bottom: 1rem;
+}
+
+[data-theme='dark'] .sl-tab-nav {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.sl-tab-btn {
+  padding: 0.75rem 1rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--color-neutral-500, #64748b);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sl-tab-btn--active {
+  color: #007185;
+  border-bottom-color: #007185;
+}
+
+[data-theme='dark'] .sl-tab-btn--active {
+  color: #38bdf8;
+  border-bottom-color: #38bdf8;
+}

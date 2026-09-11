@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 export const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  email: z.string().email('Invalid email address').toLowerCase().trim(),
   password: z.string().min(1, 'Password is required'),
 })
 
@@ -14,7 +14,7 @@ export const registerSchema = z.object({
     .max(30)
     .regex(/^[a-z0-9_]+$/, 'Username can only contain lowercase letters, numbers, and underscores')
     .trim(),
-  email: z.string().email('Invalid email address').toLowerCase(),
+  email: z.string().email('Invalid email address').toLowerCase().trim(),
   password: z
     .string()
     .min(8, 'Password must be at least 8 characters')
@@ -30,7 +30,7 @@ export const registerSchema = z.object({
 })
 
 export const forgotPasswordSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  email: z.string().email('Invalid email address').toLowerCase().trim(),
 })
 
 export const resetPasswordSchema = z
@@ -48,6 +48,52 @@ export const resetPasswordSchema = z
     message: 'Passwords do not match',
     path: ['confirmPassword'],
   })
+
+export const verifyEmailOtpSchema = z.object({
+  email: z.string().email('Invalid email address').toLowerCase().trim(),
+  otp: z
+    .string()
+    .length(6, 'Verification code must be exactly 6 digits')
+    .regex(/^\d{6}$/, 'Verification code must contain only numbers'),
+})
+
+export const resetPasswordOtpSchema = z
+  .object({
+    email: z.string().email('Invalid email address').toLowerCase().trim(),
+    otp: z
+      .string()
+      .length(6, 'Verification code must be exactly 6 digits')
+      .regex(/^\d{6}$/, 'Verification code must contain only numbers'),
+    password: z
+      .string()
+      .min(8, 'Password must be at least 8 characters')
+      .regex(/[A-Z]/, 'Must contain uppercase letter')
+      .regex(/[0-9]/, 'Must contain a number')
+      .regex(/[^A-Za-z0-9]/, 'Must contain a special character'),
+    confirmPassword: z.string(),
+  })
+  .refine((d) => d.password === d.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  })
+
+export const resendOtpSchema = z.object({
+  email: z.string().email('Invalid email address').toLowerCase().trim(),
+  purpose: z
+    .enum(['EMAIL_VERIFICATION', 'PASSWORD_RESET', 'CHANGE_EMAIL', 'MFA', 'SECURITY_CONFIRMATION'])
+    .default('EMAIL_VERIFICATION'),
+})
+
+export const verifyOtpOnlySchema = z.object({
+  email: z.string().email('Invalid email address').toLowerCase().trim(),
+  otp: z
+    .string()
+    .length(6, 'Verification code must be exactly 6 digits')
+    .regex(/^\d{6}$/, 'Verification code must contain only numbers'),
+  purpose: z
+    .enum(['EMAIL_VERIFICATION', 'PASSWORD_RESET', 'CHANGE_EMAIL', 'MFA', 'SECURITY_CONFIRMATION'])
+    .default('PASSWORD_RESET'),
+})
 
 export const changePasswordSchema = z
   .object({
@@ -69,4 +115,8 @@ export type LoginInput = z.infer<typeof loginSchema>
 export type RegisterInput = z.infer<typeof registerSchema>
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>
+export type VerifyEmailOtpInput = z.infer<typeof verifyEmailOtpSchema>
+export type ResetPasswordOtpInput = z.infer<typeof resetPasswordOtpSchema>
+export type ResendOtpInput = z.infer<typeof resendOtpSchema>
+export type VerifyOtpOnlyInput = z.infer<typeof verifyOtpOnlySchema>
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>

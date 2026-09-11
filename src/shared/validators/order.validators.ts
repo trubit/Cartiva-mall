@@ -14,14 +14,20 @@ export const updateOrderStatusSchema = z.object({
   orderStatus: z.enum(ORDER_STATUS_VALUES as [string, ...string[]]),
   tracking: z
     .object({
-      trackingNumber: z.string().max(100).optional(),
-      carrier: z.string().max(100).optional(),
-      trackingUrl: z.string().url({ message: 'Invalid tracking URL' }).optional(),
-      estimatedDeliveryDate: z.string().datetime({ offset: true }).optional(),
-      location: z.string().max(200).optional(),
-      note: z.string().max(300).optional(),
+      trackingNumber: z.string().max(100).optional().nullable(),
+      carrier: z.string().max(100).optional().nullable(),
+      trackingUrl: z
+        .string()
+        .url({ message: 'Invalid tracking URL' })
+        .or(z.literal(''))
+        .optional()
+        .nullable(),
+      estimatedDeliveryDate: z.string().optional().nullable(),
+      location: z.string().max(200).optional().nullable(),
+      note: z.string().max(300).optional().nullable(),
     })
-    .optional(),
+    .optional()
+    .nullable(),
 })
 
 // ─── Return request ───────────────────────────────────────────────────────────

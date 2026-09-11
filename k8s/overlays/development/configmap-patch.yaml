@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cartiva-config
+data:
+  NODE_ENV: 'development'
+  LOG_LEVEL: 'debug'
+  CLIENT_URL: 'http://localhost:5170'

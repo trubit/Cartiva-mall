@@ -254,25 +254,34 @@
    ═══════════════════════════════════════════════════════════ */
 .admin-stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1rem;
   margin-bottom: 2rem;
+}
+
+@media (min-width: 1024px) {
+  .admin-stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 .admin-stat-card {
   background: var(--color-white);
   border: 1px solid var(--color-neutral-200, #e5e7eb);
   border-radius: 12px;
-  padding: 1.25rem;
+  padding: 1.1rem 0.9rem;
   display: flex;
-  align-items: flex-start;
-  gap: 1rem;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .admin-stat-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -298,26 +307,39 @@
 }
 
 .admin-stat-body {
+  flex: 1;
   min-width: 0;
+  overflow: hidden;
 }
 .admin-stat-value {
-  font-size: 1.6rem;
+  font-size: clamp(0.95rem, 1.2vw, 1.3rem);
   font-weight: 800;
   color: var(--color-brand-text, #131921);
-  line-height: 1;
+  line-height: 1.2;
   display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  letter-spacing: -0.01em;
 }
 .admin-stat-label {
   font-size: 0.72rem;
   color: var(--color-neutral-500, #6b7280);
   font-weight: 500;
   display: block;
-  margin-top: 0.2rem;
+  margin-top: 0.15rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .admin-stat-sub {
   font-size: 0.7rem;
   color: var(--color-neutral-400, #9ca3af);
-  margin-top: 0.3rem;
+  margin-top: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -825,6 +847,31 @@
 [data-theme='dark'] .admin-error {
   background: rgba(220, 38, 38, 0.18);
   color: #fca5a5;
+}
+
+[data-theme='dark'] .admin-table-card {
+  background: #1c2128;
+  border-color: #30363d;
+  color: #e6edf3;
+}
+
+[data-theme='dark'] .admin-table-toolbar {
+  border-bottom-color: #30363d;
+}
+
+[data-theme='dark'] .admin-table th {
+  background: #161b22;
+  border-bottom-color: #30363d;
+  color: #8b949e;
+}
+
+[data-theme='dark'] .admin-table td {
+  border-bottom-color: #21262d;
+  color: #e6edf3;
+}
+
+[data-theme='dark'] .admin-table tr:hover td {
+  background: rgba(255, 255, 255, 0.04);
 }
 
 /* ═══════════════════════════════════════════════════════════

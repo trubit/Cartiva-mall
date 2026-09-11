@@ -13,16 +13,22 @@ import {
   FiTrendingUp,
   FiCreditCard,
   FiFileText,
+  FiCpu,
+  FiMessageSquare,
 } from 'react-icons/fi'
 import Logo from '../../ui/Logo/index.js'
+import { useUnreadMessagesCount } from '../../../hooks/useMessaging.js'
 
 const NAV_STORE = [
   { to: '/seller', end: true, Icon: FiGrid, label: 'Dashboard' },
   { to: '/seller/products', end: false, Icon: FiPackage, label: 'Products' },
   { to: '/seller/inventory', end: false, Icon: FiArchive, label: 'Inventory' },
   { to: '/seller/orders', end: false, Icon: FiShoppingBag, label: 'Orders' },
+  { to: '/messages', end: false, Icon: FiMessageSquare, label: 'Messages', badge: true },
   { to: '/seller/analytics', end: false, Icon: FiBarChart2, label: 'Analytics' },
   { to: '/seller/payouts', end: false, Icon: FiDollarSign, label: 'Payouts' },
+  { to: '/seller/fees', end: false, Icon: FiDollarSign, label: 'Sales & Commissions' },
+  { to: '/seller/autonomy', end: false, Icon: FiCpu, label: 'Autonomous Economy' },
   { to: '/seller/settings', end: false, Icon: FiSettings, label: 'Settings' },
 ]
 
@@ -46,6 +52,9 @@ const GROUP_COLOR = 'rgba(255,255,255,0.28)'
 
 // ─── Desktop sidebar ──────────────────────────────────────────────────────────
 export default function SellerSidebar() {
+  const { data: unreadData } = useUnreadMessagesCount()
+  const unreadMsgCount = unreadData?.unreadConversations ?? 0
+
   return (
     <aside
       style={{
@@ -113,8 +122,15 @@ export default function SellerSidebar() {
         >
           Manage
         </p>
-        {NAV.slice(1, 4).map(({ to, end, Icon, label }) => (
-          <SidebarLink key={to} to={to} end={end} Icon={Icon} label={label} />
+        {NAV.slice(1, 5).map(({ to, end, Icon, label, badge }) => (
+          <SidebarLink
+            key={to}
+            to={to}
+            end={end}
+            Icon={Icon}
+            label={label}
+            count={badge ? unreadMsgCount : 0}
+          />
         ))}
 
         <p
@@ -130,7 +146,7 @@ export default function SellerSidebar() {
         >
           Account
         </p>
-        {NAV.slice(4).map(({ to, end, Icon, label }) => (
+        {NAV.slice(5).map(({ to, end, Icon, label }) => (
           <SidebarLink key={to} to={to} end={end} Icon={Icon} label={label} />
         ))}
 
@@ -154,8 +170,30 @@ export default function SellerSidebar() {
         ))}
       </nav>
 
-      {/* Footer link */}
-      <div style={{ padding: '1rem 1.25rem', borderTop: `1px solid ${BORDER}` }}>
+      {/* Footer links */}
+      <div
+        style={{
+          padding: '1rem 1.25rem',
+          borderTop: `1px solid ${BORDER}`,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 8,
+        }}
+      >
+        <Link
+          to="/dashboard"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            color: 'rgba(255,153,0,0.9)',
+            fontSize: '0.75rem',
+            textDecoration: 'none',
+            fontWeight: 600,
+          }}
+        >
+          <FiShoppingBag size={13} /> Switch to Buyer View →
+        </Link>
         <Link
           to="/"
           style={{
@@ -225,11 +263,13 @@ function SidebarLink({
   end,
   Icon,
   label,
+  count,
 }: {
   to: string
   end?: boolean
   Icon: React.ElementType
   label: string
+  count?: number
 }) {
   return (
     <NavLink
@@ -250,7 +290,21 @@ function SidebarLink({
       })}
     >
       <Icon size={15} />
-      {label}
+      <span style={{ flex: 1 }}>{label}</span>
+      {count !== undefined && count > 0 && (
+        <span
+          style={{
+            background: '#ff9900',
+            color: '#0f172a',
+            fontSize: '0.65rem',
+            fontWeight: 800,
+            borderRadius: '9999px',
+            padding: '1px 6px',
+          }}
+        >
+          {count > 99 ? '99+' : count}
+        </span>
+      )}
     </NavLink>
   )
 }

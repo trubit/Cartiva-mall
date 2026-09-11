@@ -31,7 +31,8 @@ process.on('unhandledRejection', (reason) => {
 })
 
 const ensureAdmin = async (): Promise<void> => {
-  const email = 'trustezika831@gmail.com'
+  const email = env.ADMIN_EMAIL
+  if (!email) return
   try {
     const result = await User.findOneAndUpdate(
       { email },
@@ -44,18 +45,6 @@ const ensureAdmin = async (): Promise<void> => {
 }
 
 const bootstrap = async (): Promise<void> => {
-  await connectMongoDB()
-  await connectRedis()
-  await ensureAdmin()
-  seedDefaultPermissions().catch(() => {})
-  seedDefaultAccounts().catch(() => {})
-  startWorkflowWorker()
-  startIamWorker()
-  startWebhookWorker()
-  startEventBusWorker()
-  startGodModeWorker().catch(() => {})
-  verifyEmailConfig() // non-blocking — logs result when ready
-
   const httpServer = createServer(app)
 
   // 30-second hard timeout on all HTTP connections.
@@ -82,6 +71,18 @@ const bootstrap = async (): Promise<void> => {
     logger.info(`Cartiva API running on http://localhost:${env.PORT}`)
     logger.info(`Environment: ${env.NODE_ENV}`)
   })
+
+  await connectMongoDB()
+  await connectRedis()
+  await ensureAdmin()
+  seedDefaultPermissions().catch(() => {})
+  seedDefaultAccounts().catch(() => {})
+  startWorkflowWorker()
+  startIamWorker()
+  startWebhookWorker()
+  startEventBusWorker()
+  startGodModeWorker().catch(() => {})
+  verifyEmailConfig() // non-blocking — logs result when ready
 
   // ─── Graceful shutdown ──────────────────────────────────────────────────────
   // Called on SIGTERM (container stop / rolling deploy) and SIGINT (Ctrl+C).

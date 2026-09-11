@@ -136,10 +136,11 @@ export const setInventory = async (
 
 export const stockIn = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { quantity, note, referenceId } = req.body as {
+    const { quantity, note, referenceId, reason } = req.body as {
       quantity: number
       note?: string
       referenceId?: string
+      reason?: string
     }
     const inv = await adjustStock(
       req.params['productId'] as string,
@@ -147,8 +148,7 @@ export const stockIn = async (req: Request, res: Response, next: NextFunction): 
       'in',
       quantity,
       req.user!.userId,
-      note,
-      referenceId,
+      { note, referenceId, reason },
     )
     sendSuccess(res, inv, 'Stock added')
   } catch (err) {
@@ -158,10 +158,11 @@ export const stockIn = async (req: Request, res: Response, next: NextFunction): 
 
 export const stockOut = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { quantity, note, referenceId } = req.body as {
+    const { quantity, note, referenceId, reason } = req.body as {
       quantity: number
       note?: string
       referenceId?: string
+      reason?: string
     }
     const inv = await adjustStock(
       req.params['productId'] as string,
@@ -169,8 +170,7 @@ export const stockOut = async (req: Request, res: Response, next: NextFunction):
       'out',
       quantity,
       req.user!.userId,
-      note,
-      referenceId,
+      { note, referenceId, reason },
     )
     sendSuccess(res, inv, 'Stock removed')
   } catch (err) {

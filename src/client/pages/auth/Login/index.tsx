@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useSearchParams } from 'react-router-dom'
-import { FiMail, FiLock, FiAlertCircle, FiCheckCircle, FiRefreshCw } from 'react-icons/fi'
+import { FiMail, FiLock, FiAlertCircle, FiCheckCircle } from 'react-icons/fi'
 import { motion } from 'framer-motion'
 import AuthFormCard from '../../../../client/components/auth/AuthFormCard/index.js'
 import AuthInput from '../../../../client/components/auth/AuthInput/index.js'
@@ -63,46 +63,42 @@ export default function LoginPage() {
               <FiAlertCircle style={{ flexShrink: 0, marginTop: 2 }} />
               <span>{errorMsg}</span>
             </div>
-            {resent ? (
-              <div
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <Link
+                to={`/verify-email?email=${encodeURIComponent(getValues('email') || '')}`}
+                className="auth-btn auth-btn-primary"
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 'var(--space-2)',
-                  color: '#065f46',
-                  background: 'var(--color-success-50)',
-                  padding: 'var(--space-2) var(--space-3)',
-                  borderRadius: 'var(--radius-sm)',
                   fontSize: 'var(--text-xs)',
+                  padding: '6px 14px',
+                  height: 'auto',
+                  textDecoration: 'none',
                 }}
               >
-                <FiCheckCircle />
-                Verification email sent — check your Gmail inbox and spam folder.
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={handleResend}
-                disabled={resending}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 'var(--space-2)',
-                  background: 'none',
-                  border: '1px solid #fca5a5',
-                  borderRadius: 'var(--radius-sm)',
-                  color: '#991b1b',
-                  fontSize: 'var(--text-xs)',
-                  fontWeight: 600,
-                  padding: 'var(--space-1-5) var(--space-3)',
-                  cursor: 'pointer',
-                  opacity: resending ? 0.65 : 1,
-                }}
-              >
-                <FiRefreshCw size={12} className={resending ? 'animate-spin' : ''} />
-                {resending ? 'Sending…' : 'Resend verification email'}
-              </button>
-            )}
+                Enter 6-Digit Code
+              </Link>
+              {resent ? (
+                <span style={{ fontSize: 'var(--text-xs)', color: '#065f46', fontWeight: 600 }}>
+                  <FiCheckCircle /> Code resent!
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={resending}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#991b1b',
+                    fontSize: 'var(--text-xs)',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    textDecoration: 'underline',
+                  }}
+                >
+                  {resending ? 'Sending…' : 'Resend code'}
+                </button>
+              )}
+            </div>
           </div>
         )}
 
@@ -147,8 +143,15 @@ export default function LoginPage() {
         <SocialLogin />
 
         <p className="auth-terms">
-          By signing in, you agree to Cartiva&apos;s <a href="#">Conditions of Use</a> and{' '}
-          <a href="#">Privacy Notice</a>.
+          By signing in, you agree to Cartiva&apos;s{' '}
+          <Link to="/conditions" className="auth-link" style={{ fontWeight: 600 }}>
+            Conditions of Use
+          </Link>{' '}
+          and{' '}
+          <Link to="/privacy" className="auth-link" style={{ fontWeight: 600 }}>
+            Privacy Notice
+          </Link>
+          .
         </p>
 
         <div className="auth-divider">New to Cartiva?</div>

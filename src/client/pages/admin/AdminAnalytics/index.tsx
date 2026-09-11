@@ -14,9 +14,16 @@ import {
   Cell,
   Legend,
 } from 'recharts'
-import { FiTrendingUp, FiTrendingDown } from 'react-icons/fi'
+import {
+  FiTrendingUp,
+  FiTrendingDown,
+  FiDollarSign,
+  FiShoppingBag,
+  FiUsers,
+  FiUserCheck,
+} from 'react-icons/fi'
 import { useAdminAnalytics } from '../../../hooks/useAdmin.js'
-import { formatCurrency } from '../../../../shared/helpers/index.js'
+import { useCurrency } from '../../../hooks/useCurrency.js'
 
 const COLORS = [
   '#FF9900',
@@ -33,7 +40,7 @@ const DAY_OPTIONS = [7, 14, 30, 60, 90]
 
 export default function AdminAnalytics() {
   const [days, setDays] = useState(30)
-
+  const { formatPrice } = useCurrency()
   const { data: res, isLoading, error } = useAdminAnalytics(days)
   const analytics = res?.data
 
@@ -82,9 +89,13 @@ export default function AdminAnalytics() {
       {/* Summary cards */}
       <div className="admin-stats-grid" style={{ marginBottom: '1.5rem' }}>
         <div className="admin-stat-card">
-          <div className="admin-stat-icon admin-stat-icon--revenue" />
+          <div className="admin-stat-icon admin-stat-icon--revenue">
+            <FiDollarSign />
+          </div>
           <div className="admin-stat-body">
-            <span className="admin-stat-value">{formatCurrency(summary.currentRevenue)}</span>
+            <span className="admin-stat-value" title={formatPrice(summary.currentRevenue)}>
+              {formatPrice(summary.currentRevenue)}
+            </span>
             <span className="admin-stat-label">Revenue ({days}d)</span>
             <p className="admin-stat-sub" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               {summary.revenueGrowth >= 0 ? (
@@ -101,9 +112,14 @@ export default function AdminAnalytics() {
         </div>
 
         <div className="admin-stat-card">
-          <div className="admin-stat-icon admin-stat-icon--orders" />
+          <div className="admin-stat-icon admin-stat-icon--orders">
+            <FiShoppingBag />
+          </div>
           <div className="admin-stat-body">
-            <span className="admin-stat-value">
+            <span
+              className="admin-stat-value"
+              title={String(topProducts.reduce((s, p) => s + p.unitsSold, 0))}
+            >
               {topProducts.reduce((s, p) => s + p.unitsSold, 0)}
             </span>
             <span className="admin-stat-label">Units Sold ({days}d)</span>
@@ -112,18 +128,29 @@ export default function AdminAnalytics() {
         </div>
 
         <div className="admin-stat-card">
-          <div className="admin-stat-icon admin-stat-icon--users" />
+          <div className="admin-stat-icon admin-stat-icon--users">
+            <FiUsers />
+          </div>
           <div className="admin-stat-body">
-            <span className="admin-stat-value">{userGrowth.reduce((s, u) => s + u.users, 0)}</span>
+            <span
+              className="admin-stat-value"
+              title={String(userGrowth.reduce((s, u) => s + u.users, 0))}
+            >
+              {userGrowth.reduce((s, u) => s + u.users, 0)}
+            </span>
             <span className="admin-stat-label">New Users (6mo)</span>
             <p className="admin-stat-sub">{userGrowth.length} active months</p>
           </div>
         </div>
 
         <div className="admin-stat-card">
-          <div className="admin-stat-icon admin-stat-icon--products" />
+          <div className="admin-stat-icon admin-stat-icon--products">
+            <FiUserCheck />
+          </div>
           <div className="admin-stat-body">
-            <span className="admin-stat-value">{topSellers.length}</span>
+            <span className="admin-stat-value" title={String(topSellers.length)}>
+              {topSellers.length}
+            </span>
             <span className="admin-stat-label">Active Sellers ({days}d)</span>
             <p className="admin-stat-sub">With sales activity</p>
           </div>
@@ -151,7 +178,7 @@ export default function AdminAnalytics() {
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
               <XAxis dataKey="_id" tick={{ fontSize: 10 }} tickFormatter={(v) => v.slice(5)} />
               <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `$${v}`} width={60} />
-              <Tooltip formatter={(v) => [formatCurrency(Number(v) || 0), 'Revenue']} />
+              <Tooltip formatter={(v) => [formatPrice(Number(v) || 0), 'Revenue']} />
               <Area
                 type="monotone"
                 dataKey="revenue"
@@ -190,7 +217,7 @@ export default function AdminAnalytics() {
                   tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
                 />
                 <YAxis type="category" dataKey="_id" tick={{ fontSize: 9 }} width={80} />
-                <Tooltip formatter={(v) => [formatCurrency(Number(v) || 0), 'Revenue']} />
+                <Tooltip formatter={(v) => [formatPrice(Number(v) || 0), 'Revenue']} />
                 <Bar dataKey="revenue" radius={[0, 4, 4, 0]}>
                   {categoryBreakdown.map((_: unknown, i: number) => (
                     <Cell key={i} fill={COLORS[i % COLORS.length]} />
@@ -289,7 +316,7 @@ export default function AdminAnalytics() {
                       </td>
                       <td style={{ fontSize: '.8rem' }}>{s.orders}</td>
                       <td style={{ fontWeight: 700, fontSize: '.8rem' }}>
-                        {formatCurrency(s.revenue)}
+                        {formatPrice(s.revenue)}
                       </td>
                     </tr>
                   ))
@@ -350,7 +377,7 @@ export default function AdminAnalytics() {
                       </td>
                       <td style={{ fontSize: '.8rem' }}>{p.unitsSold}</td>
                       <td style={{ fontWeight: 700, fontSize: '.8rem' }}>
-                        {formatCurrency(p.revenue)}
+                        {formatPrice(p.revenue)}
                       </td>
                     </tr>
                   ))

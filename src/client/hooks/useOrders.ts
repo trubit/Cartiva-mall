@@ -14,13 +14,23 @@ export const useMyOrders = (params?: { status?: string; page?: number; limit?: n
     staleTime: 30_000,
   })
 
+const isValidObjectId = (id?: string): boolean =>
+  Boolean(id) && id !== ':id' && /^[0-9a-fA-F]{24}$/.test(id!)
+
 // ─── Fetch single order ───────────────────────────────────────────────────────
-export const useOrder = (orderId: string) =>
+export const useOrder = (
+  orderId: string,
+  options?: {
+    refetchInterval?: number | false | ((query: any) => number | false)
+    staleTime?: number
+  },
+) =>
   useQuery({
     queryKey: [...ORDER_KEY, orderId],
     queryFn: () => orderService.getOrder(orderId),
-    enabled: Boolean(orderId),
-    staleTime: 15_000,
+    enabled: isValidObjectId(orderId),
+    staleTime: options?.staleTime ?? 15_000,
+    refetchInterval: options?.refetchInterval,
   })
 
 // ─── Tracking info (lightweight endpoint) ────────────────────────────────────
@@ -28,7 +38,7 @@ export const useTrackOrder = (orderId: string) =>
   useQuery({
     queryKey: [...ORDER_KEY, orderId, 'track'],
     queryFn: () => orderService.trackOrder(orderId),
-    enabled: Boolean(orderId),
+    enabled: isValidObjectId(orderId),
     staleTime: 10_000,
   })
 

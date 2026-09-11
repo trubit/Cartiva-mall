@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { getImageUrl } from '../../../utils/image.js'
 import Alert from 'react-bootstrap/Alert'
@@ -7,7 +7,8 @@ import { FiArrowLeft } from 'react-icons/fi'
 import { useOrder } from '../../../hooks/useOrders.js'
 import { OrderStatusBadge } from '../../../components/order/OrderStatus/index.js'
 import ReturnRequestForm from '../../../components/order/ReturnRequestForm/index.js'
-import { formatDate, formatCurrency } from '../../../../shared/helpers/index.js'
+import { formatDate } from '../../../../shared/helpers/index.js'
+import { useCurrency } from '../../../hooks/useCurrency.js'
 import {
   RETURNABLE_STATUSES,
   RETURN_WINDOW_DAYS,
@@ -20,9 +21,11 @@ function isWithinReturnWindow(createdAt: string) {
 
 export default function ReturnOrder() {
   const { id } = useParams<{ id: string }>()
+  const isValidId = Boolean(id) && id !== ':id' && /^[0-9a-fA-F]{24}$/.test(id!)
   const [showModal, setShowModal] = useState(false)
 
   const { data: order, isLoading, isError } = useOrder(id ?? '')
+  const { formatPrice } = useCurrency()
 
   if (isLoading) {
     return (
@@ -32,12 +35,16 @@ export default function ReturnOrder() {
     )
   }
 
-  if (isError || !order) {
+  if (!isValidId || isError || !order) {
     return (
       <div className="container section">
-        <Alert variant="danger">Order not found.</Alert>
-        <Link to="/orders" className="btn btn-outline-secondary btn-sm mt-2">
-          <FiArrowLeft size={14} className="me-1" /> Back to Orders
+        <Alert variant="danger">
+          {!isValidId
+            ? 'The URL contains a placeholder route parameter (:id). Please select an order from your history below.'
+            : 'Order not found.'}
+        </Alert>
+        <Link to="/orders" className="btn btn-primary btn-sm mt-2">
+          <FiArrowLeft size={14} className="me-1" /> View Your Orders
         </Link>
       </div>
     )
@@ -66,7 +73,7 @@ export default function ReturnOrder() {
         <div className="return-order__card">
           <div className="return-order__order-header">
             <OrderStatusBadge status={order.orderStatus} showIcon />
-            <strong>{formatCurrency(order.grandTotal)}</strong>
+            <strong>{formatPrice(order.grandTotal, order.currency)}</strong>
           </div>
           <ul className="return-order__items">
             {order.items.map((item, i) => (
@@ -81,7 +88,7 @@ export default function ReturnOrder() {
                 <div className="return-order__item-info">
                   <span className="return-order__item-title">{item.title}</span>
                   <span className="return-order__item-meta">
-                    ×{item.quantity} · {formatCurrency(item.lineTotal)}
+                    ×{item.quantity} · {formatPrice(item.lineTotal, order.currency)}
                     {item.selectedSize && ` · Size: ${item.selectedSize}`}
                     {item.selectedColor && ` · Color: ${item.selectedColor}`}
                   </span>
@@ -127,7 +134,7 @@ export default function ReturnOrder() {
               {order.returnRequest.refundAmount !== undefined && (
                 <div className="return-order__status-row">
                   <span>Refund</span>
-                  <strong>{formatCurrency(order.returnRequest.refundAmount)}</strong>
+                  <strong>{formatPrice(order.returnRequest.refundAmount, order.currency)}</strong>
                 </div>
               )}
             </div>

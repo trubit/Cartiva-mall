@@ -1,5 +1,6 @@
 import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from 'axios'
 import { useAuthStore } from '../store/authStore.js'
+import { withJitter, delay } from '../utils/resilience.js'
 
 const api: AxiosInstance = axios.create({
   baseURL: '/api/v1',
@@ -23,22 +24,42 @@ function isTokenExpired(token: string): boolean {
 // Shared promise so concurrent requests don't all fire separate refreshes
 let refreshPromise: Promise<string | null> | null = null
 
-function doRefresh(): Promise<string | null> {
+// Endpoints that must NEVER trigger automatic token refresh
+// (avoids infinite refresh→401→refresh loops)
+const AUTH_BYPASS_PATHS = ['/auth/refresh', '/auth/login', '/auth/register', '/auth/logout']
+
+function isAuthBypassPath(url?: string): boolean {
+  if (!url) return false
+  return AUTH_BYPASS_PATHS.some((p) => url.includes(p))
+}
+
+export function doRefresh(): Promise<string | null> {
+  if (!useAuthStore.getState().isAuthenticated) {
+    return Promise.resolve(null)
+  }
+
   if (!refreshPromise) {
     refreshPromise = axios
-      .post<{ data: { accessToken: string } }>(
+      .post<{ data: { accessToken: string; user?: any } }>(
         '/api/v1/auth/refresh',
         {},
         { withCredentials: true },
       )
       .then(({ data }) => {
         const token = data.data.accessToken
-        // Update the in-memory Zustand store — never write tokens to localStorage
+        const freshUser = data.data.user
+        // Update the in-memory Zustand store with fresh user data & role
         const { user, setAuth } = useAuthStore.getState()
-        if (user) setAuth(user, token)
+        if (freshUser || user) {
+          setAuth(freshUser || user, token)
+        }
         return token
       })
-      .catch(() => null)
+      .catch(() => {
+        // Refresh cookie invalid/expired — clear persisted auth so we stop looping
+        useAuthStore.getState().clearAuth()
+        return null
+      })
       .finally(() => {
         refreshPromise = null
       })
@@ -46,28 +67,36 @@ function doRefresh(): Promise<string | null> {
   return refreshPromise
 }
 
-// ─── Request interceptor — proactively refresh before sending expired token ──
+// ─── Request interceptor — proactively refresh before sending expired token & attach request IDs ──
 api.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
   const { accessToken, isAuthenticated } = useAuthStore.getState()
   let token = accessToken
 
-  // Refresh when:
-  // (a) token is present but expired/about to expire, OR
-  // (b) token is absent but the user is authenticated — happens after a hard page
-  //     reload (window.location.href) which clears in-memory Zustand state while
-  //     the httpOnly refresh-token cookie is still valid.
-  if ((!token && isAuthenticated) || (token && isTokenExpired(token))) {
+  // Never auto-refresh for auth endpoints — prevents infinite refresh→401 loops
+  const skip = isAuthBypassPath(config.url)
+
+  if (!skip && ((!token && isAuthenticated) || (token && isTokenExpired(token)))) {
     const fresh = await doRefresh()
-    token = fresh // null if refresh failed; the response interceptor will handle it
+    token = fresh
+    if (!token && !useAuthStore.getState().isAuthenticated) {
+      return Promise.reject(new axios.Cancel('Session expired'))
+    }
   }
 
-  if (token && config.headers) {
-    config.headers.Authorization = `Bearer ${token}`
+  if (config.headers) {
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    const requestId = crypto.randomUUID
+      ? crypto.randomUUID()
+      : `req-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+    config.headers['X-Request-ID'] = config.headers['X-Request-ID'] || requestId
+    config.headers['X-Correlation-ID'] = config.headers['X-Correlation-ID'] || requestId
   }
   return config
 })
 
-// ─── Response interceptor — catch any unexpected 401s that slipped through ───
+// ─── Response interceptor — auth refresh & resilient exponential backoff retry ──
 let isRefreshing = false
 let failedQueue: Array<{ resolve: (t: string) => void; reject: (e: unknown) => void }> = []
 
@@ -78,7 +107,23 @@ const processQueue = (error: unknown, token?: string) => {
 
 const forceLogout = () => {
   useAuthStore.getState().clearAuth()
-  window.location.href = '/login'
+}
+
+const isRetryableError = (error: any): boolean => {
+  if (!error.response) return true // Network connection failure / timeout
+  const status = error.response.status
+  // Never retry 429 — retrying a rate-limited request just makes it worse.
+  // Only retry transient 5xx server errors.
+  return status >= 500
+}
+
+const getRetryAfterMs = (error: any): number => {
+  const retryAfter = error.response?.headers?.['retry-after']
+  if (retryAfter) {
+    const parsed = parseInt(retryAfter, 10)
+    if (!isNaN(parsed)) return parsed * 1000 // convert seconds → ms
+  }
+  return 0
 }
 
 api.interceptors.response.use(
@@ -86,7 +131,15 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (!originalRequest) return Promise.reject(error)
+
+    // 1. Handle 401 Unauthorized token refresh
+    // Skip auto-retry for auth-bypass endpoints to prevent infinite loops
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !isAuthBypassPath(originalRequest.url)
+    ) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject })
@@ -112,6 +165,22 @@ api.interceptors.response.use(
       } finally {
         isRefreshing = false
       }
+    }
+
+    // 2. Handle Transient Failures (502, 503, 504, 429, Network error) with exponential backoff & full jitter
+    const method = (originalRequest.method || 'get').toLowerCase()
+    const isIdempotent = ['get', 'head', 'options', 'put', 'delete'].includes(method)
+
+    originalRequest._retryCount = originalRequest._retryCount || 0
+    const maxRetries = 2
+
+    if (isIdempotent && isRetryableError(error) && originalRequest._retryCount < maxRetries) {
+      originalRequest._retryCount++
+      const retryAfterMs = getRetryAfterMs(error)
+      const baseDelayMs = retryAfterMs || 300 * Math.pow(2, originalRequest._retryCount - 1)
+      const jitterDelayMs = retryAfterMs ? baseDelayMs : Math.round(withJitter(baseDelayMs, 0.25))
+      await delay(jitterDelayMs)
+      return api(originalRequest)
     }
 
     return Promise.reject(error)

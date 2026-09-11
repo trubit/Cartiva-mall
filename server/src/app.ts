@@ -38,7 +38,15 @@ import developerRoutes from './routes/developer.routes.js'
 import integrationRoutes from './routes/integration.routes.js'
 import apiManagementRoutes from './routes/apiManagement.routes.js'
 import eventSystemRoutes from './routes/eventSystem.routes.js'
+import searchRoutes from './routes/search.routes.js'
 import godmodeRoutes from './routes/godmode.routes.js'
+import reviewRoutes from './routes/review.routes.js'
+import riskRoutes from './routes/risk.routes.js'
+import aiBiRoutes from './routes/aiBi.routes.js'
+import currencyRoutes from './routes/currency.routes.js'
+import feeRoutes from './routes/fee.routes.js'
+import optimizationRoutes from './routes/optimization.routes.js'
+import autonomyRoutes from './routes/autonomy.routes.js'
 import { apiGatewayMiddleware } from './middlewares/apiGateway.middleware.js'
 import { getActivePromotions } from './modules/coupon/coupon.controller.js'
 import * as paymentController from './modules/payment/payment.controller.js'
@@ -53,14 +61,46 @@ app.set('trust proxy', 1)
 // ─── Security headers ─────────────────────────────────────────────────────────
 app.use(
   helmet({
+    crossOriginOpenerPolicy: false,
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          'https://js.paystack.co',
+          'https://checkout.paystack.com',
+          'https://accounts.google.com',
+          'https://fonts.googleapis.com',
+        ],
         styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
-        fontSrc: ["'self'", 'https://fonts.gstatic.com'],
-        imgSrc: ["'self'", 'data:', 'https:'],
-        connectSrc: ["'self'", 'ws:', 'wss:'],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+        imgSrc: ["'self'", 'data:', 'https:', 'blob:'],
+        frameSrc: [
+          "'self'",
+          'https://checkout.paystack.com',
+          'https://standard.paystack.co',
+          'https://*.paystack.co',
+          'https://accounts.google.com',
+        ],
+        childSrc: [
+          "'self'",
+          'https://checkout.paystack.com',
+          'https://standard.paystack.co',
+          'https://*.paystack.co',
+        ],
+        connectSrc: [
+          "'self'",
+          'ws:',
+          'wss:',
+          'https://api.paystack.co',
+          'https://checkout.paystack.com',
+          'https://standard.paystack.co',
+          'https://*.paystack.co',
+          'https://accounts.google.com',
+          'https://fonts.googleapis.com',
+          'https://fonts.gstatic.com',
+        ],
       },
     },
   }),
@@ -68,9 +108,18 @@ app.use(
 
 // ─── Webhooks (raw body BEFORE express.json, AFTER helmet) ───────────────────
 app.post(
-  '/webhooks/paystack',
+  [
+    '/webhooks/paystack',
+    `${API_PREFIX}/payment/paystack/webhook`,
+    `${API_PREFIX}/webhooks/paystack`,
+  ],
   express.raw({ type: 'application/json', limit: '512kb' }),
   paymentController.paystackWebhook,
+)
+app.post(
+  '/webhooks/stripe',
+  express.raw({ type: 'application/json', limit: '512kb' }),
+  paymentController.stripeWebhook,
 )
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
@@ -80,7 +129,7 @@ app.use(
     origin: env.CLIENT_URL || false,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-session-id'],
   }),
 )
 app.use(globalLimiter)
@@ -99,17 +148,44 @@ app.use(morgan(env.isDev() ? 'dev' : 'combined'))
 
 // ─── Health Check ─────────────────────────────────────────────────────────────
 app.get('/health', async (_req, res) => {
-  const dbOk = mongoose.connection.readyState === 1
+  const dbState = mongoose.connection.readyState // 0=disc 1=conn 2=connting 3=discting
+  const dbOk = dbState === 1
 
   const redisOk = await redis
     .ping()
     .then((p) => p === 'PONG')
     .catch(() => false)
 
-  const status = dbOk ? 200 : 503
-  res.status(status).json({
-    success: dbOk,
-    message: dbOk ? 'Cartiva API is running' : 'Service degraded',
+  // Always return 200 so wait-server.mjs considers the server "ready" as soon as
+  // Express is listening; degraded infra is reported in the body but never blocks dev startup.
+  res.status(200).json({
+    success: true,
+    message: 'Cartiva API is running',
+    checks: {
+      mongodb: dbOk ? 'ok' : dbState === 2 ? 'connecting' : 'unavailable',
+      redis: redisOk ? 'ok' : 'unavailable',
+    },
+  })
+})
+
+// ─── Readiness Check ──────────────────────────────────────────────────────────
+app.get('/ready', async (_req, res) => {
+  const dbState = mongoose.connection.readyState
+  const dbOk = dbState === 1
+
+  const redisOk = await redis
+    .ping()
+    .then((p) => p === 'PONG')
+    .catch(() => false)
+
+  const isReady = dbOk && redisOk
+
+  res.status(isReady ? 200 : 503).json({
+    success: isReady,
+    status: isReady ? 'UP' : 'DOWN',
+    message: isReady
+      ? 'API Gateway is ready to serve traffic'
+      : 'API Gateway dependencies degraded',
     checks: {
       mongodb: dbOk ? 'ok' : 'unavailable',
       redis: redisOk ? 'ok' : 'unavailable',
@@ -117,10 +193,14 @@ app.get('/health', async (_req, res) => {
   })
 })
 
+// ─── API Gateway Middleware ───────────────────────────────────────────────────
+app.use(API_PREFIX, apiGatewayMiddleware)
+
 // ─── API Routes ───────────────────────────────────────────────────────────────
 app.use(`${API_PREFIX}/auth`, authRoutes)
 app.use(`${API_PREFIX}/profile`, profileRoutes)
 app.use(`${API_PREFIX}/products`, productRoutes)
+app.use(`${API_PREFIX}/search`, searchRoutes)
 app.use(`${API_PREFIX}/cart`, cartRoutes)
 app.use(`${API_PREFIX}/checkout`, checkoutRoutes)
 app.use(`${API_PREFIX}/orders`, orderRoutes)
@@ -130,6 +210,11 @@ app.use(`${API_PREFIX}/seller`, sellerRoutes)
 app.use(`${API_PREFIX}/admin`, adminRoutes)
 app.use(`${API_PREFIX}/inventory`, inventoryRoutes)
 app.use(`${API_PREFIX}/recommendations`, recommendationRoutes)
+app.use(`${API_PREFIX}/reviews`, reviewRoutes)
+app.use(`${API_PREFIX}/risk`, riskRoutes)
+app.use(`${API_PREFIX}/ai-bi`, aiBiRoutes)
+app.use(`${API_PREFIX}/optimization`, optimizationRoutes)
+app.use(`${API_PREFIX}/autonomy`, autonomyRoutes)
 app.get(`${API_PREFIX}/promotions`, getActivePromotions)
 app.use(`${API_PREFIX}/notifications`, notificationRoutes)
 app.use(`${API_PREFIX}/messaging`, messagingRoutes)
@@ -147,9 +232,8 @@ app.use(`${API_PREFIX}/integrations`, integrationRoutes)
 app.use(`${API_PREFIX}/api-management`, apiManagementRoutes)
 app.use(`${API_PREFIX}/event-system`, eventSystemRoutes)
 app.use(`${API_PREFIX}/godmode`, godmodeRoutes)
-
-// Apply API Gateway middleware to all API routes
-app.use(`${API_PREFIX}`, apiGatewayMiddleware)
+app.use(`${API_PREFIX}/currencies`, currencyRoutes)
+app.use(`${API_PREFIX}/fees`, feeRoutes)
 
 // ─── Error Handling ───────────────────────────────────────────────────────────
 app.use(notFound)

@@ -1,14 +1,17 @@
-import { useState } from 'react'
-import { FiAlertTriangle, FiShield, FiList, FiCreditCard } from 'react-icons/fi'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { FiAlertTriangle, FiShield, FiList, FiCreditCard, FiDollarSign } from 'react-icons/fi'
 import {
   useAdminFraudAlerts,
   useAdminAuditLogs,
   useAdminPayments,
 } from '../../../hooks/useAdmin.js'
-import { formatCurrency, formatDate } from '../../../../shared/helpers/index.js'
+import { formatDate } from '../../../../shared/helpers/index.js'
+import { useCurrency } from '../../../hooks/useCurrency.js'
 import type { FraudAlert, AuditLog, AdminPayment } from '../../../services/adminService.js'
+import CommissionPolicyManager from './CommissionPolicyManager.js'
 
-const TABS = ['Fraud Alerts', 'Audit Log', 'Payments'] as const
+const TABS = ['Commission Policy', 'Fraud Alerts', 'Audit Log', 'Payments'] as const
 type Tab = (typeof TABS)[number]
 
 const SEVERITY_CLASSES: Record<string, string> = {
@@ -18,7 +21,33 @@ const SEVERITY_CLASSES: Record<string, string> = {
 }
 
 export default function AdminSettings() {
-  const [tab, setTab] = useState<Tab>('Fraud Alerts')
+  const { formatPrice } = useCurrency()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tabParam = searchParams.get('tab')
+
+  const resolveTab = (): Tab => {
+    if (!tabParam) return 'Commission Policy'
+    const lower = tabParam.toLowerCase()
+    if (lower.includes('commission') || lower.includes('fee')) return 'Commission Policy'
+    if (lower.includes('fraud')) return 'Fraud Alerts'
+    if (lower.includes('audit')) return 'Audit Log'
+    if (lower.includes('pay')) return 'Payments'
+    return 'Commission Policy'
+  }
+
+  const [tab, setTabState] = useState<Tab>(resolveTab)
+
+  useEffect(() => {
+    if (tabParam) {
+      setTabState(resolveTab())
+    }
+  }, [tabParam])
+
+  const setTab = (newTab: Tab) => {
+    setTabState(newTab)
+    setSearchParams({ tab: newTab })
+  }
+
   const [payPage, setPayPage] = useState(1)
   const [auditPage, setAuditPage] = useState(1)
   const [payStatus, setPayStatus] = useState('')
@@ -65,6 +94,7 @@ export default function AdminSettings() {
             onClick={() => setTab(t)}
             style={{ display: 'flex', alignItems: 'center', gap: '.35rem' }}
           >
+            {t === 'Commission Policy' && <FiDollarSign size={13} />}
             {t === 'Fraud Alerts' && <FiAlertTriangle size={13} />}
             {t === 'Audit Log' && <FiList size={13} />}
             {t === 'Payments' && <FiCreditCard size={13} />}
@@ -88,6 +118,9 @@ export default function AdminSettings() {
           </button>
         ))}
       </div>
+
+      {/* ── Commission Policy ─────────────────────────────────────────────────── */}
+      {tab === 'Commission Policy' && <CommissionPolicyManager />}
 
       {/* ── Fraud Alerts ─────────────────────────────────────────────────────── */}
       {tab === 'Fraud Alerts' && (
@@ -313,13 +346,13 @@ export default function AdminSettings() {
                         <td style={{ fontSize: '.8rem' }}>
                           {pay.orderId ? (
                             <>
-                              #{pay.orderId.orderNumber} · {formatCurrency(pay.orderId.grandTotal)}
+                              #{pay.orderId.orderNumber} · {formatPrice(pay.orderId.grandTotal)}
                             </>
                           ) : (
                             '—'
                           )}
                         </td>
-                        <td style={{ fontWeight: 700 }}>{formatCurrency(pay.amount)}</td>
+                        <td style={{ fontWeight: 700 }}>{formatPrice(pay.amount)}</td>
                         <td
                           style={{
                             fontSize: '.75rem',

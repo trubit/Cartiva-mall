@@ -6,6 +6,7 @@ import {
   uploadLimiter,
   dashboardLimiter,
 } from '../middlewares/rateLimiter.middleware.js'
+import { uploadVendorDocument } from '../middlewares/upload.middleware.js'
 
 const router = Router()
 
@@ -43,6 +44,13 @@ router.put('/:id/profile', authenticate, ctrl.updateProfile)
 router.post('/:id/verify', authenticate, ctrl.submitVerification)
 router.post('/:id/storefront', authenticate, ctrl.upsertStorefront)
 router.post('/:id/documents', authenticate, uploadLimiter, ctrl.uploadDocument)
+router.post(
+  '/:id/documents/upload',
+  authenticate,
+  uploadLimiter,
+  uploadVendorDocument,
+  ctrl.uploadDocumentFile,
+)
 router.get('/:id/documents', authenticate, ctrl.listDocuments)
 router.get('/:id/analytics', authenticate, dashboardLimiter, ctrl.getAnalytics)
 router.get('/:id/score', authenticate, ctrl.getScore)

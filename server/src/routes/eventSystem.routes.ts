@@ -9,7 +9,6 @@ import {
   discardDeadLetter,
   getSagas,
   getSagaById,
-  triggerOrderSagaDemo,
   getEventSystemHealth,
 } from '../modules/event-bus/eventBus.controller.js'
 
@@ -30,7 +29,6 @@ router.delete('/dead-letters/:id', discardDeadLetter)
 // Sagas
 router.get('/sagas', getSagas)
 router.get('/sagas/:id', getSagaById)
-router.post('/sagas/trigger-demo', triggerOrderSagaDemo)
 
 // System Health & Metrics — router is mounted at /event-system so path is just /health
 router.get('/health', getEventSystemHealth)

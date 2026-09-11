@@ -8,7 +8,8 @@ import {
   OrderStatusBadge,
   PaymentStatusBadge,
 } from '../../../components/order/OrderStatus/index.js'
-import { formatCurrency, formatDate } from '../../../../shared/helpers/index.js'
+import { formatDate } from '../../../../shared/helpers/index.js'
+import { useCurrency } from '../../../hooks/useCurrency.js'
 import { ORDER_STATUS } from '../../../../shared/constants/index.js'
 import type { IOrder, OrderStatus } from '../../../../shared/types/index.js'
 
@@ -194,6 +195,7 @@ export default function SellerOrders() {
   const [editingOrder, setEditingOrder] = useState<IOrder | null>(null)
 
   const { data, isLoading, isError } = useSellerOrders({ status: statusFilter, page, limit: 20 })
+  const { formatPrice } = useCurrency()
   const orders = data?.orders ?? []
   const total = data?.pagination?.total ?? orders.length
   const totalPages = data?.pagination?.totalPages ?? 1
@@ -291,7 +293,9 @@ export default function SellerOrders() {
                     {order.items.length} item{order.items.length !== 1 ? 's' : ''}
                   </td>
                   <td>
-                    <span className="so-total">{formatCurrency(order.grandTotal)}</span>
+                    <span className="so-total">
+                      {formatPrice(order.grandTotal, order.currency)}
+                    </span>
                   </td>
                   <td>
                     <OrderStatusBadge status={order.orderStatus} showIcon size="sm" />

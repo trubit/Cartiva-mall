@@ -40,4 +40,9 @@ export const messagingService = {
     api.put<{ data: IMessage }>(`/messaging/messages/${id}`, { content }),
 
   deleteMessage: (id: string) => api.delete(`/messaging/messages/${id}`),
+
+  getUnreadCount: () =>
+    api.get<{ data: { unreadConversations: number; unreadMessages: number } }>(
+      '/messaging/unread-count',
+    ),
 }

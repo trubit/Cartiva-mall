@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "npm run kill:ports && concurrently --kill-others-on-fail -n server,client -c blue,green \"npm run dev:server\" \"npm run dev:client\"",
-    "dev:client": "node scripts/wait-server.mjs && vite",
+    "dev:client": "node scripts/kill-client-port.mjs && node scripts/wait-server.mjs && vite",
     "dev:server": "tsx watch server/src/index.ts",
     "client": "vite",
     "server": "tsx watch server/src/index.ts",
@@ -30,7 +30,8 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
-    "test:all": "npm run test && npm run test:server"
+    "test:all": "npm run test && npm run test:server",
+    "sonar": "sonar-scanner-npm"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -38,6 +39,7 @@
     "@hookform/resolvers": "^5.4.0",
     "@mui/icons-material": "^9.2.0",
     "@mui/material": "^9.1.1",
+    "@react-oauth/google": "^0.13.5",
     "@socket.io/redis-adapter": "^8.3.0",
     "@tanstack/react-query": "^5.101.0",
     "@types/compression": "^1.8.1",
@@ -54,6 +56,7 @@
     "express": "^5.2.1",
     "express-rate-limit": "^8.5.2",
     "framer-motion": "^12.40.0",
+    "google-auth-library": "^11.0.2",
     "helmet": "^8.2.0",
     "ioredis": "^5.11.1",
     "jsonwebtoken": "^9.0.3",
@@ -117,6 +120,7 @@
     "msw": "^2.14.6",
     "nodemon": "^3.1.14",
     "prettier": "^3.8.4",
+    "sonarqube-scanner": "^5.0.0",
     "supertest": "^7.2.2",
     "ts-node": "^10.9.2",
     "tsx": "^4.22.4",

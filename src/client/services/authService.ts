@@ -1,5 +1,12 @@
-import api from './api.js'
-import type { LoginInput, RegisterInput } from '../../shared/validators/auth.validators.js'
+import api, { doRefresh } from './api.js'
+import { useAuthStore } from '../store/authStore.js'
+import type {
+  LoginInput,
+  RegisterInput,
+  VerifyEmailOtpInput,
+  ResetPasswordOtpInput,
+  ResendOtpInput,
+} from '../../shared/validators/auth.validators.js'
 import type { IUser } from '../../shared/types/user.types.js'
 import type { ApiResponse } from '../../shared/types/api.types.js'
 
@@ -11,7 +18,31 @@ interface AuthResponseData {
 
 export const authService = {
   register: async (data: RegisterInput) => {
-    const res = await api.post<ApiResponse<{ user: IUser }>>('/auth/register', data)
+    const res = await api.post<ApiResponse<{ user: Partial<IUser> }>>('/auth/register', data)
+    return res.data
+  },
+
+  verifyEmailOtp: async (data: VerifyEmailOtpInput) => {
+    const res = await api.post<ApiResponse<AuthResponseData>>('/auth/verify-otp', data)
+    return res.data
+  },
+
+  resendOtp: async (data: ResendOtpInput) => {
+    const res = await api.post<ApiResponse<null>>('/auth/resend-otp', data)
+    return res.data
+  },
+
+  verifyResetOtp: async (email: string, otp: string) => {
+    const res = await api.post<ApiResponse<null>>('/auth/verify-reset-otp', {
+      email,
+      otp,
+      purpose: 'PASSWORD_RESET',
+    })
+    return res.data
+  },
+
+  resetPasswordWithOtp: async (data: ResetPasswordOtpInput) => {
+    const res = await api.post<ApiResponse<null>>('/auth/reset-password-otp', data)
     return res.data
   },
 
@@ -20,14 +51,30 @@ export const authService = {
     return res.data
   },
 
-  logout: async () => {
-    const res = await api.post<ApiResponse<null>>('/auth/logout')
+  googleAuth: async (data: {
+    token?: string
+    credential?: string
+    code?: string
+    role?: string
+  }) => {
+    const res = await api.post<ApiResponse<AuthResponseData>>('/auth/google', data)
     return res.data
   },
 
+  logout: async () => {
+    try {
+      const res = await api.post<ApiResponse<null>>('/auth/logout')
+      return res.data
+    } catch {
+      return { success: true, data: null, message: 'Logged out' }
+    }
+  },
+
   refresh: async () => {
-    const res = await api.post<ApiResponse<{ accessToken: string; user: IUser }>>('/auth/refresh')
-    return res.data
+    const token = await doRefresh()
+    if (!token) return null
+    const { user } = useAuthStore.getState()
+    return user ? { success: true, data: { accessToken: token, user } } : null
   },
 
   getMe: async () => {

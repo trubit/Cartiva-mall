@@ -8,7 +8,7 @@ interface Props {
   user: IUser
 }
 
-const ROLE_LABEL: Record<string, string> = { user: 'Shopper', seller: 'Seller', admin: 'Admin' }
+const ROLE_LABEL: Record<string, string> = { user: 'Buyer', seller: 'Seller', admin: 'Admin' }
 
 export default function ProfileHeader({ user }: Props) {
   const logoutMutation = useLogout()
@@ -75,12 +75,12 @@ export default function ProfileHeader({ user }: Props) {
           <>
             <div className="profile-nav-divider" />
             <NavLink
-              to="/seller/products"
+              to="/seller"
               className={({ isActive }) =>
                 `profile-nav-item profile-nav-item--seller${isActive ? ' active' : ''}`
               }
             >
-              <FiGrid /> Seller Dashboard
+              <FiGrid /> Seller Hub
             </NavLink>
           </>
         )}

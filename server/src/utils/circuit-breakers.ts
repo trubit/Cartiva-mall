@@ -28,6 +28,14 @@ export const paystackBreaker = new CircuitBreaker({
   volumeThreshold: 10,
 })
 
+export const stripeBreaker = new CircuitBreaker({
+  name: 'Stripe',
+  failureThreshold: 5,
+  successThreshold: 2,
+  halfOpenTimeout: 30_000,
+  volumeThreshold: 10,
+})
+
 // ─── shouldRetry helper ───────────────────────────────────────────────────────
 
 const isRetryableHttpError = (err: unknown): boolean => {
@@ -44,6 +52,7 @@ const BREVO_TIMEOUT_MS = 15_000
 const CLOUDINARY_UPLOAD_TIMEOUT_MS = 60_000
 const CLOUDINARY_DELETE_TIMEOUT_MS = 10_000
 const PAYSTACK_TIMEOUT_MS = 15_000
+const STRIPE_TIMEOUT_MS = 15_000
 
 export async function callBrevo<T>(fn: () => Promise<T>): Promise<T> {
   try {
@@ -137,10 +146,38 @@ export async function callPaystack<T>(
   }
 }
 
+export async function callStripe<T>(fn: () => Promise<T>, operationName = 'Stripe'): Promise<T> {
+  try {
+    return await stripeBreaker.fire(() =>
+      withRetry(() => withTimeout(fn(), STRIPE_TIMEOUT_MS, operationName), {
+        maxAttempts: 3,
+        initialDelayMs: 500,
+        maxDelayMs: 5_000,
+        factor: 2,
+        jitterFactor: 0.3,
+        shouldRetry: isRetryableHttpError,
+        onRetry: (err, attempt, ms) =>
+          logger.warn(`Stripe retry attempt ${attempt} in ${ms}ms`, {
+            error: err instanceof Error ? err.message : err,
+          }),
+      }),
+    )
+  } catch (err) {
+    if (err instanceof CircuitBreakerOpenError) {
+      throw new AppError(
+        'Stripe payment service is temporarily unavailable. Please try again shortly.',
+        503,
+      )
+    }
+    throw err
+  }
+}
+
 // ─── Health / status ──────────────────────────────────────────────────────────
 
 export const getCircuitBreakerStatus = () => [
   brevoBreaker.getStatus(),
   cloudinaryBreaker.getStatus(),
   paystackBreaker.getStatus(),
+  stripeBreaker.getStatus(),
 ]

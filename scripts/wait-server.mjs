@@ -12,8 +12,8 @@ try {
 } catch {}
 
 const serverPort = env.PORT ?? '5001'
-const url = `http://localhost:${serverPort}/health`
-const TIMEOUT_MS = 60_000
+const url = `http://127.0.0.1:${serverPort}/health`
+const TIMEOUT_MS = 120_000
 const INTERVAL_MS = 1_000
 
 function check() {

@@ -20,6 +20,7 @@ import {
   FormGroup,
   FormControlLabel,
   Checkbox,
+  Snackbar,
 } from '@mui/material'
 import { Add as AddIcon, Send as TestIcon, Delete as DeleteIcon } from '@mui/icons-material'
 import { useDeveloperStore } from '../../../store/useDeveloperStore.js'
@@ -30,6 +31,7 @@ export const WebhookManager: React.FC = () => {
   const [openModal, setOpenModal] = useState(false)
   const [url, setUrl] = useState('')
   const [description, setDescription] = useState('')
+  const [snackbarMessage, setSnackbarMessage] = useState<string | null>(null)
   const [selectedEvents, setSelectedEvents] = useState<string[]>([
     'order.created',
     'payment.completed',
@@ -59,8 +61,12 @@ export const WebhookManager: React.FC = () => {
   }
 
   const handleTestWebhook = async (id: string) => {
-    await developerApi.testWebhook(id)
-    alert('Test webhook payload queued for dispatch!')
+    try {
+      await developerApi.testWebhook(id)
+      setSnackbarMessage('Test webhook payload queued for dispatch!')
+    } catch {
+      setSnackbarMessage('Failed to queue test webhook payload')
+    }
   }
 
   const handleDeleteWebhook = async (id: string) => {
@@ -74,7 +80,14 @@ export const WebhookManager: React.FC = () => {
         <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
           Webhook Subscriptions
         </Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpenModal(true)}>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={(e) => {
+            e.currentTarget.blur()
+            setOpenModal(true)
+          }}
+        >
           Create Webhook Subscription
         </Button>
       </Box>
@@ -82,7 +95,12 @@ export const WebhookManager: React.FC = () => {
       <TableContainer component={Paper} variant="outlined">
         <Table>
           <TableHead>
-            <TableRow sx={{ bgcolor: '#f8fafc' }}>
+            <TableRow
+              sx={{
+                bgcolor: '#f1f5f9',
+                '& .MuiTableCell-head': { fontWeight: 700, fontSize: '0.875rem', color: '#0f172a' },
+              }}
+            >
               <TableCell>Endpoint URL</TableCell>
               <TableCell>Subscribed Events</TableCell>
               <TableCell>Status</TableCell>
@@ -199,6 +217,13 @@ export const WebhookManager: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar
+        open={!!snackbarMessage}
+        autoHideDuration={4000}
+        onClose={() => setSnackbarMessage(null)}
+        message={snackbarMessage}
+      />
     </Box>
   )
 }

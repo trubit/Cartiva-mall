@@ -1,13 +1,34 @@
 import { Router } from 'express'
-import { authenticate } from '../middlewares/auth.middleware.js'
-import * as notifCtrl from '../modules/notification/notification.controller.js'
+import {
+  listNotifications,
+  getUnreadCount,
+  markRead,
+  markAllRead,
+  deleteNotification,
+  getPreferences,
+  updatePreferences,
+  registerDeviceToken,
+  broadcastAdminNotification,
+} from '../modules/notification/notification.controller.js'
+import { authenticate, authorize } from '../middlewares/auth.middleware.js'
 
 const router = Router()
 
-router.get('/', authenticate, notifCtrl.listNotifications)
-router.get('/unread', authenticate, notifCtrl.getUnreadCount)
-router.put('/read-all', authenticate, notifCtrl.markAllRead)
-router.put('/:id/read', authenticate, notifCtrl.markRead)
-router.delete('/:id', authenticate, notifCtrl.deleteNotification)
+router.use(authenticate)
+
+router.get('/', listNotifications)
+router.get('/unread', getUnreadCount)
+router.get('/unread-count', getUnreadCount)
+router.post('/read-all', markAllRead)
+router.put('/read-all', markAllRead)
+router.patch('/:id/read', markRead)
+router.put('/:id/read', markRead)
+router.delete('/:id', deleteNotification)
+
+router.get('/preferences', getPreferences)
+router.patch('/preferences', updatePreferences)
+router.post('/device-tokens', registerDeviceToken)
+
+router.post('/admin/broadcast', authorize('admin'), broadcastAdminNotification)
 
 export default router

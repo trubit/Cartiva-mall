@@ -5,6 +5,7 @@ import type { IPromotion } from '../../../shared/types/promotion.types.js'
 import type { IProduct } from '../../../shared/types/product.types.js'
 import { getImageUrl } from '../../utils/image.js'
 import PriceTag from '../../components/product/PriceTag/index.js'
+import { useCurrency } from '../../hooks/useCurrency.js'
 
 function CountdownTimer({ endDate }: { endDate: string }) {
   const end = new Date(endDate).getTime()
@@ -14,13 +15,16 @@ function CountdownTimer({ endDate }: { endDate: string }) {
   const h = Math.floor(diff / 3600000)
   const m = Math.floor((diff % 3600000) / 60000)
   const s = Math.floor((diff % 60000) / 1000)
+
   return (
     <span
       style={{
-        fontVariantNumeric: 'tabular-nums',
-        fontSize: 'var(--text-xs)',
-        color: '#ef4444',
+        fontFamily: 'monospace',
         fontWeight: 700,
+        fontSize: 'var(--text-sm)',
+        background: 'rgba(0,0,0,0.2)',
+        padding: '2px 6px',
+        borderRadius: 4,
       }}
     >
       {String(h).padStart(2, '0')}:{String(m).padStart(2, '0')}:{String(s).padStart(2, '0')}
@@ -29,11 +33,12 @@ function CountdownTimer({ endDate }: { endDate: string }) {
 }
 
 function PromotionBanner({ promo }: { promo: IPromotion }) {
+  const { formatPrice } = useCurrency()
   const isFlash = promo.type === 'flash_sale'
   const discountLabel =
     promo.discountType === 'percentage'
       ? `${promo.discountValue}% off`
-      : `$${promo.discountValue} off`
+      : `${formatPrice(promo.discountValue)} off`
 
   return (
     <div

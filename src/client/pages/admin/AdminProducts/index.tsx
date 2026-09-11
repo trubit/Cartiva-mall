@@ -1,13 +1,15 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { FiSearch, FiCheck, FiSlash } from 'react-icons/fi'
 import { useAdminProducts, useApproveProduct, useBlockProduct } from '../../../hooks/useAdmin.js'
-import { formatCurrency, formatDate } from '../../../../shared/helpers/index.js'
+import { formatDate } from '../../../../shared/helpers/index.js'
+import { useCurrency } from '../../../hooks/useCurrency.js'
 import type { IProduct } from '../../../../shared/types/product.types.js'
 import { getImageUrl } from '../../../utils/image.js'
 
 type FilterStatus = '' | 'pending' | 'active' | 'blocked'
 
 export default function AdminProducts() {
+  const { formatPrice } = useCurrency()
   const [status, setStatus] = useState<FilterStatus>('pending')
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
@@ -155,7 +157,7 @@ export default function AdminProducts() {
                       <td style={{ fontWeight: 600, fontSize: '.8rem' }}>
                         {product.discountPrice ? (
                           <span>
-                            {formatCurrency(product.discountPrice)}{' '}
+                            {formatPrice(product.discountPrice)}{' '}
                             <span
                               style={{
                                 textDecoration: 'line-through',
@@ -163,11 +165,11 @@ export default function AdminProducts() {
                                 fontWeight: 400,
                               }}
                             >
-                              {formatCurrency(product.price)}
+                              {formatPrice(product.price)}
                             </span>
                           </span>
                         ) : (
-                          formatCurrency(product.price)
+                          formatPrice(product.price)
                         )}
                       </td>
                       <td style={{ fontSize: '.8rem' }}>{product.stockQuantity}</td>

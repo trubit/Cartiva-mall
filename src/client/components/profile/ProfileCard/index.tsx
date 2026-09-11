@@ -1,5 +1,7 @@
-import { FiMail, FiPhone, FiCalendar, FiGlobe, FiUser } from 'react-icons/fi'
+import { Link } from 'react-router-dom'
+import { FiMail, FiPhone, FiCalendar, FiGlobe, FiUser, FiShield } from 'react-icons/fi'
 import { MdVerified } from 'react-icons/md'
+import { useSellerKycStatus } from '../../../hooks/useSellerKyc.js'
 import type { IUser } from '../../../../shared/types/user.types.js'
 
 interface Props {
@@ -25,19 +27,82 @@ const GENDER_LABEL: Record<string, string> = {
 }
 
 export default function ProfileCard({ user }: Props) {
+  const { data: kycData } = useSellerKycStatus()
+  const kycStatus = kycData?.kycStatus || 'NOT_STARTED'
+  const isVerified = kycData?.isVerified || false
+
   return (
     <div className="profile-card">
       <div className="profile-card-header">
         <h2 className="profile-section-title">
           <FiUser /> Personal Information
         </h2>
-        {user.emailVerified ? (
-          <span className="verified-badge verified-badge--yes">
-            <MdVerified /> Verified
-          </span>
-        ) : (
-          <span className="verified-badge verified-badge--no">Unverified</span>
-        )}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          {user.emailVerified ? (
+            <span className="verified-badge verified-badge--yes">
+              <MdVerified /> Email Verified
+            </span>
+          ) : (
+            <span className="verified-badge verified-badge--no">Email Unverified</span>
+          )}
+
+          {isVerified ? (
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                background: '#ecfdf5',
+                color: '#047857',
+                border: '1px solid #a7f3d0',
+                padding: '4px 10px',
+                borderRadius: 999,
+                fontSize: '0.75rem',
+                fontWeight: 700,
+              }}
+            >
+              <FiShield /> KYC Verified Seller
+            </span>
+          ) : kycStatus === 'UNDER_REVIEW' || kycStatus === 'PENDING' ? (
+            <Link
+              to="/seller/kyc"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                background: '#eff6ff',
+                color: '#1d4ed8',
+                border: '1px solid #bfdbfe',
+                padding: '4px 10px',
+                borderRadius: 999,
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                textDecoration: 'none',
+              }}
+            >
+              <FiShield /> KYC Under Review
+            </Link>
+          ) : kycStatus === 'REQUIRES_ACTION' ? (
+            <Link
+              to="/seller/kyc"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                background: '#fff7ed',
+                color: '#c2410c',
+                border: '1px solid #ffedd5',
+                padding: '4px 10px',
+                borderRadius: 999,
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                textDecoration: 'none',
+              }}
+            >
+              <FiShield /> KYC Action Required
+            </Link>
+          ) : null}
+        </div>
       </div>
 
       {user.bio && (

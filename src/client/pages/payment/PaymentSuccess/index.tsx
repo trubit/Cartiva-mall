@@ -1,13 +1,16 @@
 import { useSearchParams, Link } from 'react-router-dom'
 import { FiCheckCircle, FiPackage, FiArrowRight, FiShoppingBag, FiTruck } from 'react-icons/fi'
 import { useOrder } from '../../../hooks/usePayment.js'
-import { formatCurrency, formatDate } from '../../../../shared/helpers/index.js'
+import { formatDate } from '../../../../shared/helpers/index.js'
+import { useCurrency } from '../../../hooks/useCurrency.js'
 
 export default function PaymentSuccess() {
   const [params] = useSearchParams()
   const orderId = params.get('orderId') ?? ''
-
-  const { data: order, isLoading } = useOrder(orderId)
+  const { formatPrice } = useCurrency()
+  const { data: order, isLoading } = useOrder(orderId, {
+    refetchInterval: (query) => (query.state.data?.paymentStatus === 'paid' ? false : 2000),
+  })
 
   const orderDetailId = orderId || (order?._id as string | undefined) || ''
   const paymentPaid = order?.paymentStatus === 'paid'
@@ -111,7 +114,9 @@ export default function PaymentSuccess() {
               </div>
               <div className="payment-result__order-row">
                 <span>Total Paid</span>
-                <strong style={{ color: '#16a34a' }}>{formatCurrency(order.grandTotal)}</strong>
+                <strong style={{ color: '#16a34a' }}>
+                  {formatPrice(order.grandTotal, order.currency)}
+                </strong>
               </div>
               <div className="payment-result__order-row">
                 <span>Shipping To</span>

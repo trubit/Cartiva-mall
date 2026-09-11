@@ -79,10 +79,47 @@ export const useSellerDashboard = () =>
   useQuery({
     queryKey: SELLER_DASH,
     queryFn: async (): Promise<ISellerDashboard> => {
-      const res = await sellerService.getSellerDashboard()
-      return res.data!
+      try {
+        const res = await sellerService.getSellerDashboard()
+        if (res.data) return res.data
+      } catch (err: any) {
+        if (err?.response?.status === 404 || err?.response?.status === 403) {
+          return {
+            stats: {
+              totalRevenue: 0,
+              totalOrders: 0,
+              totalProducts: 0,
+              activeProducts: 0,
+              pendingOrders: 0,
+              thisMonthRevenue: 0,
+            },
+            products: { active: 0, pending: 0, blocked: 0 },
+            recentOrders: [],
+            revenueByDay: [],
+            orderStatusBreakdown: [],
+            topProducts: [],
+          } as unknown as ISellerDashboard
+        }
+        throw err
+      }
+      return {
+        stats: {
+          totalRevenue: 0,
+          totalOrders: 0,
+          totalProducts: 0,
+          activeProducts: 0,
+          pendingOrders: 0,
+          thisMonthRevenue: 0,
+        },
+        products: { active: 0, pending: 0, blocked: 0 },
+        recentOrders: [],
+        revenueByDay: [],
+        orderStatusBreakdown: [],
+        topProducts: [],
+      } as unknown as ISellerDashboard
     },
-    staleTime: 60 * 1000,
+    staleTime: 30 * 1000,
+    retry: 1,
   })
 
 // ─── Analytics ────────────────────────────────────────────────────────────────
@@ -149,13 +186,111 @@ export const useSellerDeleteProduct = () => {
   })
 }
 
-// ─── Orders ───────────────────────────────────────────────────────────────────
 export const useSellerOrdersNS = (params?: { status?: string; page?: number; limit?: number }) =>
   useQuery({
     queryKey: [...SELLER_ORDERS, params],
     queryFn: async (): Promise<IOrder[]> => {
       const res = await sellerService.getSellerOrders(params)
       return res.data!
+    },
+    staleTime: 30 * 1000,
+  })
+
+// ─── Payouts & Withdrawals ───────────────────────────────────────────────────
+export const SELLER_WITHDRAWALS = [...SELLER_KEY, 'withdrawals'] as const
+export const SELLER_PAYOUT_ACCOUNTS = [...SELLER_KEY, 'payout-accounts'] as const
+export const SELLER_BANKS = [...SELLER_KEY, 'banks'] as const
+export const SELLER_LEDGER = [...SELLER_KEY, 'ledger'] as const
+
+export const useSellerWithdrawals = (params?: { page?: number; limit?: number; status?: string }) =>
+  useQuery({
+    queryKey: [...SELLER_WITHDRAWALS, params],
+    queryFn: async () => {
+      const res = await sellerService.getSellerWithdrawals(params)
+      return res
+    },
+    staleTime: 30 * 1000,
+  })
+
+export const useRequestWithdrawal = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: { amount: number; payoutAccountId: string; idempotencyKey?: string }) =>
+      sellerService.requestWithdrawal(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: SELLER_EARNINGS })
+      qc.invalidateQueries({ queryKey: SELLER_DASH })
+      qc.invalidateQueries({ queryKey: SELLER_WITHDRAWALS })
+      qc.invalidateQueries({ queryKey: SELLER_LEDGER })
+    },
+  })
+}
+
+export const useSellerPayoutAccounts = () =>
+  useQuery({
+    queryKey: SELLER_PAYOUT_ACCOUNTS,
+    queryFn: async () => {
+      const res = await sellerService.getSellerPayoutAccounts()
+      return res.data ?? []
+    },
+    staleTime: 60 * 1000,
+  })
+
+export const useAddPayoutAccount = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: {
+      bankName: string
+      bankCode: string
+      accountNumber: string
+      accountName: string
+      currency?: string
+      isDefault?: boolean
+    }) => sellerService.addSellerPayoutAccount(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: SELLER_PAYOUT_ACCOUNTS })
+    },
+  })
+}
+
+export const useDeletePayoutAccount = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => sellerService.deleteSellerPayoutAccount(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: SELLER_PAYOUT_ACCOUNTS })
+    },
+  })
+}
+
+export const useAvailableBanks = (currency = 'NGN') =>
+  useQuery({
+    queryKey: [...SELLER_BANKS, currency],
+    queryFn: async () => {
+      const res = await sellerService.getAvailableBanks(currency)
+      const rawList = (res.data ?? []) as any[]
+      const seen = new Set<string>()
+      return rawList.filter((b) => {
+        if (!b?.code || seen.has(b.code)) return false
+        seen.add(b.code)
+        return true
+      })
+    },
+    staleTime: 12 * 60 * 60 * 1000, // 12 hours
+  })
+
+export const useResolveBankAccount = () =>
+  useMutation({
+    mutationFn: (data: { accountNumber: string; bankCode: string }) =>
+      sellerService.resolveBankAccount(data),
+  })
+
+export const useSellerLedger = (params?: { page?: number; limit?: number }) =>
+  useQuery({
+    queryKey: [...SELLER_LEDGER, params],
+    queryFn: async () => {
+      const res = await sellerService.getSellerLedger(params)
+      return res
     },
     staleTime: 30 * 1000,
   })

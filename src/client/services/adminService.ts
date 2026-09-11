@@ -43,6 +43,56 @@ export interface AdminSeller {
   }
 }
 
+export interface KycBankDetails {
+  bankCode?: string
+  bankName?: string
+  accountNumber?: string
+  accountName?: string
+  isResolved?: boolean
+}
+
+export interface AdminSellerKycProfile {
+  _id: string
+  userId: {
+    _id: string
+    firstName: string
+    lastName: string
+    email: string
+    phoneNumber?: string
+    profileImage?: string
+    createdAt: string
+  }
+  storeName: string
+  storeCategory?: string
+  storeDescription?: string
+  storeSlug?: string
+  kycStatus:
+    | 'NOT_STARTED'
+    | 'PENDING'
+    | 'UNDER_REVIEW'
+    | 'VERIFIED'
+    | 'REJECTED'
+    | 'REQUIRES_ACTION'
+  isVerified: boolean
+  storeCreated: boolean
+  kycData?: {
+    businessType?: string
+    legalName?: string
+    idType?: string
+    idNumber?: string
+    idDocumentUrl?: string
+    proofOfAddressUrl?: string
+    bankDetails?: KycBankDetails
+    submittedAt?: string
+    reviewedAt?: string
+    reviewedBy?: string
+    rejectionReason?: string
+    actionRequiredReason?: string
+  }
+  createdAt: string
+  updatedAt: string
+}
+
 export interface AdminPayment {
   _id: string
   paymentIntentId: string
@@ -140,6 +190,23 @@ export const adminService = {
   verifySeller: (id: string): Promise<AdminSeller> =>
     api.patch(`/admin/sellers/${id}/verify`).then((r) => r.data.data),
 
+  getPendingKycSellers: (
+    params?: Record<string, string>,
+  ): Promise<PagedResponse<AdminSellerKycProfile>> =>
+    api
+      .get('/admin/sellers/kyc/pending', { params })
+      .then((r) => ({ data: r.data.data, pagination: r.data.pagination })),
+
+  reviewSellerKyc: (
+    sellerId: string,
+    data: {
+      action: 'APPROVE' | 'REJECT' | 'REQUEST_ACTION'
+      rejectionReason?: string
+      actionRequiredReason?: string
+    },
+  ): Promise<AdminSellerKycProfile> =>
+    api.put(`/admin/sellers/${sellerId}/kyc/review`, data).then((r) => r.data.data),
+
   // ── Products
   getProducts: (params?: Record<string, string>): Promise<PagedResponse<IProduct>> =>
     api
@@ -186,4 +253,48 @@ export const adminService = {
     api
       .get('/admin/audit-logs', { params })
       .then((r) => ({ data: r.data.data, pagination: r.data.pagination })),
+
+  // ── Commission policy
+  getCommissionPolicy: (): Promise<{ success: boolean; data: MarketplaceCommissionPolicy }> =>
+    api.get('/fees/admin/commission-policy').then((r) => r.data),
+
+  updateCommissionPolicy: (
+    payload: UpdateCommissionPolicyPayload,
+  ): Promise<{ success: boolean; data: MarketplaceCommissionPolicy }> =>
+    api.put('/fees/admin/commission-policy', payload).then((r) => r.data),
+}
+
+export interface CommissionAuditLog {
+  modifiedBy: string
+  modifierEmail?: string
+  previousState?: Record<string, any>
+  newState?: Record<string, any>
+  reason?: string
+  timestamp: string
+}
+
+export interface MarketplaceCommissionPolicy {
+  _id: string
+  baseSellerFee: number
+  baseCurrency: string
+  commissionType: 'FLAT_PER_UNIT' | 'PERCENTAGE' | 'HYBRID'
+  percentageRate: number
+  currencyRates: Record<string, number>
+  baseUsdRate: number
+  isActive: boolean
+  version: number
+  lastModifiedBy?: string
+  auditTrail: CommissionAuditLog[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface UpdateCommissionPolicyPayload {
+  baseSellerFee: number
+  baseCurrency?: string
+  commissionType?: 'FLAT_PER_UNIT' | 'PERCENTAGE' | 'HYBRID'
+  percentageRate?: number
+  currencyRates?: Record<string, number>
+  baseUsdRate?: number
+  reason?: string
 }

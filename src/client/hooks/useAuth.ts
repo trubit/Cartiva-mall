@@ -11,7 +11,13 @@ import { useCheckoutStore } from '../store/checkoutStore.js'
 import { cartService } from '../services/cartService.js'
 import { queryClient } from '../services/queryClient.js'
 import { CART_KEY } from './useCart.js'
-import type { LoginInput, RegisterInput } from '../../shared/validators/auth.validators.js'
+import type {
+  LoginInput,
+  RegisterInput,
+  VerifyEmailOtpInput,
+  ResetPasswordOtpInput,
+  ResendOtpInput,
+} from '../../shared/validators/auth.validators.js'
 
 // ─── Login ────────────────────────────────────────────────────────────────────
 export const useLogin = () => {
@@ -51,8 +57,58 @@ export const useRegister = () => {
 
   return useMutation({
     mutationFn: (data: RegisterInput) => authService.register(data),
+    onSuccess: (_res, variables) => {
+      navigate(`/verify-email?email=${encodeURIComponent(variables.email)}`)
+    },
+  })
+}
+
+// ─── Verify Email with 6-Digit OTP ───────────────────────────────────────────
+export const useVerifyEmailOtp = () => {
+  const { setAuth } = useAuthStore()
+  const navigate = useNavigate()
+  const { guestItems, clearGuestCart, setServerCart } = useCartStore()
+
+  return useMutation({
+    mutationFn: (data: VerifyEmailOtpInput) => authService.verifyEmailOtp(data),
+    onSuccess: async (res) => {
+      if (res.data?.user && res.data?.accessToken) {
+        setAuth(res.data.user, res.data.accessToken)
+
+        if (guestItems.length > 0) {
+          try {
+            const synced = await cartService.syncCart({
+              items: guestItems.map((i) => ({ productId: i.product._id, quantity: i.quantity })),
+            })
+            setServerCart(synced)
+            queryClient.setQueryData(CART_KEY, synced)
+            clearGuestCart()
+          } catch {
+            // non-fatal
+          }
+        }
+
+        navigate('/?verified=true')
+      } else {
+        navigate('/login?verified=true')
+      }
+    },
+  })
+}
+
+// ─── Resend OTP ───────────────────────────────────────────────────────────────
+export const useResendOtp = () =>
+  useMutation({
+    mutationFn: (data: ResendOtpInput) => authService.resendOtp(data),
+  })
+
+// ─── Reset Password with OTP ──────────────────────────────────────────────────
+export const useResetPasswordWithOtp = () => {
+  const navigate = useNavigate()
+  return useMutation({
+    mutationFn: (data: ResetPasswordOtpInput) => authService.resetPasswordWithOtp(data),
     onSuccess: () => {
-      navigate('/login?registered=true')
+      navigate('/login?reset=true')
     },
   })
 }
@@ -63,8 +119,8 @@ export const useLogout = () => {
 
   return useMutation({
     mutationFn: () => authService.logout(),
-    onSettled: () => {
-      // Clear all user-specific state to prevent PII leakage between users on shared devices
+    onMutate: () => {
+      // Clear immediately so UI reacts with 0 latency
       useAuthStore.getState().clearAuth()
       useCartStore.getState().clearServerCart()
       useCartStore.getState().clearGuestCart()
@@ -74,7 +130,9 @@ export const useLogout = () => {
       usePaymentStore.getState().reset()
       useCheckoutStore.getState().reset()
       queryClient.clear()
-      navigate('/login')
+    },
+    onSettled: () => {
+      navigate('/login', { replace: true })
     },
   })
 }
@@ -88,14 +146,13 @@ export const useMe = () => {
     queryFn: async () => {
       const res = await authService.getMe()
       if (res.data?.user) {
-        // Keep Zustand user (emailVerified, role, etc.) in sync with server
         updateUser(res.data.user)
       }
       return res.data?.user
     },
     enabled: isAuthenticated,
     staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: true, // Picks up emailVerified change when user returns from email tab
+    refetchOnWindowFocus: true,
   })
 }
 
@@ -105,7 +162,7 @@ export const useForgotPassword = () =>
     mutationFn: (email: string) => authService.forgotPassword(email),
   })
 
-// ─── Reset Password ───────────────────────────────────────────────────────────
+// ─── Reset Password (Token/Link backward compat) ──────────────────────────────
 export const useResetPassword = () => {
   const navigate = useNavigate()
   return useMutation({
@@ -124,7 +181,7 @@ export const useResetPassword = () => {
   })
 }
 
-// ─── Verify Email ─────────────────────────────────────────────────────────────
+// ─── Verify Email (Token/Link backward compat) ────────────────────────────────
 export const useVerifyEmail = (token: string) =>
   useQuery({
     queryKey: ['auth', 'verify-email', token],
@@ -138,3 +195,39 @@ export const useResendVerification = () =>
   useMutation({
     mutationFn: (email: string) => authService.resendVerification(email),
   })
+
+// ─── Google OAuth ─────────────────────────────────────────────────────────────
+export const useGoogleAuth = () => {
+  const { setAuth } = useAuthStore()
+  const navigate = useNavigate()
+  const { guestItems, clearGuestCart, setServerCart } = useCartStore()
+
+  return useMutation({
+    mutationFn: (data: { token?: string; credential?: string; code?: string; role?: string }) =>
+      authService.googleAuth(data),
+    onSuccess: async (res) => {
+      if (res.data?.user && res.data?.accessToken) {
+        setAuth(res.data.user, res.data.accessToken)
+
+        if (guestItems.length > 0) {
+          try {
+            const synced = await cartService.syncCart({
+              items: guestItems.map((i) => ({ productId: i.product._id, quantity: i.quantity })),
+            })
+            setServerCart(synced)
+            queryClient.setQueryData(CART_KEY, synced)
+            clearGuestCart()
+          } catch {
+            // Non-fatal
+          }
+        }
+
+        if (res.data.user.role === 'seller') {
+          navigate('/seller', { replace: true })
+        } else {
+          navigate('/', { replace: true })
+        }
+      }
+    },
+  })
+}

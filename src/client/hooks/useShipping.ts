@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { shippingService } from '../services/shippingService'
+import { shippingService } from '../services/shippingService.js'
 import type { ShipmentStatus } from '../../shared/types/shipping.types.js'
 
 export const useShipmentTracking = (trackingNumber: string) =>
@@ -49,6 +49,24 @@ export const useUpdateShipmentStatus = () => {
     }) => shippingService.updateStatus(id, status, location, description),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['shipments'] })
+    },
+  })
+}
+
+export const useAdminShippingConfig = () =>
+  useQuery({
+    queryKey: ['shipping', 'admin', 'config'],
+    queryFn: () => shippingService.getAdminShippingConfig(),
+    select: (res) => res.data.data,
+  })
+
+export const useUpdateAdminShippingConfig = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: { rates: Record<string, number>; note?: string }) =>
+      shippingService.updateAdminShippingConfig(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['shipping'] })
     },
   })
 }

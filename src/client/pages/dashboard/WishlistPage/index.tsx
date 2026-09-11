@@ -2,16 +2,15 @@ import { Link } from 'react-router-dom'
 import { FiHeart, FiTrash2, FiShoppingCart } from 'react-icons/fi'
 import { useWishlist, useRemoveFromWishlist } from '../../../hooks/useDashboard.js'
 import { useCartStore } from '../../../store/cartStore.js'
+import { useCurrency } from '../../../hooks/useCurrency.js'
 import LoadingSpinner from '../../../components/ui/LoadingSpinner.js'
 import type { IProduct } from '../../../../shared/types/product.types.js'
-
-const formatCurrency = (n: number) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n)
 
 export default function WishlistPage() {
   const { data, isLoading } = useWishlist()
   const removeFromWishlist = useRemoveFromWishlist()
   const addGuestItem = useCartStore((s) => s.addGuestItem)
+  const { formatPrice: formatCurrency } = useCurrency()
 
   if (isLoading) return <LoadingSpinner />
 

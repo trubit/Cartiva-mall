@@ -1,0 +1,13 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: cartiva-api-pdb
+  namespace: cartiva
+  labels:
+    app.kubernetes.io/name: cartiva-api-pdb
+    app.kubernetes.io/part-of: cartiva-mall
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cartiva-api

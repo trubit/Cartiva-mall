@@ -1,21 +1,40 @@
 import mongoose from 'mongoose'
+import { v4 as uuidv4 } from 'uuid'
 import { Warehouse, type IWarehouseDocument } from './warehouse.model.js'
 import { Inventory, type IInventoryDocument } from './inventory.model.js'
-import { InventoryMovement, type MovementType } from './inventoryMovement.model.js'
+import {
+  InventoryMovement,
+  type MovementType,
+  type AdjustmentReason,
+} from './inventoryMovement.model.js'
+import {
+  InventoryReservation,
+  type IInventoryReservationDocument,
+} from './inventoryReservation.model.js'
 import { StockAlert, type AlertType } from './stockAlert.model.js'
 import { Product } from '../product/product.model.js'
 import { AppError } from '../../middlewares/error.middleware.js'
+import { eventBus } from '../event-bus/eventBus.service.js'
 
 const uid = (id: string) => new mongoose.Types.ObjectId(id)
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+const RESERVATION_EXPIRY_MINUTES = 15
+
+// ─── Movement logging helper ──────────────────────────────────────────────────
 const logMovement = async (
   productId: string,
   warehouseId: string,
   type: MovementType,
   quantity: number,
   createdBy: string,
-  opts: { toWarehouseId?: string; note?: string; referenceId?: string } = {},
+  opts: {
+    toWarehouseId?: string
+    note?: string
+    referenceId?: string
+    reason?: AdjustmentReason | string
+    previousAvailable?: number
+    newAvailable?: number
+  } = {},
 ) => {
   await InventoryMovement.create({
     productId: uid(productId),
@@ -25,18 +44,39 @@ const logMovement = async (
     quantity,
     note: opts.note,
     referenceId: opts.referenceId,
+    reason: opts.reason,
+    previousAvailable: opts.previousAvailable,
+    newAvailable: opts.newAvailable,
     createdBy: uid(createdBy),
   })
 }
 
+// ─── Alerts & Stock Sync Helper ───────────────────────────────────────────────
 const checkAndCreateAlerts = async (inv: IInventoryDocument) => {
-  const available = inv.quantity - inv.reservedQuantity
+  const available = inv.availableQuantity
 
   let alertType: AlertType | null = null
   if (available <= 0) {
     alertType = 'out_of_stock'
+    await eventBus.publish({
+      eventType: 'inventory.out_of_stock',
+      aggregateId: inv.productId.toString(),
+      aggregateType: 'Inventory',
+      payload: { productId: inv.productId.toString(), warehouseId: inv.warehouseId.toString() },
+    })
   } else if (available <= inv.lowStockThreshold) {
     alertType = 'low_stock'
+    await eventBus.publish({
+      eventType: 'inventory.low_stock',
+      aggregateId: inv.productId.toString(),
+      aggregateType: 'Inventory',
+      payload: {
+        productId: inv.productId.toString(),
+        warehouseId: inv.warehouseId.toString(),
+        available,
+        threshold: inv.lowStockThreshold,
+      },
+    })
   }
 
   if (alertType) {
@@ -56,6 +96,15 @@ const checkAndCreateAlerts = async (inv: IInventoryDocument) => {
       })
     }
   }
+}
+
+const syncProductStock = async (productId: string) => {
+  const agg = await Inventory.aggregate<{ total: number }>([
+    { $match: { productId: uid(productId) } },
+    { $group: { _id: null, total: { $sum: '$availableQuantity' } } },
+  ])
+  const totalStock = Math.max(0, agg[0]?.total ?? 0)
+  await Product.findByIdAndUpdate(productId, { stockQuantity: totalStock })
 }
 
 // ─── Warehouses ───────────────────────────────────────────────────────────────
@@ -116,6 +165,7 @@ export const upsertInventory = async (
 ): Promise<IInventoryDocument> => {
   if (!mongoose.isValidObjectId(productId)) throw new AppError('Invalid product ID', 400)
   if (!mongoose.isValidObjectId(warehouseId)) throw new AppError('Invalid warehouse ID', 400)
+  if (quantity < 0) throw new AppError('Quantity cannot be negative', 400)
 
   const product = await Product.findById(productId)
   if (!product) throw new AppError('Product not found', 404)
@@ -126,140 +176,403 @@ export const upsertInventory = async (
     productId: uid(productId),
     warehouseId: uid(warehouseId),
   })
+
   const prevQty = existing?.quantity ?? 0
+  const reservedQty = existing?.reservedQuantity ?? 0
+  const soldQty = existing?.soldQuantity ?? 0
+  const damagedQty = existing?.damagedQuantity ?? 0
+  const availableQty = Math.max(0, quantity - reservedQty - soldQty - damagedQty)
   const delta = quantity - prevQty
 
   const inv = await Inventory.findOneAndUpdate(
     { productId: uid(productId), warehouseId: uid(warehouseId) },
-    { quantity, lowStockThreshold },
+    {
+      $set: {
+        quantity,
+        availableQuantity: availableQty,
+        lowStockThreshold,
+      },
+      $inc: { version: 1 },
+    },
     { upsert: true, returnDocument: 'after', runValidators: true },
   )
 
   await logMovement(productId, warehouseId, 'adjustment', delta, createdBy, {
     note: `Manual stock set to ${quantity}`,
+    reason: 'COUNT_CORRECTION',
+    previousAvailable: existing?.availableQuantity ?? 0,
+    newAvailable: availableQty,
   })
   await checkAndCreateAlerts(inv)
-
-  // Sync Product.stockQuantity: sum across all warehouses
-  const agg = await Inventory.aggregate<{ total: number }>([
-    { $match: { productId: uid(productId) } },
-    { $group: { _id: null, total: { $sum: { $subtract: ['$quantity', '$reservedQuantity'] } } } },
-  ])
-  const totalStock = agg[0]?.total ?? 0
-  await Product.findByIdAndUpdate(productId, { stockQuantity: totalStock })
+  await syncProductStock(productId)
 
   return inv
 }
 
-// ─── Stock in/out ─────────────────────────────────────────────────────────────
+// ─── Stock Adjustments ────────────────────────────────────────────────────────
 export const adjustStock = async (
   productId: string,
   warehouseId: string,
-  type: 'in' | 'out',
+  type: 'in' | 'out' | 'damaged' | 'returned',
   quantity: number,
   createdBy: string,
-  note?: string,
-  referenceId?: string,
+  opts:
+    | {
+        reason?: AdjustmentReason | string
+        note?: string
+        referenceId?: string
+      }
+    | AdjustmentReason
+    | string = {},
+  legacyNote?: string,
+  legacyReferenceId?: string,
 ): Promise<IInventoryDocument> => {
   if (quantity <= 0) throw new AppError('Quantity must be positive', 400)
   if (!mongoose.isValidObjectId(productId)) throw new AppError('Invalid product ID', 400)
+  if (!mongoose.isValidObjectId(warehouseId)) throw new AppError('Invalid warehouse ID', 400)
 
-  const inv = await Inventory.findOne({ productId: uid(productId), warehouseId: uid(warehouseId) })
-  if (!inv) throw new AppError('Inventory record not found — create one first', 404)
+  // Support both options object and positional arguments for backwards compatibility
+  let reason: AdjustmentReason | string | undefined
+  let note: string | undefined
+  let referenceId: string | undefined
 
-  if (type === 'out') {
-    const available = inv.quantity - inv.reservedQuantity
-    if (quantity > available) throw new AppError('Insufficient available stock', 400)
-    inv.quantity -= quantity
+  if (typeof opts === 'object' && opts !== null) {
+    reason = opts.reason
+    note = opts.note
+    referenceId = opts.referenceId
   } else {
-    inv.quantity += quantity
+    reason = opts
+    note = legacyNote
+    referenceId = legacyReferenceId
   }
 
-  await inv.save()
-  await logMovement(productId, warehouseId, type, quantity, createdBy, { note, referenceId })
-  await checkAndCreateAlerts(inv)
+  let inv = await Inventory.findOne({ productId: uid(productId), warehouseId: uid(warehouseId) })
 
-  // Sync product stockQuantity
-  const agg = await Inventory.aggregate<{ total: number }>([
-    { $match: { productId: uid(productId) } },
-    { $group: { _id: null, total: { $sum: { $subtract: ['$quantity', '$reservedQuantity'] } } } },
-  ])
-  await Product.findByIdAndUpdate(productId, { stockQuantity: agg[0]?.total ?? 0 })
+  if (!inv) {
+    if (type === 'out' || type === 'damaged') {
+      throw new AppError('Inventory record not found — create one or stock in first', 404)
+    }
+
+    const product = await Product.findById(productId)
+    if (!product) throw new AppError('Product not found', 404)
+
+    const wh = await Warehouse.findOne({ _id: warehouseId, isActive: true })
+    if (!wh) throw new AppError('Warehouse not found or inactive', 404)
+
+    inv = await Inventory.create({
+      productId: uid(productId),
+      warehouseId: uid(warehouseId),
+      quantity: 0,
+      availableQuantity: 0,
+      reservedQuantity: 0,
+      soldQuantity: 0,
+      damagedQuantity: 0,
+      lowStockThreshold: 10,
+      version: 1,
+    })
+  }
+
+  const prevAvailable = inv.availableQuantity
+
+  if (type === 'out' || type === 'damaged') {
+    if (quantity > inv.availableQuantity) {
+      throw new AppError('Insufficient available stock for adjustment', 400)
+    }
+    inv.availableQuantity -= quantity
+    if (type === 'damaged') {
+      inv.damagedQuantity += quantity
+    } else {
+      inv.quantity = Math.max(0, inv.quantity - quantity)
+    }
+  } else {
+    // 'in' or 'returned'
+    inv.quantity += quantity
+    inv.availableQuantity += quantity
+  }
+
+  inv.version += 1
+  await inv.save()
+
+  await logMovement(
+    productId,
+    warehouseId,
+    type === 'in'
+      ? 'in'
+      : type === 'damaged'
+        ? 'damaged'
+        : type === 'returned'
+          ? 'returned'
+          : 'out',
+    quantity,
+    createdBy,
+    {
+      note,
+      reason,
+      referenceId,
+      previousAvailable: prevAvailable,
+      newAvailable: inv.availableQuantity,
+    },
+  )
+  await checkAndCreateAlerts(inv)
+  await syncProductStock(productId)
+
+  await eventBus.publish({
+    eventType: 'inventory.adjusted',
+    aggregateId: productId,
+    aggregateType: 'Inventory',
+    payload: { productId, warehouseId, type, quantity, reason },
+  })
 
   return inv
 }
 
-// ─── Reservation (called by checkout flow) ────────────────────────────────────
+// ─── Atomic Stock Reservation (Checkout / Order Lifecycle) ───────────────────
 export const reserveStock = async (
   items: { productId: string; warehouseId: string; quantity: number }[],
   userId: string,
   referenceId?: string,
-): Promise<void> => {
-  for (const item of items) {
-    const inv = await Inventory.findOne({
-      productId: uid(item.productId),
-      warehouseId: uid(item.warehouseId),
-    })
-    if (!inv) throw new AppError(`No inventory record for product ${item.productId}`, 404)
+  referenceType: 'checkout' | 'order' | 'manual' = 'checkout',
+): Promise<IInventoryReservationDocument[]> => {
+  const reservations: IInventoryReservationDocument[] = []
+  const expiresAt = new Date(Date.now() + RESERVATION_EXPIRY_MINUTES * 60 * 1000)
 
-    const available = inv.quantity - inv.reservedQuantity
-    if (item.quantity > available) {
-      throw new AppError(`Insufficient stock for product ${item.productId}`, 400)
+  for (const item of items) {
+    if (item.quantity <= 0) throw new AppError('Reservation quantity must be positive', 400)
+
+    // Atomic conditional update enforcing availableQuantity >= requested quantity
+    const updatedInv = await Inventory.findOneAndUpdate(
+      {
+        productId: uid(item.productId),
+        warehouseId: uid(item.warehouseId),
+        availableQuantity: { $gte: item.quantity },
+      },
+      {
+        $inc: {
+          availableQuantity: -item.quantity,
+          reservedQuantity: item.quantity,
+          version: 1,
+        },
+      },
+      { returnDocument: 'after' },
+    )
+
+    if (!updatedInv) {
+      // Rollback any reservations performed in this loop iteration before failing
+      for (const res of reservations) {
+        await releaseReservation(
+          [
+            {
+              productId: res.productId.toString(),
+              warehouseId: res.warehouseId.toString(),
+              quantity: res.quantity,
+            },
+          ],
+          userId,
+          res.reservationId,
+        )
+      }
+      throw new AppError(`Insufficient available stock for product ${item.productId}`, 400)
     }
 
-    inv.reservedQuantity += item.quantity
-    await inv.save()
-    await logMovement(item.productId, item.warehouseId, 'reservation', item.quantity, userId, {
+    const reservationId = `RES-${uuidv4().replace(/-/g, '').slice(0, 12).toUpperCase()}`
+    const reservation = await InventoryReservation.create({
+      reservationId,
+      productId: uid(item.productId),
+      warehouseId: uid(item.warehouseId),
+      quantity: item.quantity,
+      status: 'ACTIVE',
+      expiresAt,
       referenceId,
+      referenceType,
+      userId: uid(userId),
+    })
+
+    reservations.push(reservation)
+
+    await logMovement(item.productId, item.warehouseId, 'reservation', item.quantity, userId, {
+      referenceId: reservationId,
+      previousAvailable: updatedInv.availableQuantity + item.quantity,
+      newAvailable: updatedInv.availableQuantity,
+    })
+
+    await checkAndCreateAlerts(updatedInv)
+    await syncProductStock(item.productId)
+
+    await eventBus.publish({
+      eventType: 'inventory.stock_reserved',
+      aggregateId: reservationId,
+      aggregateType: 'InventoryReservation',
+      payload: {
+        reservationId,
+        productId: item.productId,
+        warehouseId: item.warehouseId,
+        quantity: item.quantity,
+        expiresAt,
+      },
     })
   }
+
+  return reservations
 }
 
+// ─── Release Stock Reservation ────────────────────────────────────────────────
 export const releaseReservation = async (
   items: { productId: string; warehouseId: string; quantity: number }[],
   userId: string,
   referenceId?: string,
 ): Promise<void> => {
   for (const item of items) {
-    await Inventory.findOneAndUpdate(
-      { productId: uid(item.productId), warehouseId: uid(item.warehouseId) },
-      { $inc: { reservedQuantity: -item.quantity } },
+    if (referenceId) {
+      const resDoc = await InventoryReservation.findOne({ reservationId: referenceId })
+      if (resDoc && resDoc.status === 'RELEASED') {
+        // Prevent double release
+        continue
+      }
+      if (resDoc) {
+        resDoc.status = 'RELEASED'
+        await resDoc.save()
+      }
+    }
+
+    const updatedInv = await Inventory.findOneAndUpdate(
+      {
+        productId: uid(item.productId),
+        warehouseId: uid(item.warehouseId),
+        reservedQuantity: { $gte: item.quantity },
+      },
+      {
+        $inc: {
+          availableQuantity: item.quantity,
+          reservedQuantity: -item.quantity,
+          version: 1,
+        },
+      },
+      { returnDocument: 'after' },
     )
-    await logMovement(item.productId, item.warehouseId, 'release', item.quantity, userId, {
-      referenceId,
-    })
+
+    if (updatedInv) {
+      await logMovement(item.productId, item.warehouseId, 'release', item.quantity, userId, {
+        referenceId,
+        previousAvailable: updatedInv.availableQuantity - item.quantity,
+        newAvailable: updatedInv.availableQuantity,
+      })
+      await checkAndCreateAlerts(updatedInv)
+      await syncProductStock(item.productId)
+
+      await eventBus.publish({
+        eventType: 'inventory.stock_released',
+        aggregateId: referenceId || item.productId,
+        aggregateType: 'InventoryReservation',
+        payload: {
+          productId: item.productId,
+          warehouseId: item.warehouseId,
+          quantity: item.quantity,
+        },
+      })
+    }
   }
 }
 
+// ─── Confirm Stock Reservation (Order Paid / Confirmed) ──────────────────────
 export const confirmReservation = async (
   items: { productId: string; warehouseId: string; quantity: number }[],
   userId: string,
   referenceId?: string,
 ): Promise<void> => {
   for (const item of items) {
-    const inv = await Inventory.findOneAndUpdate(
-      { productId: uid(item.productId), warehouseId: uid(item.warehouseId) },
-      { $inc: { quantity: -item.quantity, reservedQuantity: -item.quantity } },
+    if (referenceId) {
+      const resDoc = await InventoryReservation.findOne({ reservationId: referenceId })
+      if (resDoc && resDoc.status === 'CONFIRMED') {
+        // Prevent double confirmation
+        continue
+      }
+      if (resDoc) {
+        resDoc.status = 'CONFIRMED'
+        await resDoc.save()
+      }
+    }
+
+    const updatedInv = await Inventory.findOneAndUpdate(
+      {
+        productId: uid(item.productId),
+        warehouseId: uid(item.warehouseId),
+        reservedQuantity: { $gte: item.quantity },
+      },
+      {
+        $inc: {
+          quantity: -item.quantity,
+          reservedQuantity: -item.quantity,
+          soldQuantity: item.quantity,
+          version: 1,
+        },
+      },
       { returnDocument: 'after' },
     )
-    if (inv) {
-      await checkAndCreateAlerts(inv)
-      const agg = await Inventory.aggregate<{ total: number }>([
-        { $match: { productId: uid(item.productId) } },
-        {
-          $group: { _id: null, total: { $sum: { $subtract: ['$quantity', '$reservedQuantity'] } } },
+
+    if (updatedInv) {
+      await logMovement(item.productId, item.warehouseId, 'sold', item.quantity, userId, {
+        referenceId,
+        note: 'Order confirmed and stock sold',
+      })
+      await checkAndCreateAlerts(updatedInv)
+      await syncProductStock(item.productId)
+
+      await eventBus.publish({
+        eventType: 'inventory.stock_confirmed',
+        aggregateId: referenceId || item.productId,
+        aggregateType: 'InventoryReservation',
+        payload: {
+          productId: item.productId,
+          warehouseId: item.warehouseId,
+          quantity: item.quantity,
         },
-      ])
-      await Product.findByIdAndUpdate(item.productId, { stockQuantity: agg[0]?.total ?? 0 })
+      })
     }
-    await logMovement(item.productId, item.warehouseId, 'out', item.quantity, userId, {
-      referenceId,
-      note: 'Order confirmed',
-    })
   }
 }
 
-// ─── Movements ────────────────────────────────────────────────────────────────
+// ─── Expire Stale Reservations (Worker / Background Process) ────────────────
+export const processExpiredReservations = async (): Promise<number> => {
+  const expiredDocs = await InventoryReservation.find({
+    status: 'ACTIVE',
+    expiresAt: { $lte: new Date() },
+  }).limit(100)
+
+  let expiredCount = 0
+  for (const resDoc of expiredDocs) {
+    resDoc.status = 'EXPIRED'
+    await resDoc.save()
+
+    await Inventory.findOneAndUpdate(
+      {
+        productId: resDoc.productId,
+        warehouseId: resDoc.warehouseId,
+        reservedQuantity: { $gte: resDoc.quantity },
+      },
+      {
+        $inc: {
+          availableQuantity: resDoc.quantity,
+          reservedQuantity: -resDoc.quantity,
+          version: 1,
+        },
+      },
+    )
+
+    await syncProductStock(resDoc.productId.toString())
+    expiredCount++
+
+    await eventBus.publish({
+      eventType: 'inventory.reservation_expired',
+      aggregateId: resDoc.reservationId,
+      aggregateType: 'InventoryReservation',
+      payload: { reservationId: resDoc.reservationId, productId: resDoc.productId.toString() },
+    })
+  }
+
+  return expiredCount
+}
+
+// ─── Ledger Movements & History ──────────────────────────────────────────────
 export const getMovements = async (
   filter: { productId?: string; warehouseId?: string },
   page = 1,
@@ -289,7 +602,7 @@ export const getMovements = async (
   return { items, total, page, limit, totalPages: Math.ceil(total / limit) }
 }
 
-// ─── Stock alerts ─────────────────────────────────────────────────────────────
+// ─── Stock Alerts ─────────────────────────────────────────────────────────────
 export const getActiveAlerts = async (page = 1, limit = 20) => {
   const skip = (page - 1) * limit
   const [items, total] = await Promise.all([

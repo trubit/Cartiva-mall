@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cartiva-config
+data:
+  NODE_ENV: 'staging'
+  LOG_LEVEL: 'info'
+  CLIENT_URL: 'https://staging.cartiva.mall'

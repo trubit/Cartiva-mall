@@ -1,48 +1,36 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useMyVendorDetail, useUpsertStorefront } from '../../../hooks/useVendors.js'
 import type { IVendorStorefront } from '../../../../shared/types/vendors.types.js'
 
-export default function StorefrontBuilder() {
-  const { data, isLoading } = useMyVendorDetail()
+function StorefrontBuilderForm({
+  vendorId,
+  initialStorefront,
+}: {
+  vendorId: string
+  initialStorefront?: IVendorStorefront | null
+}) {
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
-  const [form, setForm] = useState({
-    name: '',
-    slug: '',
-    description: '',
-    logo: '',
-    banner: '',
-    isPublic: false,
-    policies: { returns: '', shipping: '', payment: '' },
-    theme: { primaryColor: '#6366f1', secondaryColor: '#8b5cf6' },
-  })
+  const [form, setForm] = useState(() => ({
+    name: initialStorefront?.name ?? '',
+    slug: initialStorefront?.slug ?? '',
+    description: initialStorefront?.description ?? '',
+    logo: initialStorefront?.logo ?? '',
+    banner: initialStorefront?.banner ?? '',
+    isPublic: initialStorefront?.isPublic ?? false,
+    policies: {
+      returns: initialStorefront?.policies?.returns ?? '',
+      shipping: initialStorefront?.policies?.shipping ?? '',
+      payment: initialStorefront?.policies?.payment ?? '',
+    },
+    theme: {
+      primaryColor: initialStorefront?.theme?.primaryColor ?? '#6366f1',
+      secondaryColor: initialStorefront?.theme?.secondaryColor ?? '#8b5cf6',
+    },
+  }))
 
-  const vendorId = data?.vendor ? String(data.vendor._id) : ''
   const upsert = useUpsertStorefront(vendorId)
-
-  useEffect(() => {
-    const sf = data?.storefront as IVendorStorefront | null
-    if (sf) {
-      setForm({
-        name: sf.name ?? '',
-        slug: sf.slug ?? '',
-        description: sf.description ?? '',
-        logo: sf.logo ?? '',
-        banner: sf.banner ?? '',
-        isPublic: sf.isPublic ?? false,
-        policies: {
-          returns: sf.policies?.returns ?? '',
-          shipping: sf.policies?.shipping ?? '',
-          payment: sf.policies?.payment ?? '',
-        },
-        theme: {
-          primaryColor: sf.theme?.primaryColor ?? '#6366f1',
-          secondaryColor: sf.theme?.secondaryColor ?? '#8b5cf6',
-        },
-      })
-    }
-  }, [data?.storefront])
 
   const toSlug = (val: string) =>
     val
@@ -62,34 +50,6 @@ export default function StorefrontBuilder() {
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to save storefront')
     }
-  }
-
-  if (isLoading) {
-    return (
-      <div className="container section sl-page">
-        <div className="sl-page-header">
-          <h1 className="sl-page-title">Storefront Builder</h1>
-        </div>
-        <div className="skeleton" style={{ height: 240, borderRadius: 12, marginBottom: 16 }} />
-        <div className="skeleton" style={{ height: 160, borderRadius: 12 }} />
-      </div>
-    )
-  }
-
-  if (!vendorId) {
-    return (
-      <div className="container section sl-page">
-        <div className="sl-page-header">
-          <h1 className="sl-page-title">Storefront Builder</h1>
-        </div>
-        <div className="sl-empty">
-          <p>You need a vendor profile before building a storefront.</p>
-          <Link to="/seller/register" className="sl-btn sl-btn--primary" style={{ marginTop: 12 }}>
-            Register as a Vendor
-          </Link>
-        </div>
-      </div>
-    )
   }
 
   return (
@@ -123,7 +83,7 @@ export default function StorefrontBuilder() {
                 value={form.name}
                 onChange={(e) => {
                   update('name', e.target.value)
-                  if (!data?.storefront) update('slug', toSlug(e.target.value))
+                  if (!initialStorefront) update('slug', toSlug(e.target.value))
                 }}
                 required
               />
@@ -239,5 +199,47 @@ export default function StorefrontBuilder() {
         </div>
       </form>
     </div>
+  )
+}
+
+export default function StorefrontBuilder() {
+  const { data, isLoading } = useMyVendorDetail()
+
+  if (isLoading) {
+    return (
+      <div className="container section sl-page">
+        <div className="sl-page-header">
+          <h1 className="sl-page-title">Storefront Builder</h1>
+        </div>
+        <div className="skeleton" style={{ height: 240, borderRadius: 12, marginBottom: 16 }} />
+        <div className="skeleton" style={{ height: 160, borderRadius: 12 }} />
+      </div>
+    )
+  }
+
+  const vendorId = data?.vendor ? String(data.vendor._id) : ''
+
+  if (!vendorId) {
+    return (
+      <div className="container section sl-page">
+        <div className="sl-page-header">
+          <h1 className="sl-page-title">Storefront Builder</h1>
+        </div>
+        <div className="sl-empty">
+          <p>You need a vendor profile before building a storefront.</p>
+          <Link to="/seller/register" className="sl-btn sl-btn--primary" style={{ marginTop: 12 }}>
+            Register as a Vendor
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <StorefrontBuilderForm
+      key={vendorId + (data?.storefront?.slug || '')}
+      vendorId={vendorId}
+      initialStorefront={data?.storefront}
+    />
   )
 }

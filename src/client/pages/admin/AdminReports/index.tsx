@@ -9,9 +9,9 @@ import {
   ResponsiveContainer,
   Cell,
 } from 'recharts'
-import { FiDownload } from 'react-icons/fi'
+import { FiDownload, FiDollarSign, FiShoppingBag, FiUsers, FiPackage } from 'react-icons/fi'
 import { useAdminReports } from '../../../hooks/useAdmin.js'
-import { formatCurrency, formatDate } from '../../../../shared/helpers/index.js'
+import { useCurrency } from '../../../hooks/useCurrency.js'
 
 type Period = 'week' | 'month' | 'quarter' | 'year'
 const PERIODS: { val: Period; label: string }[] = [
@@ -34,17 +34,19 @@ const COLORS = [
 
 export default function AdminReports() {
   const [period, setPeriod] = useState<Period>('month')
-
+  const { formatPrice } = useCurrency()
   const { data: res, isLoading, error } = useAdminReports(period)
   const report = res?.data
 
-  const handleExport = () => {
+  const handleExport = (format: 'csv' | 'json') => {
     if (!report) return
-    const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' })
+    const blob = new Blob([JSON.stringify(report, null, 2)], {
+      type: format === 'json' ? 'application/json' : 'text/csv',
+    })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `cartiva-report-${period}-${new Date().toISOString().slice(0, 10)}.json`
+    a.download = `cartiva-report-${period}-${Date.now()}.${format}`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -63,63 +65,75 @@ export default function AdminReports() {
       >
         <div>
           <h1 className="admin-page-title">Reports</h1>
-          <p className="admin-page-subtitle">
-            Aggregated marketplace data from {report ? formatDate(report.since) : '…'} to now
-          </p>
+          <p className="admin-page-subtitle">Exportable metrics and business summaries</p>
         </div>
-        <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-          {PERIODS.map((p) => (
-            <button
-              key={p.val}
-              className={`admin-btn ${period === p.val ? 'admin-btn--primary' : 'admin-btn--deactivate'}`}
-              onClick={() => setPeriod(p.val)}
-            >
-              {p.label}
-            </button>
-          ))}
+        <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '.25rem' }}>
+            {PERIODS.map((p) => (
+              <button
+                key={p.val}
+                className={`admin-btn ${period === p.val ? 'admin-btn--primary' : 'admin-btn--deactivate'}`}
+                onClick={() => setPeriod(p.val)}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
           <button
-            className="admin-btn admin-btn--activate"
-            onClick={handleExport}
+            className="admin-btn admin-btn--primary"
+            onClick={() => handleExport('json')}
             disabled={!report}
           >
-            <FiDownload size={12} /> Export JSON
+            <FiDownload size={13} /> Export JSON
           </button>
         </div>
       </div>
 
-      {isLoading ? (
-        <div className="admin-loading">Generating report…</div>
-      ) : error || !report ? (
-        <div className="admin-error">Failed to load report.</div>
-      ) : (
+      {isLoading && <div className="admin-loading">Generating report…</div>}
+      {error && <div className="admin-error">Failed to generate report.</div>}
+
+      {report && (
         <>
           {/* Revenue summary */}
           <div className="admin-stats-grid">
             <div className="admin-stat-card">
-              <div className="admin-stat-icon admin-stat-icon--revenue" />
+              <div className="admin-stat-icon admin-stat-icon--revenue">
+                <FiDollarSign />
+              </div>
               <div className="admin-stat-body">
-                <span className="admin-stat-value">{formatCurrency(report.revenue.total)}</span>
+                <span className="admin-stat-value" title={formatPrice(report.revenue.total)}>
+                  {formatPrice(report.revenue.total)}
+                </span>
                 <span className="admin-stat-label">Total Revenue</span>
                 <p className="admin-stat-sub">{report.revenue.count} paid orders</p>
               </div>
             </div>
 
             <div className="admin-stat-card">
-              <div className="admin-stat-icon admin-stat-icon--orders" />
+              <div className="admin-stat-icon admin-stat-icon--orders">
+                <FiShoppingBag />
+              </div>
               <div className="admin-stat-body">
-                <span className="admin-stat-value">{formatCurrency(report.revenue.avgValue)}</span>
+                <span className="admin-stat-value" title={formatPrice(report.revenue.avgValue)}>
+                  {formatPrice(report.revenue.avgValue)}
+                </span>
                 <span className="admin-stat-label">Avg Order Value</span>
                 <p className="admin-stat-sub">
-                  Min {formatCurrency(report.revenue.minValue)} · Max{' '}
-                  {formatCurrency(report.revenue.maxValue)}
+                  Min {formatPrice(report.revenue.minValue)} · Max{' '}
+                  {formatPrice(report.revenue.maxValue)}
                 </p>
               </div>
             </div>
 
             <div className="admin-stat-card">
-              <div className="admin-stat-icon admin-stat-icon--users" />
+              <div className="admin-stat-icon admin-stat-icon--users">
+                <FiUsers />
+              </div>
               <div className="admin-stat-body">
-                <span className="admin-stat-value">
+                <span
+                  className="admin-stat-value"
+                  title={String(Object.values(report.newUsers).reduce((a, b) => a + b, 0))}
+                >
                   {Object.values(report.newUsers).reduce((a, b) => a + b, 0)}
                 </span>
                 <span className="admin-stat-label">New Users</span>
@@ -130,9 +144,13 @@ export default function AdminReports() {
             </div>
 
             <div className="admin-stat-card">
-              <div className="admin-stat-icon admin-stat-icon--products" />
+              <div className="admin-stat-icon admin-stat-icon--products">
+                <FiPackage />
+              </div>
               <div className="admin-stat-body">
-                <span className="admin-stat-value">{report.orders['delivered'] ?? 0}</span>
+                <span className="admin-stat-value" title={String(report.orders['delivered'] ?? 0)}>
+                  {report.orders['delivered'] ?? 0}
+                </span>
                 <span className="admin-stat-label">Orders Delivered</span>
                 <p className="admin-stat-sub">
                   {report.orders['cancelled'] ?? 0} cancelled · {report.orders['refunded'] ?? 0}{' '}
@@ -168,7 +186,7 @@ export default function AdminReports() {
                     tick={{ fontSize: 9 }}
                     tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`}
                   />
-                  <Tooltip formatter={(v) => [formatCurrency(Number(v) || 0), 'Revenue']} />
+                  <Tooltip formatter={(v) => [formatPrice(Number(v) || 0), 'Revenue']} />
                   <Bar dataKey="revenue" radius={[4, 4, 0, 0]}>
                     {report.categories.map((_: unknown, i: number) => (
                       <Cell key={i} fill={COLORS[i % COLORS.length]} />

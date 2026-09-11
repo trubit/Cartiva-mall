@@ -48,8 +48,18 @@ router.patch('/users/:id/toggle-active', adminController.toggleUserActive)
 router.patch('/users/:id/role', validate(adminChangeRoleSchema), adminController.changeUserRole)
 router.delete('/users/:id', adminController.deleteUser)
 
-// ─── Sellers ──────────────────────────────────────────────────────────────────
+// ─── Sellers & KYC ──────────────────────────────────────────────────────────
 router.get('/sellers', adminController.listSellers)
+router.get('/sellers/kyc/pending', (req, res, next) => {
+  import('../modules/seller/seller.controller.js')
+    .then((c) => c.adminListPendingKyc(req, res, next))
+    .catch(next)
+})
+router.put('/sellers/:sellerId/kyc/review', (req, res, next) => {
+  import('../modules/seller/seller.controller.js')
+    .then((c) => c.adminReviewKyc(req, res, next))
+    .catch(next)
+})
 router.patch('/sellers/:id/verify', adminController.verifySeller)
 
 // ─── Products ─────────────────────────────────────────────────────────────────

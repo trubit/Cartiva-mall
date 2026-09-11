@@ -1,5 +1,5 @@
 import { FiPackage } from 'react-icons/fi'
-import { formatCurrency } from '../../../../shared/helpers/index.js'
+import { formatMoney } from '../../../../shared/utils/money.js'
 import type { IOrder } from '../../../../shared/types/index.js'
 import { getImageUrl } from '../../../utils/image.js'
 
@@ -16,7 +16,7 @@ export default function OrderSummaryPanel({
   currency = 'USD',
   orderNumber,
 }: OrderSummaryPanelProps) {
-  // Can render from a full IOrder or just amount + orderNumber (at create time)
+  const orderCurrency = order?.currency || currency || 'USD'
   const grandTotal = order?.grandTotal ?? amount ?? 0
   const num = order?.orderNumber ?? orderNumber
 
@@ -55,7 +55,7 @@ export default function OrderSummaryPanel({
                   <span className="order-summary-panel__item-sku">{item.sku}</span>
                 </div>
                 <span className="order-summary-panel__item-total">
-                  {formatCurrency(item.lineTotal)}
+                  {formatMoney(item.lineTotal, orderCurrency)}
                 </span>
               </li>
             ))}
@@ -66,21 +66,23 @@ export default function OrderSummaryPanel({
           <div className="order-summary-panel__lines">
             <div className="order-summary-panel__line">
               <span>Subtotal</span>
-              <span>{formatCurrency(order.subtotal)}</span>
+              <span>{formatMoney(order.subtotal, orderCurrency)}</span>
             </div>
             {order.discountAmount > 0 && (
               <div className="order-summary-panel__line order-summary-panel__line--discount">
                 <span>Discount{order.couponCode ? ` (${order.couponCode})` : ''}</span>
-                <span>–{formatCurrency(order.discountAmount)}</span>
+                <span>–{formatMoney(order.discountAmount, orderCurrency)}</span>
               </div>
             )}
             <div className="order-summary-panel__line">
               <span>Shipping</span>
-              <span>{order.shippingFee === 0 ? 'FREE' : formatCurrency(order.shippingFee)}</span>
+              <span>
+                {order.shippingFee === 0 ? 'FREE' : formatMoney(order.shippingFee, orderCurrency)}
+              </span>
             </div>
             <div className="order-summary-panel__line">
               <span>Tax</span>
-              <span>{formatCurrency(order.taxAmount)}</span>
+              <span>{formatMoney(order.taxAmount, orderCurrency)}</span>
             </div>
           </div>
 
@@ -91,7 +93,7 @@ export default function OrderSummaryPanel({
       <div className="order-summary-panel__total">
         <span>Total</span>
         <strong className="order-summary-panel__total-amount">
-          {formatCurrency(grandTotal, currency)}
+          {formatMoney(grandTotal, orderCurrency)}
         </strong>
       </div>
     </aside>

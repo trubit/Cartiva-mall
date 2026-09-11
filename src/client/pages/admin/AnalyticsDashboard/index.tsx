@@ -19,13 +19,9 @@ import {
   Tooltip,
   CartesianGrid,
 } from 'recharts'
+import { formatCurrency } from '../../../../shared/helpers/index.js'
 
-const fmt = (n: number) =>
-  new Intl.NumberFormat('en-NG', {
-    style: 'currency',
-    currency: 'NGN',
-    minimumFractionDigits: 0,
-  }).format(n)
+const fmt = (n: number) => formatCurrency(n)
 
 function KpiCard({
   label,

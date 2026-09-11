@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { FiTrash2 } from 'react-icons/fi'
 import QuantitySelector from '../QuantitySelector/index.js'
-import { formatCurrency } from '../../../../shared/helpers/index.js'
+import { useCurrency } from '../../../hooks/useCurrency.js'
 import type { ICartDisplayItem } from '../../../../shared/types/cart.types.js'
 import { getImageUrl } from '../../../utils/image.js'
 
@@ -13,6 +13,7 @@ interface CartItemProps {
 }
 
 export default function CartItem({ item, onRemove, onUpdateQty, isMutating }: CartItemProps) {
+  const { formatPrice } = useCurrency()
   const { product, quantity, itemPrice, lineTotal, selectedVariant, selectedSize, selectedColor } =
     item
   const thumb = getImageUrl(product.images?.[0])
@@ -46,9 +47,9 @@ export default function CartItem({ item, onRemove, onUpdateQty, isMutating }: Ca
         )}
 
         <div className="cart-item__price-row">
-          <span className="cart-item__unit-price">{formatCurrency(itemPrice)} each</span>
+          <span className="cart-item__unit-price">{formatPrice(itemPrice)} each</span>
           {product.discountPrice && product.price > itemPrice && (
-            <span className="cart-item__original-price">{formatCurrency(product.price)}</span>
+            <span className="cart-item__original-price">{formatPrice(product.price)}</span>
           )}
         </div>
 
@@ -69,7 +70,7 @@ export default function CartItem({ item, onRemove, onUpdateQty, isMutating }: Ca
           size="md"
         />
 
-        <div className="cart-item__line-total">{formatCurrency(lineTotal)}</div>
+        <div className="cart-item__line-total">{formatPrice(lineTotal)}</div>
 
         <button
           className="cart-item__remove-btn"

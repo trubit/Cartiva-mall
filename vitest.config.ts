@@ -11,15 +11,16 @@ export default defineConfig({
     include: ['src/client/**/*.{test,spec}.{ts,tsx}', 'src/shared/**/*.{test,spec}.ts'],
     exclude: ['node_modules', 'dist'],
 
-    // Use 'threads' pool. On Windows, the default 'forks' pool creates child
-    // processes which are slow to start and hit the worker startup timeout.
-    pool: 'threads',
+    // Avoid worker thread/process IPC startup timeouts on Windows
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        singleFork: true,
+      },
+    },
     fileParallelism: false,
-    isolate: false,
-
-    // Allow more time for the jsdom + MSW environment to initialise
-    testTimeout: 30000,
-    hookTimeout: 30000,
+    testTimeout: 60000,
+    hookTimeout: 60000,
 
     coverage: {
       provider: 'v8',

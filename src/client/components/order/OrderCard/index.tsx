@@ -11,7 +11,8 @@ import {
   FiCalendar,
   FiHash,
 } from 'react-icons/fi'
-import { formatCurrency, formatDate } from '../../../../shared/helpers/index.js'
+import { formatDate } from '../../../../shared/helpers/index.js'
+import { useCurrency } from '../../../hooks/useCurrency.js'
 import {
   CANCELLABLE_STATUSES,
   RETURNABLE_STATUSES,
@@ -20,6 +21,7 @@ import {
 import { OrderStatusBadge, PaymentStatusBadge } from '../OrderStatus/index.js'
 import { useCancelOrder } from '../../../hooks/useOrders.js'
 import ReturnRequestForm from '../ReturnRequestForm/index.js'
+import ConfirmDialog from '../../common/ConfirmDialog/index.js'
 import type { IOrder } from '../../../../shared/types/index.js'
 
 const STATUS_ACCENT: Record<string, string> = {
@@ -40,7 +42,9 @@ function isWithinReturnWindow(createdAt: string) {
 
 export default function OrderCard({ order }: { order: IOrder }) {
   const [showReturn, setShowReturn] = useState(false)
+  const [showCancelModal, setShowCancelModal] = useState(false)
   const { mutate: cancelOrder, isPending: cancelling } = useCancelOrder()
+  const { formatPrice } = useCurrency()
 
   const accent = STATUS_ACCENT[order.orderStatus] ?? '#232F3E'
   const canCancel = (CANCELLABLE_STATUSES as readonly string[]).includes(order.orderStatus)
@@ -54,9 +58,22 @@ export default function OrderCard({ order }: { order: IOrder }) {
   const thumbs = order.items.slice(0, 4)
   const extraCount = order.items.length - thumbs.length
 
-  const handleCancel = () => {
-    if (!window.confirm('Are you sure you want to cancel this order?')) return
-    cancelOrder({ orderId: order._id })
+  const handleCancelClick = () => {
+    setShowCancelModal(true)
+  }
+
+  const handleConfirmCancel = () => {
+    cancelOrder(
+      { orderId: order._id },
+      {
+        onSuccess: () => {
+          setShowCancelModal(false)
+        },
+        onError: () => {
+          setShowCancelModal(false)
+        },
+      },
+    )
   }
 
   return (
@@ -134,7 +151,7 @@ export default function OrderCard({ order }: { order: IOrder }) {
           {/* Total */}
           <div className="oc-total">
             <span className="oc-total__label">Total</span>
-            <span className="oc-total__value">{formatCurrency(order.grandTotal)}</span>
+            <span className="oc-total__value">{formatPrice(order.grandTotal, order.currency)}</span>
           </div>
         </div>
 
@@ -168,7 +185,7 @@ export default function OrderCard({ order }: { order: IOrder }) {
           {canCancel && (
             <button
               className="oc-action oc-action--danger"
-              onClick={handleCancel}
+              onClick={handleCancelClick}
               disabled={cancelling}
             >
               <FiXCircle size={13} />
@@ -182,6 +199,21 @@ export default function OrderCard({ order }: { order: IOrder }) {
         orderId={order._id}
         show={showReturn}
         onHide={() => setShowReturn(false)}
+      />
+
+      <ConfirmDialog
+        open={showCancelModal}
+        title="Cancel Order?"
+        message={`Are you sure you want to cancel order #${order.orderNumber}? This action cannot be undone.`}
+        confirmText="Cancel Order"
+        cancelText="Keep Order"
+        variant="danger"
+        isLoading={cancelling}
+        loadingText="Cancelling…"
+        onConfirm={handleConfirmCancel}
+        onClose={() => {
+          if (!cancelling) setShowCancelModal(false)
+        }}
       />
     </>
   )

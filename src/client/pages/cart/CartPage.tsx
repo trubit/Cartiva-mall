@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { FiRefreshCw, FiAlertCircle, FiBookmark, FiShoppingCart, FiTrash2 } from 'react-icons/fi'
 import { useCart } from '../../hooks/useCart.js'
 import { useAuthStore } from '../../store/authStore.js'
+import { useCurrency } from '../../hooks/useCurrency.js'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import CartList from '../../components/cart/CartList/index.js'
 import CartSummary from '../../components/cart/CartSummary/index.js'
@@ -20,6 +21,7 @@ interface CouponState {
 
 function SaveForLaterSection() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const { formatPrice } = useCurrency()
   const qc = useQueryClient()
   const { data: saved = [], isLoading } = useQuery({
     queryKey: ['cart', 'saveForLater'],
@@ -98,7 +100,7 @@ function SaveForLaterSection() {
                 fontSize: 'var(--text-sm)',
               }}
             >
-              ${(p.discountPrice ?? p.price).toFixed(2)}
+              {formatPrice(p.discountPrice ?? p.price)}
             </div>
             <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
               <button
@@ -154,6 +156,7 @@ export default function CartPage() {
     removeFromCart,
     updateQuantity,
     clearCart,
+    refetch,
   } = useCart()
 
   const [coupon, setCoupon] = useState<CouponState>({
@@ -205,8 +208,8 @@ export default function CartPage() {
         <p style={{ color: 'var(--color-neutral-500)', marginBottom: 'var(--space-6)' }}>
           There was a problem reaching the server. Please try again.
         </p>
-        <button className="btn btn-primary" onClick={() => window.location.reload()}>
-          Reload page
+        <button className="btn btn-primary" onClick={() => void refetch()}>
+          Try again
         </button>
       </div>
     )

@@ -93,4 +93,137 @@ export const sellerService = {
     const res = await api.get<ApiResponse<IOrder[]>>('/seller/orders', { params })
     return res.data
   },
+
+  // ─── Payouts & Withdrawals ───────────────────────────────────────────────────
+  requestWithdrawal: async (data: {
+    amount: number
+    payoutAccountId: string
+    idempotencyKey?: string
+  }) => {
+    const res = await api.post<ApiResponse<any>>('/seller/payout/withdraw', data)
+    return res.data
+  },
+
+  getSellerWithdrawals: async (params?: { page?: number; limit?: number; status?: string }) => {
+    const res = await api.get<ApiResponse<any[]>>('/seller/payout/withdrawals', { params })
+    return res.data
+  },
+
+  getSellerPayoutAccounts: async () => {
+    const res = await api.get<ApiResponse<any[]>>('/seller/payout/accounts')
+    return res.data
+  },
+
+  addSellerPayoutAccount: async (data: {
+    bankName: string
+    bankCode: string
+    accountNumber: string
+    accountName: string
+    currency?: string
+    isDefault?: boolean
+  }) => {
+    const res = await api.post<ApiResponse<any>>('/seller/payout/accounts', data)
+    return res.data
+  },
+
+  deleteSellerPayoutAccount: async (id: string) => {
+    const res = await api.delete<ApiResponse<null>>(`/seller/payout/accounts/${id}`)
+    return res.data
+  },
+
+  getAvailableBanks: async (currency?: string) => {
+    const res = await api.get<ApiResponse<any[]>>('/seller/payout/banks', {
+      params: { currency },
+    })
+    return res.data
+  },
+
+  resolveBankAccount: async (data: { accountNumber: string; bankCode: string }) => {
+    const res = await api.post<
+      ApiResponse<{ accountNumber: string; accountName: string; bankId?: number }>
+    >('/seller/payout/resolve-account', data)
+    return res.data
+  },
+
+  getSellerLedger: async (params?: { page?: number; limit?: number }) => {
+    const res = await api.get<ApiResponse<any[]>>('/seller/payout/ledger', { params })
+    return res.data
+  },
+
+  // ─── KYC & Store Onboarding ────────────────────────────────────────────────
+  getKycStatus: async () => {
+    const res = await api.get<
+      ApiResponse<{
+        kycStatus:
+          | 'NOT_STARTED'
+          | 'PENDING'
+          | 'UNDER_REVIEW'
+          | 'VERIFIED'
+          | 'REJECTED'
+          | 'REQUIRES_ACTION'
+        isVerified: boolean
+        storeCreated: boolean
+        storeName: string
+        storeSlug?: string
+        storeDescription?: string
+        storeCategory?: string
+        storeLogo?: string
+        accountStatus: string
+        kycData?: Record<string, any>
+      }>
+    >('/seller/kyc')
+    return res.data
+  },
+
+  submitKyc: async (data: {
+    businessType: string
+    legalName: string
+    idType: string
+    idNumber: string
+    idDocumentUrl?: string
+    proofOfAddressUrl?: string
+    storeAddress?: Record<string, string>
+    bankDetails: {
+      bankCode: string
+      bankName: string
+      accountNumber: string
+      accountName: string
+    }
+  }) => {
+    const res = await api.post<ApiResponse<any>>('/seller/kyc/submit', data)
+    return res.data
+  },
+
+  createStore: async (data: {
+    storeName: string
+    storeDescription?: string
+    storeCategory?: string
+    storeLogo?: string
+    whatsappNumber?: string
+  }) => {
+    const res = await api.post<ApiResponse<any>>('/seller/store/create', data)
+    return res.data
+  },
+
+  uploadStoreLogo: async (file: File) => {
+    const formData = new FormData()
+    formData.append('logo', file)
+    const res = await api.post<ApiResponse<{ url: string; storeLogo: string }>>(
+      '/seller/store/upload-logo',
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } },
+    )
+    return res.data
+  },
+
+  uploadKycDocument: async (file: File) => {
+    const formData = new FormData()
+    formData.append('document', file)
+    const res = await api.post<
+      ApiResponse<{ url: string; fileName: string; fileSize?: number; mimeType?: string }>
+    >('/seller/kyc/upload-document', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return res.data
+  },
 }

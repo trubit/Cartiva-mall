@@ -14,6 +14,8 @@ import {
   FiCheck,
   FiGrid,
   FiHeart,
+  FiShoppingBag,
+  FiMessageSquare,
 } from 'react-icons/fi'
 import { useAuthStore } from '../../store/authStore.js'
 import { useCartStore } from '../../store/cartStore.js'
@@ -23,6 +25,8 @@ import { PRODUCT_CATEGORIES, ROLES } from '../../../shared/constants/index.js'
 import Logo from '../ui/Logo/index.js'
 import { useLogout } from '../../hooks/useAuth.js'
 import NotificationBell from './NotificationBell/index.js'
+import { useUnreadMessagesCount } from '../../hooks/useMessaging.js'
+import CurrencySelector from '../common/CurrencySelector/index.js'
 
 const CATEGORY_ICONS: Record<string, string> = {
   Electronics: '💻',
@@ -96,6 +100,8 @@ export default function Navbar() {
   const t = useT()
   const navigate = useNavigate()
   const logoutMutation = useLogout()
+  const unreadMsgsQuery = useUnreadMessagesCount()
+  const unreadMsgCount = unreadMsgsQuery.data?.unreadConversations ?? 0
 
   const [searchQuery, setSearchQuery] = useState('')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -230,6 +236,11 @@ export default function Navbar() {
                 )}
               </div>
 
+              {/* ── Currency Switcher ── */}
+              <div className="hide-mobile" style={{ display: 'flex', alignItems: 'center' }}>
+                <CurrencySelector />
+              </div>
+
               {/* ── Account ── */}
               <div className="amz-action-link" ref={accountRef} style={{ position: 'relative' }}>
                 <button
@@ -262,7 +273,11 @@ export default function Navbar() {
                           <span className="amz-account-dropdown__user-name">{fullName}</span>
                           <span className="amz-account-dropdown__user-email">{user?.email}</span>
                           <span className={`amz-account-dropdown__user-role role-${user?.role}`}>
-                            {user?.role}
+                            {user?.role === 'seller'
+                              ? 'Seller'
+                              : user?.role === 'admin'
+                                ? 'Admin'
+                                : 'Buyer'}
                           </span>
                         </div>
                       </div>
@@ -292,12 +307,25 @@ export default function Navbar() {
                         <p className="amz-account-dropdown__col-title">{t.acc_your_account}</p>
                         {isAuthenticated ? (
                           <>
+                            {user?.role === ROLES.SELLER ? (
+                              <Link
+                                to="/seller"
+                                className="amz-account-dropdown__link"
+                                onClick={() => setAccountMenuOpen(false)}
+                                style={{
+                                  fontWeight: 600,
+                                  color: 'var(--color-brand-accent, #FF9900)',
+                                }}
+                              >
+                                <FiGrid size={13} /> Seller Hub
+                              </Link>
+                            ) : null}
                             <Link
                               to="/dashboard"
                               className="amz-account-dropdown__link"
                               onClick={() => setAccountMenuOpen(false)}
                             >
-                              <FiGrid size={13} /> My Dashboard
+                              <FiGrid size={13} /> Buyer Dashboard
                             </Link>
                             <Link
                               to="/dashboard/wishlist"
@@ -320,6 +348,28 @@ export default function Navbar() {
                             >
                               <FiPackage size={13} /> {t.acc_orders}
                             </Link>
+                            <Link
+                              to="/messages"
+                              className="amz-account-dropdown__link"
+                              onClick={() => setAccountMenuOpen(false)}
+                            >
+                              <FiMessageSquare size={13} /> Messages
+                              {unreadMsgCount > 0 && (
+                                <span
+                                  style={{
+                                    marginLeft: 'auto',
+                                    background: '#FF9900',
+                                    color: '#0f172a',
+                                    fontSize: 10,
+                                    fontWeight: 800,
+                                    padding: '1px 6px',
+                                    borderRadius: 10,
+                                  }}
+                                >
+                                  {unreadMsgCount}
+                                </span>
+                              )}
+                            </Link>
                             {user?.role === ROLES.ADMIN && (
                               <Link
                                 to="/admin"
@@ -331,11 +381,11 @@ export default function Navbar() {
                             )}
                             {(user?.role === ROLES.SELLER || user?.role === ROLES.ADMIN) && (
                               <Link
-                                to="/seller/products"
+                                to="/dashboard"
                                 className="amz-account-dropdown__link"
                                 onClick={() => setAccountMenuOpen(false)}
                               >
-                                <FiPackage size={13} /> {t.acc_seller_hub}
+                                <FiShoppingBag size={13} /> Buyer View
                               </Link>
                             )}
                             <button
@@ -378,6 +428,49 @@ export default function Navbar() {
                 <span className="amz-action-link__top">{t.nav_returns}</span>
                 <span className="amz-action-link__bottom">{t.nav_orders}</span>
               </Link>
+
+              {/* Messages */}
+              {isAuthenticated && (
+                <Link
+                  to="/messages"
+                  className="amz-action-link__btn hide-mobile"
+                  aria-label={`Messages${unreadMsgCount > 0 ? ` (${unreadMsgCount} unread)` : ''}`}
+                  style={{
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'center',
+                    color: '#fff',
+                    textDecoration: 'none',
+                    padding: '0 6px',
+                  }}
+                >
+                  <span style={{ position: 'relative', display: 'inline-flex' }}>
+                    <FiMessageSquare size={21} />
+                    {unreadMsgCount > 0 && (
+                      <span
+                        style={{
+                          position: 'absolute',
+                          top: -6,
+                          right: -6,
+                          background: '#FF9900',
+                          color: '#0f172a',
+                          fontSize: 10,
+                          fontWeight: 800,
+                          borderRadius: '50%',
+                          minWidth: 16,
+                          height: 16,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          padding: '0 3px',
+                        }}
+                      >
+                        {unreadMsgCount > 99 ? '99+' : unreadMsgCount}
+                      </span>
+                    )}
+                  </span>
+                </Link>
+              )}
 
               {/* Notifications */}
               {isAuthenticated && <NotificationBell />}
@@ -425,6 +518,22 @@ export default function Navbar() {
             <Link to="/deals" className="amz-nav__item amz-nav__item--highlight">
               {t.nav_todays_deals}
             </Link>
+            {user?.role === ROLES.ADMIN && (
+              <Link
+                to="/admin"
+                className="amz-nav__item"
+                style={{
+                  color: '#FF9900',
+                  fontWeight: 700,
+                  marginLeft: 'auto',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                }}
+              >
+                <FiSettings size={14} /> Admin Console
+              </Link>
+            )}
           </div>
         </nav>
       </header>
@@ -510,6 +619,12 @@ export default function Navbar() {
             ))}
 
             <div className="amz-mobile-menu__divider" />
+            <div className="amz-mobile-menu__section-title">Currency & Settings</div>
+            <div style={{ padding: '0.25rem 1rem 0.5rem' }}>
+              <CurrencySelector variant="compact" />
+            </div>
+
+            <div className="amz-mobile-menu__divider" />
             <div className="amz-mobile-menu__section-title">{t.mob_help}</div>
             <Link
               to="/deals"
@@ -533,6 +648,28 @@ export default function Navbar() {
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   My Dashboard
+                </Link>
+                <Link
+                  to="/messages"
+                  className="amz-mobile-menu__link"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <FiMessageSquare size={15} style={{ marginRight: 6 }} /> Messages
+                  {unreadMsgCount > 0 && (
+                    <span
+                      style={{
+                        marginLeft: 'auto',
+                        background: '#FF9900',
+                        color: '#0f172a',
+                        fontSize: 10,
+                        fontWeight: 800,
+                        padding: '1px 6px',
+                        borderRadius: 10,
+                      }}
+                    >
+                      {unreadMsgCount}
+                    </span>
+                  )}
                 </Link>
                 <Link
                   to="/dashboard/wishlist"

@@ -37,6 +37,7 @@ export interface IMessage {
 export interface ConversationList {
   items: IConversation[]
   total: number
+  unreadTotal?: number
   page: number
   pages: number
 }

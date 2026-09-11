@@ -8,10 +8,8 @@ import {
   FiChevronRight,
 } from 'react-icons/fi'
 import { useDashboardSummary } from '../../../hooks/useDashboard.js'
+import { useCurrency } from '../../../hooks/useCurrency.js'
 import LoadingSpinner from '../../../components/ui/LoadingSpinner.js'
-
-const formatCurrency = (n: number) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n)
 
 const formatDate = (iso: string) =>
   new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -27,6 +25,7 @@ const ORDER_STATUS_CLASS: Record<string, string> = {
 
 export default function DashboardPage() {
   const { data, isLoading } = useDashboardSummary()
+  const { formatPrice: formatCurrency } = useCurrency()
 
   if (isLoading) return <LoadingSpinner />
   if (!data) return null

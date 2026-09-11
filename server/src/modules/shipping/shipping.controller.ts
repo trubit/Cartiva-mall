@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express'
 import { shippingService } from './shipping.service.js'
+import * as shippingConfigService from './shippingConfig.service.js'
 import { sendSuccess, sendCreated } from '../../utils/response.js'
 import type { ShipmentStatus } from './shipment.model.js'
 
@@ -117,6 +118,58 @@ export const updateShipmentStatus = async (
       location,
     )
     sendSuccess(res, data, 'Status updated')
+  } catch (err) {
+    next(err)
+  }
+}
+
+// ─── Shipping Configuration Endpoints ─────────────────────────────────────────
+
+export const getPublicShippingConfig = async (
+  _req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const config = await shippingConfigService.getShippingConfig()
+    sendSuccess(
+      res,
+      {
+        rates: config.fixedRates,
+        defaultCurrency: config.defaultCurrency,
+        defaultFee: config.defaultFee,
+        updatedAt: config.updatedAt,
+      },
+      'Public shipping configuration retrieved',
+    )
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const getAdminShippingConfig = async (
+  _req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const config = await shippingConfigService.getShippingConfig()
+    sendSuccess(res, config, 'Admin shipping configuration retrieved')
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const updateAdminShippingConfig = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const adminUserId = req.user!.userId
+    const { rates, note } = req.body as { rates: Record<string, number>; note?: string }
+    const updated = await shippingConfigService.updateShippingConfig(adminUserId, rates, note)
+    sendSuccess(res, updated, 'Shipping price configuration updated successfully')
   } catch (err) {
     next(err)
   }

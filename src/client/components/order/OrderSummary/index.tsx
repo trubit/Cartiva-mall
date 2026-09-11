@@ -1,15 +1,18 @@
-import { formatCurrency } from '../../../../shared/helpers/index.js'
+﻿import { useCurrency } from '../../../hooks/useCurrency.js'
 import type { IOrder } from '../../../../shared/types/index.js'
 
 interface OrderSummaryProps {
   order: Pick<
     IOrder,
     'subtotal' | 'discountAmount' | 'shippingFee' | 'taxAmount' | 'grandTotal' | 'couponCode'
-  >
+  > & { currency?: string }
   compact?: boolean
 }
 
 export default function OrderSummary({ order, compact = false }: OrderSummaryProps) {
+  const { formatPrice } = useCurrency()
+  const currency = order.currency || 'USD'
+
   return (
     <div className={`order-summary${compact ? ' order-summary--compact' : ''}`}>
       {!compact && <h3 className="order-summary__title">Price Summary</h3>}
@@ -17,13 +20,13 @@ export default function OrderSummary({ order, compact = false }: OrderSummaryPro
       <div className="order-summary__rows">
         <div className="order-summary__row">
           <span>Subtotal</span>
-          <span>{formatCurrency(order.subtotal)}</span>
+          <span>{formatPrice(order.subtotal, currency)}</span>
         </div>
 
         {order.discountAmount > 0 && (
           <div className="order-summary__row order-summary__row--discount">
             <span>Discount{order.couponCode ? ` (${order.couponCode})` : ''}</span>
-            <span>–{formatCurrency(order.discountAmount)}</span>
+            <span>–{formatPrice(order.discountAmount, currency)}</span>
           </div>
         )}
 
@@ -33,19 +36,19 @@ export default function OrderSummary({ order, compact = false }: OrderSummaryPro
             {order.shippingFee === 0 ? (
               <span className="order-summary__free">FREE</span>
             ) : (
-              formatCurrency(order.shippingFee)
+              formatPrice(order.shippingFee, currency)
             )}
           </span>
         </div>
 
         <div className="order-summary__row">
           <span>Tax</span>
-          <span>{formatCurrency(order.taxAmount)}</span>
+          <span>{formatPrice(order.taxAmount, currency)}</span>
         </div>
 
         <div className="order-summary__row order-summary__row--total">
           <strong>Total</strong>
-          <strong>{formatCurrency(order.grandTotal)}</strong>
+          <strong>{formatPrice(order.grandTotal, currency)}</strong>
         </div>
       </div>
     </div>

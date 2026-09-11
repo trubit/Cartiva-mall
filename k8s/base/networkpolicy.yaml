@@ -1,0 +1,57 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: cartiva-api-netpol
+  namespace: cartiva
+  labels:
+    app.kubernetes.io/name: cartiva-api-netpol
+    app.kubernetes.io/part-of: cartiva-mall
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: cartiva-api
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow ingress traffic from ingress controller and within namespace
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: cartiva
+      ports:
+        - protocol: TCP
+          port: 5001
+  egress:
+    # Allow DNS resolution
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # Allow communication to MongoDB, Redis within cluster or VPC
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: cartiva
+      ports:
+        - protocol: TCP
+          port: 27017
+        - protocol: TCP
+          port: 6379
+    # Allow HTTPS egress for external APIs (Paystack, Stripe, Cloudinary, AWS)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - protocol: TCP
+          port: 443

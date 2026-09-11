@@ -15,9 +15,15 @@ const unwrapPage = <T>(res: { data: { data: T; pagination?: PaginationMeta } }) 
 export type PagedOrders = { orders: IOrder[]; pagination?: PaginationMeta }
 
 export const orderService = {
-  // ── Core CRUD ──────────────────────────────────────────────────────────────
-  createOrder(checkoutSessionId: string, notes?: string): Promise<ICreateOrderResponse> {
-    return api.post('/orders', { checkoutSessionId, notes }).then(unwrap<ICreateOrderResponse>)
+  createOrder(
+    checkoutSessionId: string,
+    notes?: string,
+    paymentMethodType?: string,
+    currency?: string,
+  ): Promise<ICreateOrderResponse> {
+    return api
+      .post('/orders', { checkoutSessionId, notes, paymentMethodType, currency })
+      .then(unwrap<ICreateOrderResponse>)
   },
 
   getMyOrders(params?: { status?: string; page?: number; limit?: number }): Promise<PagedOrders> {

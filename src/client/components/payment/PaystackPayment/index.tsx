@@ -3,6 +3,7 @@ import { FiAlertCircle, FiCreditCard } from 'react-icons/fi'
 import { usePaystackInitialize, usePaystackVerify } from '../../../hooks/usePayment.js'
 import { usePaymentStore } from '../../../store/paymentStore.js'
 import { useAuthStore } from '../../../store/authStore.js'
+import { formatMoney } from '../../../../shared/utils/money.js'
 import type { PaystackInitResponse } from '../../../services/paymentService.js'
 
 declare global {
@@ -27,6 +28,7 @@ interface PaystackTransactionOptions {
 interface Props {
   orderId: string
   amount: number
+  currency?: string
 }
 
 const PAYSTACK_INLINE_URL = 'https://js.paystack.co/v2/inline.js'
@@ -50,7 +52,7 @@ function loadPaystackScript(): Promise<void> {
   })
 }
 
-export default function PaystackPayment({ orderId, amount }: Props) {
+export default function PaystackPayment({ orderId, amount, currency: propCurrency }: Props) {
   const user = useAuthStore((s) => s.user)
   const step = usePaymentStore((s) => s.step)
   const errorMessage = usePaymentStore((s) => s.errorMessage)
@@ -58,11 +60,15 @@ export default function PaystackPayment({ orderId, amount }: Props) {
   const setError = usePaymentStore((s) => s.setError)
 
   const initialize = usePaystackInitialize()
-  const verify = usePaystackVerify()
+  const verify = usePaystackVerify(orderId)
 
   const [scriptReady, setScriptReady] = useState(false)
-  const [currency, setCurrency] = useState('NGN')
+  const [currency, setCurrency] = useState(propCurrency || 'NGN')
   const paystackDataRef = useRef<PaystackInitResponse | null>(null)
+
+  useEffect(() => {
+    if (propCurrency) setCurrency(propCurrency)
+  }, [propCurrency])
 
   useEffect(() => {
     loadPaystackScript()
@@ -77,22 +83,62 @@ export default function PaystackPayment({ orderId, amount }: Props) {
       return
     }
 
+    const handleSuccess = (tx: any) => {
+      const ref = tx?.reference || tx?.trxref || tx?.trans || data.reference
+      setStep('processing')
+      verify.mutate(ref)
+    }
+
+    const handleCancel = () => {
+      setStep('form')
+      setError('Payment was cancelled. You can try again.')
+    }
+
     const popup = new window.PaystackPop()
-    popup.newTransaction({
-      key: data.publicKey,
-      email: user?.email ?? '',
-      amount: data.amount,
-      currency: data.currency,
-      ref: data.reference,
-      metadata: { orderId, custom_fields: [] },
-      onSuccess: (tx) => {
-        verify.mutate(tx.reference)
-      },
-      onCancel: () => {
-        setStep('form')
-        setError('Payment was cancelled. You can try again.')
-      },
-    })
+    if (typeof (popup as any).resumeTransaction === 'function' && data.accessCode) {
+      try {
+        ;(popup as any).resumeTransaction(data.accessCode, {
+          onSuccess: handleSuccess,
+          onCancel: handleCancel,
+          onClose: handleCancel,
+          callback: handleSuccess,
+        })
+      } catch {
+        popup.newTransaction({
+          key: data.publicKey,
+          email: user?.email ?? '',
+          amount: data.amount,
+          currency: data.currency,
+          reference: data.reference,
+          ref: data.reference,
+          metadata: {
+            orderId,
+            custom_fields: [{ variable_name: 'orderId', value: orderId, display_name: 'Order ID' }],
+          },
+          onSuccess: handleSuccess,
+          onCancel: handleCancel,
+          onClose: handleCancel,
+          callback: handleSuccess,
+        } as any)
+      }
+    } else {
+      popup.newTransaction({
+        key: data.publicKey,
+        email: user?.email ?? '',
+        amount: data.amount,
+        currency: data.currency,
+        reference: data.reference,
+        ref: data.reference,
+        metadata: {
+          orderId,
+          custom_fields: [{ variable_name: 'orderId', value: orderId, display_name: 'Order ID' }],
+        },
+        onSuccess: handleSuccess,
+        onCancel: handleCancel,
+        onClose: handleCancel,
+        callback: handleSuccess,
+      } as any)
+    }
   }
 
   const handlePay = async () => {
@@ -156,11 +202,7 @@ export default function PaystackPayment({ orderId, amount }: Props) {
           disabled={!scriptReady || initialize.isPending || verify.isPending}
         >
           <FiCreditCard size={16} />
-          Pay{' '}
-          {new Intl.NumberFormat(undefined, {
-            style: 'currency',
-            currency,
-          }).format(amount)}
+          Pay {formatMoney(amount, currency)}
         </button>
       )}
 

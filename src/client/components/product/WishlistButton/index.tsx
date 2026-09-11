@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { FiHeart } from 'react-icons/fi'
 import { useAuthStore } from '../../../store/authStore.js'
+import { useDashboardStore } from '../../../store/dashboardStore.js'
 import { dashboardService } from '../../../services/dashboardService.js'
 import { useNavigate } from 'react-router-dom'
 
@@ -16,17 +17,19 @@ export default function WishlistButton({
   className = '',
 }: WishlistButtonProps) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
-  const [inWishlist, setInWishlist] = useState(false)
+  const inWishlist = useDashboardStore((s) =>
+    s.wishlistItems.some((i) => {
+      const id =
+        typeof i.productId === 'object' && i.productId !== null
+          ? (i.productId as any)._id
+          : i.productId
+      return String(id) === String(productId)
+    }),
+  )
+  const addToStore = useDashboardStore((s) => s.addToWishlist)
+  const removeFromStore = useDashboardStore((s) => s.removeFromWishlist)
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
-
-  useEffect(() => {
-    if (!isAuthenticated) return
-    dashboardService
-      .checkWishlist(productId)
-      .then(setInWishlist)
-      .catch(() => {})
-  }, [productId, isAuthenticated])
 
   const toggle = async (e: React.MouseEvent) => {
     e.preventDefault()
@@ -40,11 +43,15 @@ export default function WishlistButton({
     setLoading(true)
     try {
       if (inWishlist) {
-        await dashboardService.removeFromWishlist(productId)
-        setInWishlist(false)
+        removeFromStore(productId)
+        await dashboardService.removeFromWishlist(productId).catch(() => {})
       } else {
-        await dashboardService.addToWishlist(productId)
-        setInWishlist(true)
+        addToStore({
+          _id: productId,
+          productId: productId as any,
+          addedAt: new Date().toISOString(),
+        })
+        await dashboardService.addToWishlist(productId).catch(() => {})
       }
     } finally {
       setLoading(false)

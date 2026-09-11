@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
-import { Navigate } from 'react-router-dom'
-import { FiShoppingBag } from 'react-icons/fi'
+import { Link, Navigate } from 'react-router-dom'
+import { FiShoppingBag, FiArrowLeft, FiChevronRight } from 'react-icons/fi'
 import { useCheckoutSession } from '../../hooks/useCheckout.js'
 import { useAuthStore } from '../../store/authStore.js'
 import { useCheckoutStore } from '../../store/checkoutStore.js'
@@ -34,6 +34,28 @@ export default function CheckoutPage() {
   return (
     <div className="checkout-page">
       <div className="container checkout-page__inner">
+        {/* Navigation Breadcrumb */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            marginBottom: '1rem',
+            fontSize: 'var(--text-sm)',
+            color: 'var(--color-neutral-500)',
+          }}
+        >
+          <Link to="/" style={{ color: 'var(--color-neutral-600)', textDecoration: 'none' }}>
+            Home
+          </Link>
+          <FiChevronRight size={14} />
+          <Link to="/cart" style={{ color: 'var(--color-neutral-600)', textDecoration: 'none' }}>
+            Shopping Cart
+          </Link>
+          <FiChevronRight size={14} />
+          <span style={{ fontWeight: 600, color: 'var(--color-neutral-900)' }}>Checkout</span>
+        </div>
+
         {/* Page title */}
         <div className="checkout-page__header">
           <FiShoppingBag size={24} />
@@ -73,11 +95,29 @@ export default function CheckoutPage() {
             )}
 
             {isError && (
-              <div className="checkout-page__error-banner">
-                <p>{errMsg ?? 'Failed to load checkout. Your cart may be empty.'}</p>
-                <a href="/cart" className="btn btn-outline btn-sm">
-                  Return to Cart
-                </a>
+              <div
+                className="checkout-page__error-banner"
+                style={{
+                  padding: '1.5rem',
+                  background: '#fff',
+                  borderRadius: 'var(--radius-lg)',
+                  border: '1px solid var(--color-neutral-200)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1rem',
+                  alignItems: 'flex-start',
+                }}
+              >
+                <p style={{ margin: 0, fontWeight: 500, color: 'var(--color-neutral-800)' }}>
+                  {errMsg ?? 'Failed to load checkout. Your cart may be empty.'}
+                </p>
+                <Link
+                  to="/cart"
+                  className="btn btn-outline btn-sm"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+                >
+                  <FiArrowLeft size={16} /> Return to Cart
+                </Link>
               </div>
             )}
 

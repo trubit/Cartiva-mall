@@ -38,9 +38,17 @@ export default function NotificationsPage() {
   const markRead = useMarkNotificationRead()
   const markAllRead = useMarkAllNotificationsRead()
 
-  const notifications = data?.data.notifications ?? []
-  const total = data?.data.total ?? 0
-  const unread = data?.data.unread ?? 0
+  const notifications: Array<{
+    _id: string
+    title: string
+    message: string
+    type: NotificationType
+    read?: boolean
+    link?: string
+    createdAt: string
+  }> = data?.data?.notifications ?? (data as any)?.notifications ?? []
+  const total = data?.data?.total ?? (data as any)?.total ?? 0
+  const unread = data?.data?.unread ?? (data as any)?.unread ?? 0
   const totalPages = Math.ceil(total / PAGE_LIMIT)
 
   const handleClick = (id: string, link?: string, read?: boolean) => {

@@ -9,6 +9,7 @@ const router = Router()
 router.post('/conversations', authenticate, msgCtrl.startConversation)
 router.get('/conversations', authenticate, msgCtrl.listConversations)
 router.get('/conversations/:id', authenticate, msgCtrl.getConversation)
+router.get('/unread-count', authenticate, msgCtrl.getUnreadCount)
 
 // Messages
 router.post('/messages', authenticate, messageLimiter, msgCtrl.sendMessage)

@@ -6,7 +6,6 @@ import {
   ProcessedEventModel,
 } from './eventBus.model.js'
 import { eventBus } from './eventBus.service.js'
-import { OrderPaymentSaga } from './saga/orderPaymentSaga.js'
 
 const getParam = (param: string | string[] | undefined): string => {
   if (Array.isArray(param)) return param[0] || ''
@@ -138,33 +137,6 @@ export const getSagaById = async (req: Request, res: Response): Promise<void> =>
       return
     }
     res.json({ success: true, data: saga })
-  } catch (err: any) {
-    res.status(500).json({ success: false, message: err.message })
-  }
-}
-
-export const triggerOrderSagaDemo = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const userId = (req as any).user?.id || 'demo_user'
-    const saga = new OrderPaymentSaga()
-
-    const data = {
-      orderId: `ord_${Date.now()}`,
-      userId,
-      amount: 150.0,
-      currency: 'USD',
-      items: [{ productId: 'prod_1', quantity: 2 }],
-      shippingAddress: { street: '123 Tech Lane', city: 'San Francisco', country: 'US' },
-    }
-
-    saga.start(data).catch(() => {})
-
-    res.status(202).json({
-      success: true,
-      message: 'OrderPaymentSaga started asynchronously',
-      sagaId: saga.sagaId,
-      correlationId: saga.correlationId,
-    })
   } catch (err: any) {
     res.status(500).json({ success: false, message: err.message })
   }

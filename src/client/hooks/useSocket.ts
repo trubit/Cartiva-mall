@@ -4,22 +4,13 @@ import { connectSocket, disconnectSocket, getSocket } from '../services/socketSe
 import { useAuthStore } from '../store/authStore.js'
 import { useDashboardStore } from '../store/dashboardStore.js'
 import { NOTIF_KEY } from './useDashboard.js'
-import { ORDER_KEY } from './useOrders.js'
+import { ORDER_KEY, SELLER_ORDER_KEY } from './useOrders.js'
+import { CONVERSATIONS_KEY, UNREAD_MESSAGES_KEY } from './useMessaging.js'
 
-/**
- * Call once (inside DashboardLayout or a top-level auth guard) when a user
- * is authenticated. Connects the socket, joins the user-specific room via JWT
- * (never sends userId directly — the server verifies the token and extracts
- * the userId to join the correct room), and wires up real-time events to
- * invalidate the appropriate React Query caches.
- *
- * userId is the trigger — when it becomes available after login or page reload,
- * the hook fires. The access token is read from Zustand internally; if it's
- * null (e.g., page reload before token refresh completes) the socket waits.
- */
 export const useSocket = (userId: string | undefined) => {
   const qc = useQueryClient()
   const incrementUnread = useDashboardStore((s) => s.incrementUnreadCount)
+  const setUnreadCount = useDashboardStore((s) => s.setUnreadCount)
   const accessToken = useAuthStore((s) => s.accessToken)
 
   useEffect(() => {
@@ -33,23 +24,66 @@ export const useSocket = (userId: string | undefined) => {
       qc.invalidateQueries({ queryKey: NOTIF_KEY })
     }
 
-    const onOrderUpdated = () => {
-      qc.invalidateQueries({ queryKey: ORDER_KEY })
+    const onUnreadCount = (data: { unreadCount?: number }) => {
+      if (typeof data?.unreadCount === 'number') {
+        setUnreadCount(data.unreadCount)
+      }
+      qc.invalidateQueries({ queryKey: NOTIF_KEY })
     }
 
-    const onShipmentUpdated = () => {
+    const onOrderEvent = () => {
       qc.invalidateQueries({ queryKey: ORDER_KEY })
+      qc.invalidateQueries({ queryKey: SELLER_ORDER_KEY })
+      qc.invalidateQueries({ queryKey: ['seller', 'orders'] })
+      qc.invalidateQueries({ queryKey: ['admin', 'orders'] })
+      qc.invalidateQueries({ queryKey: ['cart'] })
+      qc.invalidateQueries({ queryKey: NOTIF_KEY })
+    }
+
+    const onMessageEvent = () => {
+      qc.invalidateQueries({ queryKey: CONVERSATIONS_KEY })
+      qc.invalidateQueries({ queryKey: UNREAD_MESSAGES_KEY })
+    }
+
+    const onKycUpdated = (payload: { kycStatus?: string; isVerified?: boolean; role?: string }) => {
+      if (payload?.isVerified || payload?.kycStatus === 'VERIFIED' || payload?.role === 'seller') {
+        useAuthStore.getState().updateUser({ role: 'seller' })
+      }
+      qc.invalidateQueries({ queryKey: ['seller'] })
+      qc.invalidateQueries({ queryKey: ['auth', 'me'] })
+      qc.invalidateQueries({ queryKey: NOTIF_KEY })
+    }
+
+    const onStoreCreated = () => {
+      useAuthStore.getState().updateUser({ role: 'seller' })
+      qc.invalidateQueries({ queryKey: ['seller'] })
+      qc.invalidateQueries({ queryKey: ['auth', 'me'] })
+      qc.invalidateQueries({ queryKey: NOTIF_KEY })
     }
 
     socket.on('notification:new', onNewNotification)
-    socket.on('order:updated', onOrderUpdated)
-    socket.on('shipment:updated', onShipmentUpdated)
+    socket.on('notification:unread_count', onUnreadCount)
+    socket.on('order:new', onOrderEvent)
+    socket.on('order:updated', onOrderEvent)
+    socket.on('order:status_changed', onOrderEvent)
+    socket.on('shipment:updated', onOrderEvent)
+    socket.on('message:new', onMessageEvent)
+    socket.on('conversation:updated', onMessageEvent)
+    socket.on('seller:kyc:updated', onKycUpdated)
+    socket.on('seller:store:created', onStoreCreated)
 
     return () => {
       socket.off('notification:new', onNewNotification)
-      socket.off('order:updated', onOrderUpdated)
-      socket.off('shipment:updated', onShipmentUpdated)
+      socket.off('notification:unread_count', onUnreadCount)
+      socket.off('order:new', onOrderEvent)
+      socket.off('order:updated', onOrderEvent)
+      socket.off('order:status_changed', onOrderEvent)
+      socket.off('shipment:updated', onOrderEvent)
+      socket.off('message:new', onMessageEvent)
+      socket.off('conversation:updated', onMessageEvent)
+      socket.off('seller:kyc:updated', onKycUpdated)
+      socket.off('seller:store:created', onStoreCreated)
       disconnectSocket()
     }
-  }, [userId, accessToken, qc, incrementUnread])
+  }, [userId, accessToken, qc, incrementUnread, setUnreadCount])
 }

@@ -12,6 +12,15 @@ const paystackInitializeSchema = z.object({
 
 const paystackVerifySchema = z.object({
   reference: z.string().min(1).max(100),
+  orderId: z.string().optional(),
+})
+
+const stripeIntentSchema = z.object({
+  orderId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid order ID'),
+})
+
+const stripeConfirmSchema = z.object({
+  paymentIntentId: z.string().min(1).max(100),
 })
 
 const router = Router()
@@ -24,6 +33,7 @@ router.use(authenticate)
 router.use(paymentLimiter)
 
 router.get('/history', paymentController.getPaymentHistory)
+router.get('/:id', paymentController.getPaymentDetails)
 router.post('/refund', validate(refundSchema), paymentController.refundPayment)
 
 // Paystack
@@ -33,5 +43,13 @@ router.post(
   paymentController.paystackInitialize,
 )
 router.post('/paystack/verify', validate(paystackVerifySchema), paymentController.paystackVerify)
+
+// Stripe
+router.post(
+  '/stripe/create-intent',
+  validate(stripeIntentSchema),
+  paymentController.stripeCreateIntent,
+)
+router.post('/stripe/confirm', validate(stripeConfirmSchema), paymentController.stripeConfirm)
 
 export default router

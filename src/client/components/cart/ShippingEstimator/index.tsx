@@ -1,5 +1,5 @@
 import { FiTruck } from 'react-icons/fi'
-import { formatCurrency } from '../../../../shared/helpers/index.js'
+import { useCurrency } from '../../../hooks/useCurrency.js'
 import type { ICartTotals } from '../../../../shared/types/cart.types.js'
 
 interface ShippingEstimatorProps {
@@ -7,6 +7,7 @@ interface ShippingEstimatorProps {
 }
 
 export default function ShippingEstimator({ totals }: ShippingEstimatorProps) {
+  const { formatPrice } = useCurrency()
   const progress = Math.min(100, (totals.subtotal / totals.freeShippingThreshold) * 100)
 
   return (
@@ -24,7 +25,7 @@ export default function ShippingEstimator({ totals }: ShippingEstimatorProps) {
       ) : (
         <div className="shipping-estimator__progress-wrap">
           <p className="shipping-estimator__hint">
-            Add <strong>{formatCurrency(totals.remainingForFreeShipping)}</strong> more for free
+            Add <strong>{formatPrice(totals.remainingForFreeShipping)}</strong> more for free
             shipping
           </p>
           <div
@@ -38,7 +39,7 @@ export default function ShippingEstimator({ totals }: ShippingEstimatorProps) {
           </div>
           <div className="shipping-estimator__cost-row">
             <span>Flat rate shipping</span>
-            <strong>{formatCurrency(totals.shippingCost)}</strong>
+            <strong>{formatPrice(totals.shippingCost)}</strong>
           </div>
         </div>
       )}

@@ -3,6 +3,7 @@ import { FiSliders } from 'react-icons/fi'
 import RatingStars from '../RatingStars/index.js'
 import { PRODUCT_CATEGORIES } from '../../../../shared/constants/index.js'
 import { useProductStore } from '../../../store/productStore.js'
+import { useCurrency } from '../../../hooks/useCurrency.js'
 import type { ProductFilters } from '../../../../shared/types/product.types.js'
 
 const SORT_OPTIONS: { value: ProductFilters['sort']; label: string }[] = [
@@ -19,6 +20,7 @@ interface ProductFilterProps {
 
 export default function ProductFilter({ onChange }: ProductFilterProps) {
   const { filters, setFilters, resetFilters } = useProductStore()
+  const { symbol: currencySymbol } = useCurrency()
   const [localMin, setLocalMin] = useState(filters.minPrice?.toString() ?? '')
   const [localMax, setLocalMax] = useState(filters.maxPrice?.toString() ?? '')
 
@@ -114,7 +116,7 @@ export default function ProductFilter({ onChange }: ProductFilterProps) {
           <input
             type="number"
             className="product-filter__price-input"
-            placeholder="Min $"
+            placeholder={`Min ${currencySymbol}`}
             value={localMin}
             min={0}
             onChange={(e) => setLocalMin(e.target.value)}
@@ -124,7 +126,7 @@ export default function ProductFilter({ onChange }: ProductFilterProps) {
           <input
             type="number"
             className="product-filter__price-input"
-            placeholder="Max $"
+            placeholder={`Max ${currencySymbol}`}
             value={localMax}
             min={0}
             onChange={(e) => setLocalMax(e.target.value)}

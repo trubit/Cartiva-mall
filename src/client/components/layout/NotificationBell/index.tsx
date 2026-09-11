@@ -5,7 +5,7 @@ import NotificationDrawer from '../../notification/NotificationDrawer/index.js'
 
 export default function NotificationBell() {
   const [open, setOpen] = useState(false)
-  const { unreadQuery } = useNotifications()
+  const { unreadQuery } = useNotifications(1, { enabled: false })
   const count = unreadQuery.data ?? 0
 
   return (

@@ -106,9 +106,9 @@ beforeAll(async () => {
 })
 
 describe('GET /cart', () => {
-  it('returns 401 for unauthenticated requests', async () => {
+  it('returns 400 for unauthenticated requests without session ID header', async () => {
     const res = await request(app).get(CART)
-    expect(res.status).toBe(401)
+    expect(res.status).toBe(400)
   })
 
   it('returns 200 for authenticated requests', async () => {
@@ -125,11 +125,12 @@ describe('GET /cart', () => {
 })
 
 describe('POST /cart/add', () => {
-  it('returns 401 for unauthenticated requests', async () => {
+  it('supports guest cart for unauthenticated requests with session ID', async () => {
     const res = await request(app)
       .post(`${CART}/add`)
+      .set('x-session-id', 'test-guest-session')
       .send({ productId: testProductId, quantity: 1 })
-    expect(res.status).toBe(401)
+    expect(res.status).toBe(200)
   })
 
   it('returns 2xx when authenticated and product exists', async () => {
@@ -153,9 +154,11 @@ describe('POST /cart/add', () => {
 })
 
 describe('DELETE /cart/remove/:productId', () => {
-  it('returns 401 for unauthenticated requests', async () => {
-    const res = await request(app).delete(`${CART}/remove/${testProductId}`)
-    expect(res.status).toBe(401)
+  it('supports guest cart removal for unauthenticated requests', async () => {
+    const res = await request(app)
+      .delete(`${CART}/remove/${testProductId}`)
+      .set('x-session-id', 'test-guest-session')
+    expect(res.status).toBe(200)
   })
 
   it('returns 2xx for authenticated removal', async () => {
@@ -174,9 +177,9 @@ describe('DELETE /cart/remove/:productId', () => {
 })
 
 describe('DELETE /cart/clear', () => {
-  it('returns 401 for unauthenticated requests', async () => {
-    const res = await request(app).delete(`${CART}/clear`)
-    expect(res.status).toBe(401)
+  it('supports clearing guest cart for unauthenticated requests', async () => {
+    const res = await request(app).delete(`${CART}/clear`).set('x-session-id', 'test-guest-session')
+    expect(res.status).toBe(204)
   })
 
   it('returns 2xx and clears all cart items', async () => {

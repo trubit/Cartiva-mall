@@ -1,5 +1,5 @@
 import { FiTruck, FiZap, FiStar, FiCheck } from 'react-icons/fi'
-import { formatCurrency } from '../../../../shared/helpers/index.js'
+import { useCurrency } from '../../../hooks/useCurrency.js'
 import type { IShippingOption, ShippingMethod } from '../../../../shared/types/checkout.types.js'
 
 const METHOD_ICONS: Record<ShippingMethod, React.ReactNode> = {
@@ -16,6 +16,8 @@ interface ShippingCardProps {
 }
 
 export default function ShippingCard({ option, selected, onSelect, disabled }: ShippingCardProps) {
+  const { formatPrice } = useCurrency()
+
   return (
     <div
       className={`shipping-card ${selected ? 'shipping-card--selected' : ''} ${disabled ? 'shipping-card--disabled' : ''}`}
@@ -45,7 +47,7 @@ export default function ShippingCard({ option, selected, onSelect, disabled }: S
         {option.cost === 0 ? (
           <span className="shipping-card__free">FREE</span>
         ) : (
-          <span className="shipping-card__price">{formatCurrency(option.cost)}</span>
+          <span className="shipping-card__price">{formatPrice(option.cost)}</span>
         )}
       </div>
     </div>

@@ -85,6 +85,7 @@ export default function QuickViewModal({ product, onClose }: QuickViewModalProps
             discountPrice={product.discountPrice}
             size="lg"
             showSave
+            showOriginalConversionNotice
           />
 
           <p className="quick-view-modal__description">{product.description}</p>

@@ -14,6 +14,7 @@ const KEYS = {
   fraudAlerts: ['admin', 'fraud-alerts'] as const,
   reports: (period: string) => ['admin', 'reports', period] as const,
   auditLogs: (p: Record<string, string>) => ['admin', 'audit-logs', p] as const,
+  commissionPolicy: ['admin', 'commission-policy'] as const,
 }
 
 // ── Stats
@@ -79,6 +80,35 @@ export const useVerifySeller = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'sellers'] })
       qc.invalidateQueries({ queryKey: ['admin', 'stats'] })
+    },
+  })
+}
+
+export const useAdminKycSellers = (params: Record<string, string> = {}) =>
+  useQuery({
+    queryKey: ['admin', 'sellers', 'kyc', params],
+    queryFn: () => adminService.getPendingKycSellers(params),
+    staleTime: 15_000,
+  })
+
+export const useReviewSellerKyc = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      sellerId,
+      data,
+    }: {
+      sellerId: string
+      data: {
+        action: 'APPROVE' | 'REJECT' | 'REQUEST_ACTION'
+        rejectionReason?: string
+        actionRequiredReason?: string
+      }
+    }) => adminService.reviewSellerKyc(sellerId, data),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['admin', 'sellers'] })
+      void qc.invalidateQueries({ queryKey: ['admin', 'stats'] })
+      void qc.invalidateQueries({ queryKey: ['seller', 'kyc-status'] })
     },
   })
 }
@@ -173,3 +203,21 @@ export const useAdminAuditLogs = (params: Record<string, string> = {}) =>
     queryFn: () => adminService.getAuditLogs(params),
     staleTime: 30_000,
   })
+
+// ── Commission policy
+export const useAdminCommissionPolicy = () =>
+  useQuery({
+    queryKey: KEYS.commissionPolicy,
+    queryFn: adminService.getCommissionPolicy,
+    staleTime: 30_000,
+  })
+
+export const useUpdateCommissionPolicy = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: adminService.updateCommissionPolicy,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.commissionPolicy })
+    },
+  })
+}

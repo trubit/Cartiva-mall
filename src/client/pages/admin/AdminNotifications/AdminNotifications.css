@@ -1,0 +1,98 @@
+.an-wrap {
+  padding: 24px;
+  max-width: 700px;
+}
+
+.an-header {
+  margin-bottom: 24px;
+}
+
+.an-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 24px;
+  font-weight: 700;
+  color: #f0f0f0;
+}
+
+.an-sub {
+  color: #8899a6;
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.an-alert {
+  padding: 12px 16px;
+  border-radius: 6px;
+  background: rgba(255, 153, 0, 0.15);
+  border: 1px solid #ff9900;
+  color: #ff9900;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.an-card {
+  background: #1e242d;
+  border-radius: 8px;
+  border: 1px solid #2c3440;
+  padding: 24px;
+}
+
+.an-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.an-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.an-label {
+  color: #e0e0e0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.an-input,
+.an-textarea {
+  background: #141920;
+  border: 1px solid #2c3440;
+  border-radius: 6px;
+  padding: 12px 14px;
+  color: #fff;
+  font-size: 14px;
+}
+
+.an-input:focus,
+.an-textarea:focus {
+  outline: none;
+  border-color: #ff9900;
+}
+
+.an-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.an-send-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: #ff9900;
+  color: #111;
+  font-weight: 700;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.an-send-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}

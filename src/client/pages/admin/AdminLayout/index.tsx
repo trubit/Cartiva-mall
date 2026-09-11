@@ -22,6 +22,9 @@ import {
   FiCode,
   FiRadio,
   FiCpu,
+  FiGlobe,
+  FiKey,
+  FiPercent,
 } from 'react-icons/fi'
 import { useAdminStats, useAdminFraudAlerts } from '../../../hooks/useAdmin.js'
 import { useIsMobile } from '../../../hooks/useBreakpoint.js'
@@ -35,6 +38,7 @@ const NAV_OVERVIEW = [
 const NAV_MANAGE = [
   { to: '/admin/users', end: false, Icon: FiUsers, label: 'Users' },
   { to: '/admin/sellers', end: false, Icon: FiBriefcase, label: 'Sellers' },
+  { to: '/admin/sellers/kyc', end: false, Icon: FiShield, label: 'KYC Verification' },
   { to: '/admin/products', end: false, Icon: FiPackage, label: 'Products' },
   { to: '/admin/orders', end: false, Icon: FiShoppingBag, label: 'Orders' },
   { to: '/admin/inventory', end: false, Icon: FiArchive, label: 'Inventory' },
@@ -45,16 +49,25 @@ const NAV_OPERATIONS = [
   { to: '/admin/returns', end: false, Icon: FiRotateCcw, label: 'Returns' },
   { to: '/admin/vendors', end: false, Icon: FiBox, label: 'Vendors' },
   { to: '/admin/vendor-approvals', end: false, Icon: FiUserCheck, label: 'Vendor Approvals' },
+  { to: '/admin/finance', end: false, Icon: FiDollarSign, label: 'Finance' },
+  { to: '/admin/settings?tab=commission', end: false, Icon: FiPercent, label: 'Commission Policy' },
+]
+const NAV_ECOSYSTEM = [
+  { to: '/admin/integrations', end: false, Icon: FiGlobe, label: 'Ecosystem Integrations' },
+  { to: '/partner/integrations', end: false, Icon: FiKey, label: 'Partner API Portal' },
+  { to: '/admin/developer-platform', end: false, Icon: FiCode, label: 'Developer Platform' },
+  { to: '/admin/event-system', end: false, Icon: FiRadio, label: 'Event System' },
 ]
 const NAV_ENTERPRISE = [
   { to: '/admin/godmode', end: false, Icon: FiCpu, label: 'God-Mode AI' },
-  { to: '/admin/finance', end: false, Icon: FiDollarSign, label: 'Finance' },
+  { to: '/admin/fraud-cases', end: false, Icon: FiShield, label: 'Risk & Fraud Cases' },
+  { to: '/admin/ai-bi', end: false, Icon: FiCpu, label: 'AI Decision Support' },
+  { to: '/admin/optimization', end: false, Icon: FiCpu, label: 'Self-Optimization' },
+  { to: '/admin/autonomy', end: false, Icon: FiCpu, label: 'Autonomous Economy' },
   { to: '/admin/analytics-bi', end: false, Icon: FiPieChart, label: 'BI & Analytics' },
   { to: '/admin/forecasting', end: false, Icon: FiTrendingUp, label: 'Forecasting' },
   { to: '/admin/workflows', end: false, Icon: FiZap, label: 'Workflows' },
   { to: '/admin/iam', end: false, Icon: FiShield, label: 'IAM & Security' },
-  { to: '/admin/developer-platform', end: false, Icon: FiCode, label: 'Developer Platform' },
-  { to: '/admin/event-system', end: false, Icon: FiRadio, label: 'Event System' },
 ]
 const NAV_SYSTEM = [{ to: '/admin/settings', end: false, Icon: FiSettings, label: 'Settings' }]
 
@@ -62,6 +75,7 @@ const NAV_ALL = [
   ...NAV_OVERVIEW,
   ...NAV_MANAGE,
   ...NAV_OPERATIONS,
+  ...NAV_ECOSYSTEM,
   ...NAV_ENTERPRISE,
   ...NAV_SYSTEM,
 ]
@@ -227,7 +241,24 @@ export default function AdminLayout() {
                 margin: 0,
               }}
             >
-              Enterprise
+              Ecosystem & APIs
+            </p>
+            {NAV_ECOSYSTEM.map(({ to, end, Icon, label }) => (
+              <SidebarLink key={to} to={to} end={end} Icon={Icon} label={label} badge={null} />
+            ))}
+
+            <p
+              style={{
+                fontSize: '0.62rem',
+                fontWeight: 700,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: GROUP_COLOR,
+                padding: '0.75rem 1.25rem 0.25rem',
+                margin: 0,
+              }}
+            >
+              Enterprise AI & Autonomy
             </p>
             {NAV_ENTERPRISE.map(({ to, end, Icon, label }) => (
               <SidebarLink key={to} to={to} end={end} Icon={Icon} label={label} badge={null} />

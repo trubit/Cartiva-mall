@@ -2,6 +2,7 @@ import { FiShield, FiLock } from 'react-icons/fi'
 import PriceBreakdown from '../PriceBreakdown/index.js'
 import CheckoutCouponBox from '../CouponBox/index.js'
 import { useCheckoutStore } from '../../../store/checkoutStore.js'
+import { useCurrency } from '../../../hooks/useCurrency.js'
 import { getImageUrl } from '../../../utils/image.js'
 
 interface PaymentSummaryProps {
@@ -10,6 +11,7 @@ interface PaymentSummaryProps {
 
 export default function PaymentSummary({ showCoupon = true }: PaymentSummaryProps) {
   const { session, step } = useCheckoutStore()
+  const { formatPrice } = useCurrency()
 
   if (!session) {
     return (
@@ -43,7 +45,7 @@ export default function PaymentSummary({ showCoupon = true }: PaymentSummaryProp
               <span className="payment-summary__item-title">{item.title}</span>
               <span className="payment-summary__item-sku">{item.sku}</span>
             </div>
-            <span className="payment-summary__item-total">${item.lineTotal.toFixed(2)}</span>
+            <span className="payment-summary__item-total">{formatPrice(item.lineTotal)}</span>
           </li>
         ))}
       </ul>

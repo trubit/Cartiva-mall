@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cartiva
+  labels:
+    app.kubernetes.io/name: cartiva
+    app.kubernetes.io/part-of: cartiva-mall
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted

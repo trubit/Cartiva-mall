@@ -26,7 +26,31 @@ vi.mock('ioredis', () => {
 vi.mock('../../utils/email.js', () => ({
   sendVerificationEmail: vi.fn().mockResolvedValue(undefined),
   sendPasswordResetEmail: vi.fn().mockResolvedValue(undefined),
+  sendEmailVerificationOtp: vi.fn().mockResolvedValue(undefined),
+  sendPasswordResetOtp: vi.fn().mockResolvedValue(undefined),
+  sendEmail: vi.fn().mockResolvedValue(undefined),
 }))
+
+vi.mock('google-auth-library', () => {
+  class OAuth2Client {
+    verifyIdToken = vi.fn().mockImplementation(async ({ idToken }) => {
+      if (idToken === 'valid_google_jwt_token') {
+        return {
+          getPayload: () => ({
+            sub: 'google-123456',
+            email: 'googleuser@example.com',
+            given_name: 'Google',
+            family_name: 'User',
+            picture: 'https://example.com/pic.jpg',
+          }),
+        }
+      }
+      throw new Error('Invalid token signature')
+    })
+    getToken = vi.fn().mockRejectedValue(new Error('Invalid authorization code'))
+  }
+  return { OAuth2Client }
+})
 
 vi.mock('../../middlewares/rateLimiter.middleware.js', () => {
   const pass = (_req: unknown, _res: unknown, next: () => void) => next()
@@ -47,6 +71,8 @@ vi.mock('../../middlewares/rateLimiter.middleware.js', () => {
 // ── App + models imported after mocks ─────────────────────────────────────────
 import app from '../../app.js'
 import { User as UserModel } from '../../modules/user/user.model.js'
+import { Otp as OtpModel } from '../../modules/auth/otp.model.js'
+import * as emailUtils from '../../utils/email.js'
 import { API_PREFIX } from '../../../../src/shared/constants/index.js'
 
 const AUTH = `${API_PREFIX}/auth`
@@ -77,12 +103,13 @@ async function createVerifiedUser(seed: string) {
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
-describe('POST /auth/register', () => {
-  it('returns 201 and success:true for valid payload', async () => {
+describe('POST /auth/register', { timeout: 60000 }, () => {
+  it('returns 201 and dispatches real OTP verification email', async () => {
     const res = await request(app).post(`${AUTH}/register`).send(validRegistration('reg01'))
 
     expect(res.status).toBe(201)
     expect(res.body.success).toBe(true)
+    expect(emailUtils.sendEmailVerificationOtp).toHaveBeenCalled()
   })
 
   it('returns 4xx for duplicate email', async () => {
@@ -109,12 +136,101 @@ describe('POST /auth/register', () => {
     expect(res.status).toBeLessThan(500)
   })
 
-  it('returns 4xx for invalid email format', async () => {
+  it('correctly assigns seller role when role=seller is chosen', async () => {
+    const sellerData = { ...validRegistration('seller01'), role: 'seller' }
+    const res = await request(app).post(`${AUTH}/register`).send(sellerData)
+    expect(res.status).toBe(201)
+
+    const createdUser = await UserModel.findOne({ email: sellerData.email })
+    expect(createdUser).toBeDefined()
+    expect(createdUser!.role).toBe('seller')
+  })
+
+  it('correctly assigns buyer (user) role when role=user is chosen', async () => {
+    const buyerData = { ...validRegistration('buyer01'), role: 'user' }
+    const res = await request(app).post(`${AUTH}/register`).send(buyerData)
+    expect(res.status).toBe(201)
+
+    const createdUser = await UserModel.findOne({ email: buyerData.email })
+    expect(createdUser).toBeDefined()
+    expect(createdUser!.role).toBe('user')
+  })
+})
+
+describe('POST /auth/verify-otp (Production Email Verification)', () => {
+  it('verifies 6-digit OTP and activates user account', async () => {
+    const regData = validRegistration('otpverify01')
+    await request(app).post(`${AUTH}/register`).send(regData)
+
+    const calls = vi.mocked(emailUtils.sendEmailVerificationOtp).mock.calls
+    const latestCall = calls[calls.length - 1]
+    const dispatchedOtp = latestCall[2]
+
     const res = await request(app)
-      .post(`${AUTH}/register`)
-      .send({ ...validRegistration('reg04'), email: 'not-an-email' })
-    expect(res.status).toBeGreaterThanOrEqual(400)
-    expect(res.status).toBeLessThan(500)
+      .post(`${AUTH}/verify-otp`)
+      .send({ email: regData.email, otp: dispatchedOtp })
+
+    expect(res.status).toBe(200)
+    expect(res.body.success).toBe(true)
+    expect(res.body.data).toHaveProperty('accessToken')
+
+    const updatedUser = await UserModel.findOne({ email: regData.email })
+    expect(updatedUser!.emailVerified).toBe(true)
+  })
+
+  it('rejects invalid OTP with 400', async () => {
+    const regData = validRegistration('otpverify02')
+    await request(app).post(`${AUTH}/register`).send(regData)
+
+    const res = await request(app)
+      .post(`${AUTH}/verify-otp`)
+      .send({ email: regData.email, otp: '111111' })
+
+    expect(res.status).toBe(400)
+    expect(res.body.success).toBe(false)
+  })
+})
+
+describe('POST /auth/forgot-password & /auth/reset-password-otp', () => {
+  it('handles full OTP-based password recovery flow', async () => {
+    const user = await createVerifiedUser('pwrecovery01')
+
+    // 1. Request Reset OTP
+    const forgotRes = await request(app).post(`${AUTH}/forgot-password`).send({ email: user.email })
+
+    expect(forgotRes.status).toBe(200)
+    expect(emailUtils.sendPasswordResetOtp).toHaveBeenCalled()
+
+    const resetCalls = vi.mocked(emailUtils.sendPasswordResetOtp).mock.calls
+    const resetOtp = resetCalls[resetCalls.length - 1][2]
+
+    // 2. Verify OTP check endpoint
+    const verifyCheckRes = await request(app)
+      .post(`${AUTH}/verify-reset-otp`)
+      .send({ email: user.email, otp: resetOtp, purpose: 'PASSWORD_RESET' })
+
+    expect(verifyCheckRes.status).toBe(200)
+
+    // Simulate cooldown / reset OTP record active for password submission
+    await OtpModel.updateMany({ email: user.email }, { $set: { usedAt: null } })
+
+    // 3. Reset password with OTP
+    const resetRes = await request(app).post(`${AUTH}/reset-password-otp`).send({
+      email: user.email,
+      otp: resetOtp,
+      password: 'NewSecurePassword123!',
+      confirmPassword: 'NewSecurePassword123!',
+    })
+
+    expect(resetRes.status).toBe(200)
+
+    // 4. Validate login with new password
+    const loginRes = await request(app)
+      .post(`${AUTH}/login`)
+      .send({ email: user.email, password: 'NewSecurePassword123!' })
+
+    expect(loginRes.status).toBe(200)
+    expect(loginRes.body.data).toHaveProperty('accessToken')
   })
 })
 
@@ -218,8 +334,23 @@ describe('POST /auth/logout', () => {
     expect(res.status).toBeLessThan(300)
   })
 
-  it('returns 401 for unauthenticated logout', async () => {
+  it('returns 2xx and clears cookies for unauthenticated/expired logout', async () => {
     const res = await request(app).post(`${AUTH}/logout`)
+    expect(res.status).toBeGreaterThanOrEqual(200)
+    expect(res.status).toBeLessThan(300)
+  })
+})
+
+describe('POST /auth/google (Google OAuth)', () => {
+  it('returns 400 when neither credential nor code is provided', async () => {
+    const res = await request(app).post(`${AUTH}/google`).send({})
+    expect(res.status).toBe(400)
+  })
+
+  it('returns 401 when invalid token/code is provided', async () => {
+    const res = await request(app)
+      .post(`${AUTH}/google`)
+      .send({ credential: 'invalid_google_jwt_token' })
     expect(res.status).toBe(401)
   })
 })

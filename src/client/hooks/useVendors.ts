@@ -108,6 +108,16 @@ export function useUploadDocument(vendorId: string) {
   })
 }
 
+export function useUploadDocumentFile(vendorId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (file: File) => vendorsService.uploadDocumentFile(vendorId, file),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['vendors', vendorId, 'documents'] })
+    },
+  })
+}
+
 // ─── Analytics & Score ────────────────────────────────────────────────────────
 
 export function useVendorAnalytics(vendorId: string) {

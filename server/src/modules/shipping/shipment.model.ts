@@ -1,13 +1,17 @@
 import mongoose, { type Document, type Types } from 'mongoose'
 
 export type ShipmentStatus =
-  | 'pending'
-  | 'picked_up'
-  | 'in_transit'
-  | 'out_for_delivery'
-  | 'delivered'
-  | 'failed'
-  | 'cancelled'
+  | 'CREATED'
+  | 'LABEL_CREATED'
+  | 'READY_FOR_PICKUP'
+  | 'PICKED_UP'
+  | 'IN_TRANSIT'
+  | 'OUT_FOR_DELIVERY'
+  | 'DELIVERED'
+  | 'DELIVERY_FAILED'
+  | 'RETURNING'
+  | 'RETURNED'
+  | 'CANCELLED'
 
 export interface IShipmentEvent {
   status: ShipmentStatus
@@ -17,6 +21,8 @@ export interface IShipmentEvent {
 }
 
 export interface IShipmentDocument extends Document {
+  shipmentId: string
+  fulfillmentId?: Types.ObjectId
   orderId: Types.ObjectId
   userId: Types.ObjectId
   sellerId?: Types.ObjectId
@@ -48,13 +54,17 @@ const shipmentEventSchema = new mongoose.Schema<IShipmentEvent>(
     status: {
       type: String,
       enum: [
-        'pending',
-        'picked_up',
-        'in_transit',
-        'out_for_delivery',
-        'delivered',
-        'failed',
-        'cancelled',
+        'CREATED',
+        'LABEL_CREATED',
+        'READY_FOR_PICKUP',
+        'PICKED_UP',
+        'IN_TRANSIT',
+        'OUT_FOR_DELIVERY',
+        'DELIVERED',
+        'DELIVERY_FAILED',
+        'RETURNING',
+        'RETURNED',
+        'CANCELLED',
       ],
       required: true,
     },
@@ -80,25 +90,31 @@ const addressSchema = new mongoose.Schema(
 
 const shipmentSchema = new mongoose.Schema<IShipmentDocument>(
   {
+    shipmentId: { type: String, required: true, unique: true, index: true },
+    fulfillmentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Fulfillment', index: true },
     orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', required: true, index: true },
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-    sellerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    sellerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true },
     status: {
       type: String,
       enum: [
-        'pending',
-        'picked_up',
-        'in_transit',
-        'out_for_delivery',
-        'delivered',
-        'failed',
-        'cancelled',
+        'CREATED',
+        'LABEL_CREATED',
+        'READY_FOR_PICKUP',
+        'PICKED_UP',
+        'IN_TRANSIT',
+        'OUT_FOR_DELIVERY',
+        'DELIVERED',
+        'DELIVERY_FAILED',
+        'RETURNING',
+        'RETURNED',
+        'CANCELLED',
       ],
-      default: 'pending',
+      default: 'CREATED',
       index: true,
     },
     carrier: { type: String, required: true, trim: true },
-    trackingNumber: { type: String, required: true, trim: true, unique: true },
+    trackingNumber: { type: String, required: true, trim: true, unique: true, index: true },
     trackingUrl: { type: String, trim: true },
     estimatedDelivery: { type: Date },
     deliveredAt: { type: Date },

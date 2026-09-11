@@ -16,18 +16,42 @@ router.use(authenticate)
 
 // ── Specific-prefix routes first (before :id to avoid param capture) ─────────
 router.get('/seller', authorize('seller', 'admin'), orderController.getSellerOrders)
+router.get('/admin', authorize('admin'), orderController.getAdminOrders)
+router.get(
+  '/admin/pending-physical-payments',
+  authorize('admin'),
+  orderController.getPendingPhysicalPayments,
+)
+router.post('/admin/:id/verify-payment', authorize('admin'), orderController.verifyPhysicalPayment)
+router.get('/number/:orderNumber', orderController.getOrderByNumber)
 
 // ── Core CRUD ─────────────────────────────────────────────────────────────────
 router.post('/', validate(createOrderSchema), orderController.createOrder)
 router.get('/', orderController.getMyOrders)
 router.get('/:id', orderController.getOrder)
+router.post('/:id/submit-payment-proof', orderController.submitPhysicalPaymentProof)
 
 // ── Sub-resource routes ───────────────────────────────────────────────────────
+router.get('/:id/history', orderController.getOrderHistory)
+router.get('/:id/items', orderController.getOrderItems)
 router.get('/:id/track', orderController.trackOrder)
+router.post('/:id/cancel', validate(cancelOrderSchema), orderController.cancelOrder)
 router.put('/:id/cancel', validate(cancelOrderSchema), orderController.cancelOrder)
 router.put(
   '/:id/status',
   authorize('seller', 'admin'),
+  validate(updateOrderStatusSchema),
+  orderController.updateOrderStatus,
+)
+router.patch(
+  '/:id/status',
+  authorize('seller', 'admin'),
+  validate(updateOrderStatusSchema),
+  orderController.updateOrderStatus,
+)
+router.patch(
+  '/admin/:id/status',
+  authorize('admin'),
   validate(updateOrderStatusSchema),
   orderController.updateOrderStatus,
 )

@@ -3,6 +3,8 @@ import { z } from 'zod'
 export const createOrderSchema = z.object({
   checkoutSessionId: z.string().min(1, 'Checkout session ID is required'),
   notes: z.string().max(500).optional(),
+  paymentMethodType: z.enum(['paystack', 'physical_bank_transfer']).optional().default('paystack'),
+  currency: z.string().max(10).optional(),
 })
 
 export const refundSchema = z.object({

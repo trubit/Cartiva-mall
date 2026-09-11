@@ -2,8 +2,10 @@ import { useState } from 'react'
 import { FiTag, FiX, FiCheck } from 'react-icons/fi'
 import { useApplyCoupon, useRemoveCoupon } from '../../../hooks/useCheckout.js'
 import { useCheckoutStore } from '../../../store/checkoutStore.js'
+import { useCurrency } from '../../../hooks/useCurrency.js'
 
 export default function CheckoutCouponBox() {
+  const { formatPrice } = useCurrency()
   const session = useCheckoutStore((s) => s.session)
   const couponError = useCheckoutStore((s) => s.couponError)
   const applyCoupon = useApplyCoupon()
@@ -28,7 +30,7 @@ export default function CheckoutCouponBox() {
         <FiCheck className="checkout-coupon__icon checkout-coupon__icon--success" size={16} />
         <div className="checkout-coupon__applied-info">
           <span className="checkout-coupon__code">{appliedCode}</span>
-          <span className="checkout-coupon__saving">–${discountAmount.toFixed(2)} off</span>
+          <span className="checkout-coupon__saving">–{formatPrice(discountAmount)} off</span>
         </div>
         <button
           className="checkout-coupon__remove"

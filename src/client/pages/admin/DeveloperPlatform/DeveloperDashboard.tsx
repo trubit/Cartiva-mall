@@ -152,14 +152,41 @@ export const DeveloperDashboard: React.FC = () => {
       </Box>
 
       {/* Navigation Tabs */}
-      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Tabs value={tabValue} onChange={(_e, v) => setTabValue(v)}>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <Tabs
+          value={tabValue}
+          onChange={(_e, v) => setTabValue(v)}
+          sx={{
+            '& .MuiTabs-indicator': {
+              height: 3,
+              borderRadius: '3px 3px 0 0',
+              backgroundColor: '#38bdf8',
+            },
+          }}
+        >
           <Tab
             id="dev-tab-0"
             aria-controls="dev-tabpanel-0"
             icon={<CodeIcon />}
             iconPosition="start"
             label="Applications"
+            sx={{
+              color: '#94a3b8',
+              fontWeight: 600,
+              fontSize: '0.925rem',
+              letterSpacing: '0.025em',
+              textTransform: 'uppercase',
+              px: 2.5,
+              py: 1.5,
+              minHeight: 48,
+              '&.Mui-selected': {
+                color: '#38bdf8',
+                fontWeight: 700,
+              },
+              '&:hover': {
+                color: '#ffffff',
+              },
+            }}
           />
           <Tab
             id="dev-tab-1"
@@ -167,6 +194,23 @@ export const DeveloperDashboard: React.FC = () => {
             icon={<KeyIcon />}
             iconPosition="start"
             label="API Keys"
+            sx={{
+              color: '#94a3b8',
+              fontWeight: 600,
+              fontSize: '0.925rem',
+              letterSpacing: '0.025em',
+              textTransform: 'uppercase',
+              px: 2.5,
+              py: 1.5,
+              minHeight: 48,
+              '&.Mui-selected': {
+                color: '#38bdf8',
+                fontWeight: 700,
+              },
+              '&:hover': {
+                color: '#ffffff',
+              },
+            }}
           />
           <Tab
             id="dev-tab-2"
@@ -174,6 +218,23 @@ export const DeveloperDashboard: React.FC = () => {
             icon={<WebhookIcon />}
             iconPosition="start"
             label="Webhooks"
+            sx={{
+              color: '#94a3b8',
+              fontWeight: 600,
+              fontSize: '0.925rem',
+              letterSpacing: '0.025em',
+              textTransform: 'uppercase',
+              px: 2.5,
+              py: 1.5,
+              minHeight: 48,
+              '&.Mui-selected': {
+                color: '#38bdf8',
+                fontWeight: 700,
+              },
+              '&:hover': {
+                color: '#ffffff',
+              },
+            }}
           />
           <Tab
             id="dev-tab-3"
@@ -181,6 +242,23 @@ export const DeveloperDashboard: React.FC = () => {
             icon={<IntegrationIcon />}
             iconPosition="start"
             label="Integrations"
+            sx={{
+              color: '#94a3b8',
+              fontWeight: 600,
+              fontSize: '0.925rem',
+              letterSpacing: '0.025em',
+              textTransform: 'uppercase',
+              px: 2.5,
+              py: 1.5,
+              minHeight: 48,
+              '&.Mui-selected': {
+                color: '#38bdf8',
+                fontWeight: 700,
+              },
+              '&:hover': {
+                color: '#ffffff',
+              },
+            }}
           />
           <Tab
             id="dev-tab-4"
@@ -188,6 +266,23 @@ export const DeveloperDashboard: React.FC = () => {
             icon={<DocsIcon />}
             iconPosition="start"
             label="API Specs & Docs"
+            sx={{
+              color: '#94a3b8',
+              fontWeight: 600,
+              fontSize: '0.925rem',
+              letterSpacing: '0.025em',
+              textTransform: 'uppercase',
+              px: 2.5,
+              py: 1.5,
+              minHeight: 48,
+              '&.Mui-selected': {
+                color: '#38bdf8',
+                fontWeight: 700,
+              },
+              '&:hover': {
+                color: '#ffffff',
+              },
+            }}
           />
         </Tabs>
       </Box>

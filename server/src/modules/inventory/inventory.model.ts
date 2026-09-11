@@ -3,9 +3,13 @@ import mongoose, { type Document, type Types } from 'mongoose'
 export interface IInventoryDocument extends Document {
   productId: Types.ObjectId
   warehouseId: Types.ObjectId
-  quantity: number
+  quantity: number // Physical on-hand quantity
+  availableQuantity: number
   reservedQuantity: number
+  soldQuantity: number
+  damagedQuantity: number
   lowStockThreshold: number
+  version: number
   createdAt: Date
   updatedAt: Date
 }
@@ -25,8 +29,12 @@ const inventorySchema = new mongoose.Schema<IInventoryDocument>(
       index: true,
     },
     quantity: { type: Number, required: true, default: 0, min: 0 },
+    availableQuantity: { type: Number, required: true, default: 0, min: 0 },
     reservedQuantity: { type: Number, default: 0, min: 0 },
+    soldQuantity: { type: Number, default: 0, min: 0 },
+    damagedQuantity: { type: Number, default: 0, min: 0 },
     lowStockThreshold: { type: Number, default: 10, min: 0 },
+    version: { type: Number, default: 1 },
   },
   { timestamps: true },
 )

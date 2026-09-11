@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { FiSearch, FiShield, FiShieldOff, FiStar } from 'react-icons/fi'
 import { useAdminSellers, useVerifySeller } from '../../../hooks/useAdmin.js'
 import { formatDate } from '../../../../shared/helpers/index.js'
@@ -29,9 +30,37 @@ export default function AdminSellers() {
 
   return (
     <>
-      <div className="admin-page-header">
-        <h1 className="admin-page-title">Sellers</h1>
-        <p className="admin-page-subtitle">Verify and manage marketplace sellers</p>
+      <div
+        className="admin-page-header"
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 12,
+        }}
+      >
+        <div>
+          <h1 className="admin-page-title">Sellers</h1>
+          <p className="admin-page-subtitle">Verify and manage marketplace sellers</p>
+        </div>
+        <Link
+          to="/admin/sellers/kyc"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            background: '#007185',
+            color: '#fff',
+            padding: '9px 16px',
+            borderRadius: 8,
+            textDecoration: 'none',
+            fontWeight: 600,
+            fontSize: '0.85rem',
+          }}
+        >
+          <FiShield /> Review KYC Verification Queue
+        </Link>
       </div>
 
       {/* Filter strip */}

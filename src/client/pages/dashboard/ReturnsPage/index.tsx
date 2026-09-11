@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { FiPackage } from 'react-icons/fi'
 import { useMyReturns } from '../../../hooks/useReturns.js'
-import type { ReturnStatus } from '../../../../shared/types/returns.types.js'
+import { useCurrency } from '../../../hooks/useCurrency.js'
+import type { IReturn, ReturnStatus } from '../../../../shared/types/returns.types.js'
 
 const STATUS_COLOR: Record<ReturnStatus, string> = {
   submitted: '#3182ce',
@@ -21,12 +22,14 @@ function StatusBadge({ status }: { status: ReturnStatus }) {
   return (
     <span
       style={{
-        padding: '3px 10px',
-        borderRadius: 12,
-        fontSize: 12,
-        fontWeight: 600,
-        background: color + '22',
+        backgroundColor: `${color}20`,
         color,
+        border: `1px solid ${color}40`,
+        borderRadius: 12,
+        padding: '2px 8px',
+        fontSize: 11,
+        fontWeight: 600,
+        textTransform: 'capitalize',
       }}
     >
       {label}
@@ -36,25 +39,35 @@ function StatusBadge({ status }: { status: ReturnStatus }) {
 
 export default function ReturnsPage() {
   const [page, setPage] = useState(1)
-  const { data, isPending } = useMyReturns(page)
-  const items = data?.items ?? []
+  const { data, isLoading } = useMyReturns(page)
+  const { formatPrice } = useCurrency()
+
+  if (isLoading) return <div style={{ padding: 24 }}>Loading returns...</div>
+
+  const returns: IReturn[] = data?.items ?? []
 
   return (
     <div style={{ maxWidth: 800, margin: '0 auto', padding: '24px 16px' }}>
-      <h1 style={{ margin: '0 0 20px', fontSize: 22, fontWeight: 700 }}>Returns & Refunds</h1>
+      <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>My Returns</h1>
+      <p style={{ color: 'var(--text-muted, #666)', fontSize: 13, marginBottom: 24 }}>
+        Track your return requests and refunds
+      </p>
 
-      {isPending && <p style={{ opacity: 0.5 }}>Loading…</p>}
-
-      {!isPending && items.length === 0 && (
-        <div style={{ textAlign: 'center', padding: 60, opacity: 0.4 }}>
-          <FiPackage size={48} />
-          <p style={{ marginTop: 12 }}>No return requests found.</p>
+      {returns.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '48px 0', opacity: 0.5 }}>
+          <FiPackage size={40} style={{ marginBottom: 8 }} />
+          <p>No return requests found.</p>
         </div>
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {items.map((r) => {
-          const orderRef = typeof r.orderId === 'string' ? r.orderId : r.orderId.orderNumber
+        {returns.map((r: IReturn) => {
+          const orderRef =
+            typeof r.orderId === 'object' && r.orderId !== null
+              ? ((r.orderId as { orderNumber?: string; _id?: string }).orderNumber ??
+                (r.orderId as { _id?: string })._id)
+              : String(r.orderId)
+
           return (
             <div
               key={r._id}
@@ -76,7 +89,7 @@ export default function ReturnsPage() {
               <p style={{ margin: 0, fontSize: 13, opacity: 0.7 }}>{r.description ?? r.reason}</p>
               {r.refundAmount != null && (
                 <p style={{ margin: '6px 0 0', fontSize: 13, fontWeight: 600, color: '#2ecc71' }}>
-                  Refund: ${r.refundAmount.toFixed(2)}
+                  Refund: {formatPrice(r.refundAmount)}
                 </p>
               )}
               <p style={{ margin: '4px 0 0', fontSize: 11, opacity: 0.4 }}>

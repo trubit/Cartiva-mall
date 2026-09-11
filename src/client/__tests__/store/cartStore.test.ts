@@ -3,7 +3,6 @@ import { useCartStore } from '../../store/cartStore.js'
 import type { IProduct } from '../../../shared/types/product.types.js'
 import { PRODUCT_CATEGORIES } from '../../../shared/constants/index.js'
 import {
-  TAX_RATE_CLIENT,
   FREE_SHIPPING_THRESHOLD_CLIENT,
   FLAT_SHIPPING_COST_CLIENT,
 } from '../../config/cart.constants.js'
@@ -179,10 +178,10 @@ describe('cartStore — guestTotals', () => {
     expect(totals.shippingCost).toBe(0)
   })
 
-  it('calculates tax at TAX_RATE_CLIENT applied to subtotal', () => {
+  it('calculates flat tax fee at FLAT_TAX_FEE_CLIENT for cart items', () => {
     useCartStore.getState().addGuestItem(makeProduct({ price: 100 }), 1)
     const { taxAmount } = useCartStore.getState().guestTotals()
-    expect(taxAmount).toBeCloseTo(100 * TAX_RATE_CLIENT, 2)
+    expect(taxAmount).toBe(0.022)
   })
 
   it('calculates grandTotal as subtotal + shipping + tax', () => {

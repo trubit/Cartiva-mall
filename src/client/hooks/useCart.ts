@@ -131,7 +131,7 @@ export const useCart = () => {
     guestTotals,
   } = useCartStore()
 
-  const { isLoading, isFetching, isError: cartFetchError } = useServerCart()
+  const { isLoading, isFetching, isError: cartFetchError, refetch } = useServerCart()
   const addMutation = useAddToCartMutation()
   const updateMutation = useUpdateCartItemMutation()
   const removeMutation = useRemoveFromCartMutation()
@@ -231,6 +231,7 @@ export const useCart = () => {
     removeFromCart,
     updateQuantity,
     clearCart,
+    refetch,
     // raw
     serverCart,
     guestItems,

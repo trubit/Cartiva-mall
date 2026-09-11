@@ -9,15 +9,24 @@ import type { IRefundRequest } from '../../shared/types/index.js'
 import { ORDER_KEY } from './useOrders.js'
 export { useMyOrders, useOrder, ORDER_KEY } from './useOrders.js'
 
-// Create order then navigate to Paystack payment page
+// Create order then navigate to Paystack / Bank transfer payment page
 export const useCreateOrder = () => {
   const setOrderData = usePaymentStore((s) => s.setOrderData)
   const checkoutReset = useCheckoutStore((s) => s.reset)
   const navigate = useNavigate()
 
   return useMutation({
-    mutationFn: ({ checkoutSessionId, notes }: { checkoutSessionId: string; notes?: string }) =>
-      orderService.createOrder(checkoutSessionId, notes),
+    mutationFn: ({
+      checkoutSessionId,
+      notes,
+      paymentMethodType,
+      currency,
+    }: {
+      checkoutSessionId: string
+      notes?: string
+      paymentMethodType?: string
+      currency?: string
+    }) => orderService.createOrder(checkoutSessionId, notes, paymentMethodType, currency),
     onSuccess: (data) => {
       setOrderData(data)
       checkoutReset()
@@ -52,22 +61,38 @@ export const usePaystackInitialize = () => {
   })
 }
 
+import { useCartStore } from '../store/cartStore.js'
+
 // Verify Paystack transaction after popup closes
-export const usePaystackVerify = () => {
+export const usePaystackVerify = (orderId?: string) => {
   const navigate = useNavigate()
   const setStep = usePaymentStore((s) => s.setStep)
+  const setOrder = usePaymentStore((s) => s.setOrder)
   const setError = usePaymentStore((s) => s.setError)
   const qc = useQueryClient()
 
   return useMutation({
-    mutationFn: (reference: string) => paymentService.paystackVerify(reference),
+    mutationFn: (reference: string) => paymentService.paystackVerify(reference, orderId),
     onMutate: () => {
       setStep('processing')
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
+      const verifiedOrderId =
+        data?._id || data?.orderId || orderId || usePaymentStore.getState().orderId
+      if (verifiedOrderId) {
+        qc.setQueryData([...ORDER_KEY, verifiedOrderId], data)
+        qc.invalidateQueries({ queryKey: [...ORDER_KEY, verifiedOrderId] })
+      }
       qc.invalidateQueries({ queryKey: ORDER_KEY })
-      const orderId = usePaymentStore.getState().orderId
-      navigate(orderId ? `/payment/success?orderId=${orderId}` : '/payment/success')
+      qc.invalidateQueries({ queryKey: ['cart'] })
+      useCartStore.getState().clearServerCart()
+      useCartStore.getState().clearGuestCart()
+      setOrder(data)
+      setStep('success')
+      navigate(
+        verifiedOrderId ? `/payment/success?orderId=${verifiedOrderId}` : '/payment/success',
+        { replace: true },
+      )
     },
     onError: (err: Error) => {
       setError(err.message)

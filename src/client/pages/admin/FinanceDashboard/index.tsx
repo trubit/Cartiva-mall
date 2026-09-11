@@ -23,16 +23,12 @@ import {
   useGenerateReport,
   useAccountingPeriods,
 } from '../../../hooks/useFinance.js'
+import { formatCurrency } from '../../../../shared/helpers/index.js'
 
-const fmt = (n: number) =>
-  new Intl.NumberFormat('en-NG', {
-    style: 'currency',
-    currency: 'NGN',
-    minimumFractionDigits: 0,
-  }).format(n)
+const fmt = (n: number) => formatCurrency(n)
 
 const fmtDate = (d: string) =>
-  new Date(d).toLocaleDateString('en-NG', { day: '2-digit', month: 'short', year: 'numeric' })
+  new Date(d).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })
 
 interface SummaryCard {
   label: string

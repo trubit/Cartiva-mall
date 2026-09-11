@@ -35,17 +35,17 @@ export default function AuthFormCard({ title, subtitle, wide, children }: AuthFo
         }}
       >
         &copy; {new Date().getFullYear()} Cartiva &nbsp;|&nbsp;
-        <a href="#" className="auth-link">
-          Privacy
-        </a>{' '}
+        <Link to="/privacy" className="auth-link">
+          Privacy Notice
+        </Link>{' '}
         &nbsp;|&nbsp;
-        <a href="#" className="auth-link">
-          Terms
-        </a>{' '}
+        <Link to="/conditions" className="auth-link">
+          Conditions of Use
+        </Link>{' '}
         &nbsp;|&nbsp;
-        <a href="#" className="auth-link">
+        <Link to="/help" className="auth-link">
           Help
-        </a>
+        </Link>
       </footer>
     </div>
   )

@@ -18,7 +18,8 @@ export const EVENT_SCORES: Record<BehaviorEventType, number> = {
 }
 
 export interface IUserBehaviorDocument extends Document {
-  userId: Types.ObjectId
+  userId?: Types.ObjectId
+  anonymousSessionId?: string
   eventType: BehaviorEventType
   productId?: Types.ObjectId
   category?: string
@@ -30,7 +31,8 @@ export interface IUserBehaviorDocument extends Document {
 
 const userBehaviorSchema = new mongoose.Schema<IUserBehaviorDocument>(
   {
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true },
+    anonymousSessionId: { type: String, index: true, trim: true },
     eventType: {
       type: String,
       enum: ['view', 'search', 'cart_add', 'cart_remove', 'wishlist_add', 'purchase'],

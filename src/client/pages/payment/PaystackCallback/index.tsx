@@ -1,10 +1,15 @@
 import { useEffect, useRef } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { paymentService } from '../../../services/paymentService.js'
+import { ORDER_KEY } from '../../../hooks/useOrders.js'
+import { useCartStore } from '../../../store/cartStore.js'
+import { usePaymentStore } from '../../../store/paymentStore.js'
 
 export default function PaystackCallback() {
   const [params] = useSearchParams()
   const navigate = useNavigate()
+  const qc = useQueryClient()
   const calledRef = useRef(false)
 
   useEffect(() => {
@@ -20,14 +25,29 @@ export default function PaystackCallback() {
     }
 
     paymentService
-      .paystackVerify(reference)
-      .then(() =>
-        navigate(orderId ? `/payment/success?orderId=${orderId}` : '/payment/success', {
-          replace: true,
-        }),
-      )
+      .paystackVerify(reference, orderId ?? undefined)
+      .then((data: any) => {
+        const verifiedOrderId = data?._id || data?.orderId || orderId
+        if (verifiedOrderId) {
+          qc.setQueryData([...ORDER_KEY, verifiedOrderId], data)
+          qc.invalidateQueries({ queryKey: [...ORDER_KEY, verifiedOrderId] })
+        }
+        qc.invalidateQueries({ queryKey: ORDER_KEY })
+        qc.invalidateQueries({ queryKey: ['cart'] })
+        useCartStore.getState().clearServerCart()
+        useCartStore.getState().clearGuestCart()
+        usePaymentStore.getState().setOrder(data)
+        usePaymentStore.getState().setStep('success')
+
+        navigate(
+          verifiedOrderId ? `/payment/success?orderId=${verifiedOrderId}` : '/payment/success',
+          {
+            replace: true,
+          },
+        )
+      })
       .catch(() => navigate('/payment/failed', { replace: true }))
-  }, [params, navigate])
+  }, [params, navigate, qc])
 
   return (
     <div

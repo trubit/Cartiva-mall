@@ -17,6 +17,108 @@
           t = 'dark'
         }
         document.documentElement.setAttribute('data-theme', t || 'dark')
+
+        // Defensive guard for 3rd-party extension/VM PerformanceObserver script exceptions
+        function isIgnorableExtensionError(msg, err) {
+          var str = ''
+          if (msg) str += ' ' + String(msg)
+          if (err) {
+            if (err.message) str += ' ' + String(err.message)
+            if (err.stack) str += ' ' + String(err.stack)
+          }
+          return (
+            str.indexOf("reading 'startTime'") !== -1 ||
+            str.indexOf('startTime') !== -1 ||
+            str.indexOf('reportAllChanges') !== -1
+          )
+        }
+
+        // Layer 1: PerformanceObserver prototype sanitizer to prevent undefined entries in reportAllChanges
+        if (typeof window !== 'undefined' && typeof window.PerformanceObserver !== 'undefined') {
+          try {
+            var OriginalPerformanceObserver = window.PerformanceObserver
+            window.PerformanceObserver = function (callback) {
+              var safeCallback = function (entryList, observer) {
+                try {
+                  if (entryList) {
+                    if (typeof entryList.getEntries === 'function') {
+                      var origEntries = entryList.getEntries
+                      entryList.getEntries = function () {
+                        var res = origEntries.call(entryList)
+                        if (!Array.isArray(res)) return []
+                        return res.filter(function (e) {
+                          return e && typeof e === 'object' && typeof e.startTime === 'number'
+                        })
+                      }
+                    }
+                    if (typeof entryList.getEntriesByType === 'function') {
+                      var origByType = entryList.getEntriesByType
+                      entryList.getEntriesByType = function (type) {
+                        var res = origByType.call(entryList, type)
+                        if (!Array.isArray(res)) return []
+                        return res.filter(function (e) {
+                          return e && typeof e === 'object' && typeof e.startTime === 'number'
+                        })
+                      }
+                    }
+                  }
+                  return callback(entryList, observer)
+                } catch (cbErr) {
+                  if (isIgnorableExtensionError('', cbErr)) {
+                    return
+                  }
+                  throw cbErr
+                }
+              }
+              return new OriginalPerformanceObserver(safeCallback)
+            }
+            window.PerformanceObserver.prototype = OriginalPerformanceObserver.prototype
+            if (OriginalPerformanceObserver.supportedEntryTypes) {
+              window.PerformanceObserver.supportedEntryTypes =
+                OriginalPerformanceObserver.supportedEntryTypes
+            }
+          } catch (poErr) {
+            // Ignore if PerformanceObserver is sealed
+          }
+        }
+
+        // Layer 2: Console error filter for anonymous VM reportAllChanges race conditions
+        if (typeof console !== 'undefined' && typeof console.error === 'function') {
+          var originalConsoleError = console.error
+          console.error = function () {
+            var first = arguments[0]
+            if (first && isIgnorableExtensionError(first)) {
+              return
+            }
+            return originalConsoleError.apply(console, arguments)
+          }
+        }
+
+        // Layer 3: Synchronous window error & rejection listeners
+        window.onerror = function (msg, source, lineno, colno, error) {
+          if (isIgnorableExtensionError(msg, error)) {
+            return true
+          }
+        }
+
+        window.addEventListener(
+          'error',
+          function (e) {
+            if (e && isIgnorableExtensionError(e.message, e.error)) {
+              e.preventDefault()
+              e.stopImmediatePropagation()
+            }
+          },
+          true,
+        )
+
+        window.addEventListener('unhandledrejection', function (e) {
+          var reason = e && (e.reason || e)
+          if (reason && isIgnorableExtensionError(reason.message || String(reason), reason)) {
+            e.preventDefault()
+            e.stopImmediatePropagation()
+          }
+        })
       })()
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -25,6 +127,7 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
   </head>
   <body>
     <div id="root"></div>

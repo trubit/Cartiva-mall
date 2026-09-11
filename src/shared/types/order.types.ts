@@ -60,6 +60,13 @@ export interface IOrderItem {
   selectedColor?: string
 }
 
+export interface ISellerBankDetails {
+  bankName: string
+  accountName: string
+  accountNumber: string
+  bankCode?: string
+}
+
 // ─── Full order ───────────────────────────────────────────────────────────────
 export interface IOrder {
   _id: string
@@ -77,9 +84,27 @@ export interface IOrder {
   taxAmount: number
   grandTotal: number
   couponCode?: string
+  currency: string
+  exchangeRateUsed?: number
+  exchangeRateSource?: string
+  exchangeRateTimestamp?: string
+  originalCurrency?: string
+  originalAmount?: number
   paymentStatus: OrderPaymentStatus
   orderStatus: OrderStatus
   paymentIntentId?: string
+  paymentMethodType?: 'paystack' | 'physical_bank_transfer'
+  paymentReviewStatus?: 'unsubmitted' | 'under_review' | 'verified' | 'rejected'
+  sellerBankDetails?: ISellerBankDetails
+  paymentProof?: {
+    reference: string
+    amount: number
+    bankName?: string
+    senderName?: string
+    proofUrl?: string
+    submittedAt: string
+    notes?: string
+  }
   notes?: string
   tracking?: IOrderTracking
   returnRequest?: IReturnRequest

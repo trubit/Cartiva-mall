@@ -1,4 +1,4 @@
-import {
+﻿import {
   AreaChart,
   Area,
   XAxis,
@@ -13,7 +13,7 @@ import {
   Cell,
   Legend,
 } from 'recharts'
-import { formatCurrency } from '../../../../shared/helpers/index.js'
+import { useCurrency } from '../../../hooks/useCurrency.js'
 import type { IRevenueByDay } from '../../../../shared/types/index.js'
 
 const ORDER_STATUS_COLORS: Record<string, string> = {
@@ -36,6 +36,7 @@ interface RevenueAreaProps {
 }
 
 export function RevenueAreaChart({ data, loading, height = 220 }: RevenueAreaProps) {
+  const { formatPrice } = useCurrency()
   if (loading) {
     return <div className="skeleton" style={{ height, borderRadius: 8 }} />
   }
@@ -68,7 +69,7 @@ export function RevenueAreaChart({ data, loading, height = 220 }: RevenueAreaPro
         <XAxis dataKey="_id" tick={{ fontSize: 10 }} tickFormatter={(v: string) => v.slice(5)} />
         <YAxis tick={{ fontSize: 10 }} tickFormatter={(v: number) => `$${v}`} width={58} />
         <Tooltip
-          formatter={(v) => [formatCurrency(Number(v) || 0), 'Revenue']}
+          formatter={(v) => [formatPrice(Number(v) || 0), 'Revenue']}
           labelFormatter={(l) => `Date: ${String(l)}`}
         />
         <Area
@@ -154,6 +155,7 @@ interface RevenueBarProps {
 }
 
 export function RevenueBarChart({ data, loading, height = 220 }: RevenueBarProps) {
+  const { formatPrice } = useCurrency()
   if (loading) return <div className="skeleton" style={{ height, borderRadius: 8 }} />
   if (data.length === 0) {
     return (
@@ -177,7 +179,7 @@ export function RevenueBarChart({ data, loading, height = 220 }: RevenueBarProps
         <CartesianGrid strokeDasharray="3 3" stroke="var(--color-neutral-200,#e5e7eb)" />
         <XAxis dataKey="_id" tick={{ fontSize: 10 }} />
         <YAxis tick={{ fontSize: 10 }} tickFormatter={(v: number) => `$${v}`} width={58} />
-        <Tooltip formatter={(v) => [formatCurrency(Number(v) || 0), 'Revenue']} />
+        <Tooltip formatter={(v) => [formatPrice(Number(v) || 0), 'Revenue']} />
         <Bar dataKey="revenue" fill="#007185" radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>

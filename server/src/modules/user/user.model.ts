@@ -25,7 +25,9 @@ export interface IUserDocument extends Document {
   lastName: string
   username: string
   email: string
-  password: string
+  password?: string
+  googleId?: string
+  authProvider?: 'local' | 'google' | 'facebook'
   phoneNumber?: string
   bio?: string
   gender?: 'male' | 'female' | 'other' | 'prefer_not_to_say'
@@ -37,6 +39,9 @@ export interface IUserDocument extends Document {
   preferences: Record<string, unknown>
   notificationSettings: INotificationSettingsDoc
   role: UserRole
+  accountStatus: 'ACTIVE' | 'RESTRICTED' | 'BLOCKED' | 'SUSPENDED'
+  restrictionReason?: string
+  restrictedAt?: Date
   emailVerified: boolean
   emailVerificationToken?: string
   emailVerificationExpires?: Date
@@ -86,7 +91,9 @@ const userSchema = new mongoose.Schema<IUserDocument>(
       maxlength: 30,
     },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    password: { type: String, required: true, select: false, minlength: 8 },
+    password: { type: String, select: false, minlength: 8 },
+    googleId: { type: String, sparse: true, index: true },
+    authProvider: { type: String, enum: ['local', 'google', 'facebook'], default: 'local' },
     phoneNumber: { type: String, trim: true },
     bio: { type: String, trim: true, maxlength: 500 },
     gender: { type: String, enum: ['male', 'female', 'other', 'prefer_not_to_say'] },
@@ -98,6 +105,14 @@ const userSchema = new mongoose.Schema<IUserDocument>(
     preferences: { type: mongoose.Schema.Types.Mixed, default: {} },
     notificationSettings: { type: notificationSchema, default: () => ({}) },
     role: { type: String, enum: Object.values(ROLES), default: ROLES.USER },
+    accountStatus: {
+      type: String,
+      enum: ['ACTIVE', 'RESTRICTED', 'BLOCKED', 'SUSPENDED'],
+      default: 'ACTIVE',
+      index: true,
+    },
+    restrictionReason: { type: String, trim: true },
+    restrictedAt: { type: Date },
     emailVerified: { type: Boolean, default: false },
     emailVerificationToken: { type: String, select: false },
     emailVerificationExpires: { type: Date, select: false },
@@ -133,7 +148,7 @@ userSchema.index({ email: 'text', username: 'text', firstName: 'text', lastName:
 // Still requires ~2^10 = 1024 iterations — more than sufficient against offline attacks.
 // Native bcrypt offloads to the libuv thread pool so the event loop stays free.
 userSchema.pre('save', async function () {
-  if (!this.isModified('password')) return
+  if (!this.password || !this.isModified('password')) return
   this.password = await bcrypt.hash(this.password, 10)
 })
 

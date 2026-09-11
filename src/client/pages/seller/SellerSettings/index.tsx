@@ -31,6 +31,8 @@ export default function SellerSettings() {
 
   const [storeName, setStoreName] = useState('')
   const [storeDescription, setStoreDescription] = useState('')
+  const [whatsappNumber, setWhatsappNumber] = useState('')
+  const [publicLocation, setPublicLocation] = useState('')
   const [storeAddress, setStoreAddress] = useState(INITIAL_ADDR)
 
   useEffect(() => {
@@ -38,6 +40,8 @@ export default function SellerSettings() {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setStoreName(profile.storeName)
       setStoreDescription(profile.storeDescription)
+      setWhatsappNumber((profile as any).whatsappNumber ?? '')
+      setPublicLocation((profile as any).publicLocation ?? '')
       setStoreAddress({
         country: profile.storeAddress.country ?? '',
         state: profile.storeAddress.state ?? '',
@@ -53,9 +57,9 @@ export default function SellerSettings() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const payload = { storeName, storeDescription, storeAddress }
+    const payload = { storeName, storeDescription, whatsappNumber, publicLocation, storeAddress }
     if (!profile) {
-      onboard({ storeName, storeDescription, storeAddress })
+      onboard(payload)
     } else {
       update(payload)
     }
@@ -173,6 +177,28 @@ export default function SellerSettings() {
                     value={storeName}
                     onChange={(e) => setStoreName(e.target.value)}
                     placeholder="e.g. My Awesome Store"
+                  />
+                </Form.Group>
+              </Col>
+
+              <Col xs={12} md={6}>
+                <Form.Group controlId="ss-whatsapp">
+                  <Form.Label>WhatsApp Number for Buyers</Form.Label>
+                  <Form.Control
+                    value={whatsappNumber}
+                    onChange={(e) => setWhatsappNumber(e.target.value)}
+                    placeholder="e.g. +2348012345678"
+                  />
+                </Form.Group>
+              </Col>
+
+              <Col xs={12} md={6}>
+                <Form.Group controlId="ss-location">
+                  <Form.Label>Public Business Location</Form.Label>
+                  <Form.Control
+                    value={publicLocation}
+                    onChange={(e) => setPublicLocation(e.target.value)}
+                    placeholder="e.g. Ikeja, Lagos State, Nigeria"
                   />
                 </Form.Group>
               </Col>

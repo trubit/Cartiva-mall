@@ -20,13 +20,15 @@ import {
   FiArrowRight,
 } from 'react-icons/fi'
 import { useAdminStats } from '../../../hooks/useAdmin.js'
-import { formatCurrency, formatDate } from '../../../../shared/helpers/index.js'
+import { formatDate } from '../../../../shared/helpers/index.js'
+import { useCurrency } from '../../../hooks/useCurrency.js'
 
 interface RecentOrder {
   _id: string
   orderNumber: string
   orderStatus: string
   grandTotal: number
+  currency?: string
   createdAt: string
   userId?: { firstName: string; lastName: string }
 }
@@ -43,6 +45,7 @@ const ORDER_STATUS_COLORS: Record<string, string> = {
 
 export default function AdminDashboard() {
   const { data: res, isLoading, error } = useAdminStats()
+  const { formatPrice } = useCurrency()
   const stats = res?.data
 
   if (isLoading)
@@ -110,7 +113,9 @@ export default function AdminDashboard() {
             <FiDollarSign />
           </div>
           <div className="admin-stat-body">
-            <span className="admin-stat-value">{formatCurrency(stats.revenue.total)}</span>
+            <span className="admin-stat-value" title={formatPrice(stats.revenue.total)}>
+              {formatPrice(stats.revenue.total)}
+            </span>
             <span className="admin-stat-label">Total Revenue</span>
             <p className="admin-stat-sub">From paid orders</p>
           </div>
@@ -181,7 +186,7 @@ export default function AdminDashboard() {
                 <XAxis dataKey="_id" tick={{ fontSize: 10 }} tickFormatter={(v) => v.slice(5)} />
                 <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `$${v}`} width={55} />
                 <Tooltip
-                  formatter={(v) => [formatCurrency(Number(v) || 0), 'Revenue']}
+                  formatter={(v) => [formatPrice(Number(v) || 0), 'Revenue']}
                   labelFormatter={(l) => `Date: ${l}`}
                 />
                 <Area
@@ -269,7 +274,9 @@ export default function AdminDashboard() {
                         {order.orderStatus}
                       </span>
                     </td>
-                    <td style={{ fontWeight: 600 }}>{formatCurrency(order.grandTotal)}</td>
+                    <td style={{ fontWeight: 600 }}>
+                      {formatPrice(order.grandTotal, order.currency)}
+                    </td>
                   </tr>
                 ))
               )}

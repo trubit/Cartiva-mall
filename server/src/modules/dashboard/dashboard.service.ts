@@ -86,7 +86,7 @@ export const getWishlist = async (userId: string) => {
   const wishlist = await Wishlist.findOne({ userId }).populate({
     path: 'items.productId',
     select: 'title images price discountPrice ratingsAverage ratingsCount status slug',
-    match: { status: 'active', isActive: true },
+    match: { status: { $in: ['PUBLISHED', 'active', 'APPROVED'] } },
   })
 
   if (!wishlist) return { items: [], total: 0 }
@@ -133,7 +133,7 @@ export const moveWishlistToCart = async (userId: string, productId: string) => {
   const inWishlist = wishlist.items.some((i) => i.productId.toString() === productId)
   if (!inWishlist) throw new AppError('Product not in wishlist', 404)
 
-  const cart = await addToCart(userId, { productId, quantity: 1 })
+  const cart = await addToCart(userId, undefined, { productId, quantity: 1 })
 
   await Wishlist.findOneAndUpdate({ userId }, { $pull: { items: { productId: oid } } })
 
@@ -237,7 +237,10 @@ export const getRecentProducts = async (userId: string) => {
   if (recent.length === 0) return []
 
   const ids = recent.slice(0, MAX_RECENT).map((r) => r.productId)
-  const products = await Product.find({ _id: { $in: ids }, status: 'active', isActive: true })
+  const products = await Product.find({
+    _id: { $in: ids },
+    status: { $in: ['PUBLISHED', 'active', 'APPROVED'] },
+  })
     .select('title images price discountPrice ratingsAverage ratingsCount status')
     .limit(MAX_RECENT)
 

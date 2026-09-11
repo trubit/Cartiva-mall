@@ -31,7 +31,7 @@ export const paymentService = {
       .then(unwrap<PaystackInitResponse>)
   },
 
-  paystackVerify(reference: string): Promise<void> {
-    return api.post('/payment/paystack/verify', { reference }).then(() => undefined)
+  paystackVerify(reference: string, orderId?: string): Promise<any> {
+    return api.post('/payment/paystack/verify', { reference, orderId }).then(unwrap<any>)
   },
 }

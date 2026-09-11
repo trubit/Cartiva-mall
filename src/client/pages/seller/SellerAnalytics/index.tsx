@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { FiDollarSign, FiShoppingBag, FiTrendingUp, FiAlertCircle } from 'react-icons/fi'
 import { useSellerAnalytics } from '../../../hooks/useSeller.js'
+import { useCurrency } from '../../../hooks/useCurrency.js'
 import SellerStatsCard from '../../../components/seller/SellerStatsCard/index.js'
 import { RevenueAreaChart, OrderStatusPie } from '../../../components/seller/RevenueChart/index.js'
-import { formatCurrency } from '../../../../shared/helpers/index.js'
 
 const PERIODS: { label: string; days: number }[] = [
   { label: '7 days', days: 7 },
@@ -11,11 +11,13 @@ const PERIODS: { label: string; days: number }[] = [
   { label: '90 days', days: 90 },
 ]
 
-const PLACEHOLDER = 'https://placehold.co/40x40/eee/999?text=P'
+const PLACEHOLDER =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' fill='%23f1f5f9'/%3E%3Cpath d='M12 26l4-5 4 4 5-6 5 7H12z' fill='%2394a3b8'/%3E%3Ccircle cx='16' cy='15' r='2' fill='%2394a3b8'/%3E%3C/svg%3E"
 
 export default function SellerAnalytics() {
   const [days, setDays] = useState(30)
   const { data, isLoading, isError } = useSellerAnalytics(days)
+  const { formatPrice: formatCurrency } = useCurrency()
 
   return (
     <div className="container section sl-page">

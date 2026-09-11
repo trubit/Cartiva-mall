@@ -1,6 +1,7 @@
-import { FiPackage, FiRefreshCw } from 'react-icons/fi'
+﻿import { FiPackage, FiRefreshCw } from 'react-icons/fi'
 import { OrderStatusBadge, PaymentStatusBadge } from '../../order/OrderStatus/index.js'
-import { formatCurrency, formatDate } from '../../../../shared/helpers/index.js'
+import { formatDate } from '../../../../shared/helpers/index.js'
+import { useCurrency } from '../../../hooks/useCurrency.js'
 import type { IOrder } from '../../../../shared/types/index.js'
 
 interface OrderTableProps {
@@ -16,6 +17,7 @@ export default function OrderTable({
   onUpdate,
   compact = false,
 }: OrderTableProps) {
+  const { formatPrice } = useCurrency()
   if (loading) {
     return (
       <div className="d-flex flex-column gap-2">
@@ -64,7 +66,7 @@ export default function OrderTable({
                 </td>
               )}
               <td>
-                <span className="so-total">{formatCurrency(o.grandTotal)}</span>
+                <span className="so-total">{formatPrice(o.grandTotal, o.currency)}</span>
               </td>
               <td>
                 <OrderStatusBadge status={o.orderStatus} showIcon size="sm" />

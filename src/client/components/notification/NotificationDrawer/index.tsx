@@ -131,8 +131,13 @@ function NotifItem({
 }
 
 export default function NotificationDrawer({ open, onClose }: Props) {
-  const { listQuery, markRead, markAllRead, deleteNotification } = useNotifications()
-  const items = listQuery.data?.items ?? []
+  const { listQuery, markRead, markAllRead, deleteNotification } = useNotifications(1, {
+    enabled: open,
+  })
+  const rawData = listQuery.data
+  const items: INotification[] = Array.isArray(rawData)
+    ? rawData
+    : ((rawData as any)?.items ?? (rawData as any)?.notifications ?? [])
 
   useEffect(() => {
     if (!open) return

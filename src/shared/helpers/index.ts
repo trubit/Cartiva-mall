@@ -1,7 +1,71 @@
 import { DEFAULT_CURRENCY } from '../constants/index.js'
+import {
+  formatMoney,
+  Money,
+  moneyAdd,
+  moneySub,
+  moneyMul,
+  moneyDiv,
+  roundMoney,
+  toMinorUnits,
+  fromMinorUnits,
+} from '../utils/money.js'
+import { SUPPORTED_CURRENCIES, DEFAULT_BASE_CURRENCY } from '../constants/currencies.js'
 
-export const formatCurrency = (amount: number, currency = DEFAULT_CURRENCY): string =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount)
+export const formatCurrency = (
+  amount: number,
+  fromCurrency = DEFAULT_BASE_CURRENCY,
+  targetCurrency?: string,
+): string => {
+  let to = targetCurrency
+  let rates: Record<string, number> = {}
+
+  if (!to && typeof globalThis !== 'undefined' && 'localStorage' in globalThis) {
+    try {
+      const storage = (
+        globalThis as unknown as { localStorage?: { getItem: (k: string) => string | null } }
+      ).localStorage
+      const stored = storage?.getItem('cartiva-currency')
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        const storedCode = parsed?.state?.currentCurrency
+        if (typeof storedCode === 'string' && storedCode) {
+          to = storedCode
+          rates = parsed.state?.rates || {}
+        }
+      }
+    } catch {
+      // Ignore localStorage read/parse failures and fall back to default
+    }
+  }
+
+  const from = (fromCurrency || DEFAULT_BASE_CURRENCY).toUpperCase()
+  const target = (to || DEFAULT_CURRENCY).toUpperCase()
+
+  if (from === target || isNaN(amount) || !isFinite(amount)) {
+    return formatMoney(roundMoney(amount, target), target)
+  }
+
+  const fromRate = rates[from] ?? 1.0
+  const toRate = rates[target] ?? 1.0
+  const crossRate = toRate / fromRate
+  const converted = roundMoney(Money.from(amount).multiply(crossRate).toNumber(), target)
+  return formatMoney(converted, target)
+}
+
+export {
+  formatMoney,
+  Money,
+  moneyAdd,
+  moneySub,
+  moneyMul,
+  moneyDiv,
+  roundMoney,
+  toMinorUnits,
+  fromMinorUnits,
+  SUPPORTED_CURRENCIES,
+  DEFAULT_BASE_CURRENCY,
+}
 
 export const formatDate = (date: string | Date, options?: Intl.DateTimeFormatOptions): string => {
   const hasComponents =

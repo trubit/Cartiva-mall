@@ -10,18 +10,26 @@ import type {
 } from '../../../../src/shared/validators/checkout.validators.js'
 import type { ShippingMethod } from '../../../../src/shared/types/checkout.types.js'
 import { SHIPPING_OPTIONS, CHECKOUT_SESSION_TTL_MS } from '../../config/checkout.config.js'
-import { TAX_RATE } from '../../config/cart.config.js'
+import { FLAT_TAX_FEE } from '../../config/cart.config.js'
+
+import { getAuthoritativeShippingFee } from '../shipping/shippingConfig.service.js'
+import { Money, roundMoney } from '../../../../src/shared/utils/money.js'
 
 const uid = (id: string) => new mongoose.Types.ObjectId(id)
 const r2 = (n: number) => Math.round(n * 100) / 100
 
 // ─── Recalculate pricing ──────────────────────────────────────────────────────
-const recalcPricing = (session: ICheckoutDocument, discountAmount: number): void => {
+const recalcPricing = async (session: ICheckoutDocument, discountAmount: number): Promise<void> => {
   const subtotal = session.items.reduce((s, i) => s + i.lineTotal, 0)
   const afterDisc = Math.max(0, r2(subtotal) - r2(discountAmount))
-  const shippingFee = r2(SHIPPING_OPTIONS[session.shippingMethod]?.cost ?? 5.99)
-  const taxAmount = r2(afterDisc * TAX_RATE)
-  const grandTotal = r2(afterDisc + shippingFee + taxAmount)
+
+  // Authoritative admin-controlled fixed shipping fee (USD baseline in session)
+  const shippingFee = await getAuthoritativeShippingFee('USD')
+  const taxAmount = subtotal === 0 ? 0 : FLAT_TAX_FEE
+  const grandTotal = roundMoney(
+    Money.from(afterDisc).add(shippingFee).add(taxAmount).toNumber(),
+    'USD',
+  )
 
   session.pricing = {
     subtotal: r2(subtotal),
@@ -68,6 +76,7 @@ export const getOrCreateCheckout = async (userId: string): Promise<ICheckoutDocu
   // Validate every item is still available + in stock
   const snapshotItems: ICheckoutDocument['items'] = []
   for (const item of cart.items) {
+    if (!item.productId) continue
     const product = item.productId as unknown as {
       _id: mongoose.Types.ObjectId
       title: string
@@ -76,17 +85,17 @@ export const getOrCreateCheckout = async (userId: string): Promise<ICheckoutDocu
       discountPrice?: number
       stockQuantity: number
       sku: string
-      status: string
-      isActive: boolean
+      status?: string
+      isActive?: boolean
     }
-    if (product.status !== 'active' || !product.isActive)
-      throw new AppError(`"${product.title}" is no longer available`, 400)
-    if (product.stockQuantity < item.quantity)
-      throw new AppError(
-        `"${product.title}" only has ${product.stockQuantity} unit(s) in stock`,
-        400,
-      )
+    if (!product || !product.title) continue
 
+    const isAvailable =
+      product.isActive !== false &&
+      (!product.status || ['active', 'PUBLISHED', 'APPROVED'].includes(product.status))
+    if (!isAvailable) continue
+
+    const qty = Math.min(item.quantity, Math.max(1, product.stockQuantity || 1))
     const effectivePrice =
       product.discountPrice && product.discountPrice < product.price
         ? product.discountPrice
@@ -96,12 +105,14 @@ export const getOrCreateCheckout = async (userId: string): Promise<ICheckoutDocu
       productId: product._id,
       title: product.title,
       image: product.images?.[0],
-      sku: product.sku,
-      quantity: item.quantity,
+      sku: product.sku || 'SKU-ITEM',
+      quantity: qty,
       itemPrice: effectivePrice,
-      lineTotal: r2(effectivePrice * item.quantity),
+      lineTotal: r2(effectivePrice * qty),
     })
   }
+
+  if (snapshotItems.length === 0) throw new AppError('Your cart is empty', 400)
 
   const session = new Checkout({
     userId: uid(userId),
@@ -115,7 +126,7 @@ export const getOrCreateCheckout = async (userId: string): Promise<ICheckoutDocu
   // Re-apply coupon if cart had one
   const discountAmt = cart.discountAmount ?? 0
   if (cart.couponCode) session.couponCode = cart.couponCode
-  recalcPricing(session, discountAmt)
+  await recalcPricing(session, discountAmt)
   await session.save()
   return session
 }
@@ -133,6 +144,7 @@ export const updateCheckout = async (
     ? (input.shippingAddress as ICheckoutDocument['billingAddress'])
     : ((input.billingAddress as ICheckoutDocument['billingAddress']) ?? null)
 
+  await recalcPricing(session, session.pricing.discountAmount)
   await session.save()
   return session
 }
@@ -145,7 +157,7 @@ export const selectShipping = async (
   const session = await getActiveSession(userId)
 
   session.shippingMethod = input.method as ShippingMethod
-  recalcPricing(session, session.pricing.discountAmount)
+  await recalcPricing(session, session.pricing.discountAmount)
   await session.save()
   return session
 }
@@ -195,7 +207,7 @@ export const applyCoupon = async (
     discount = r2(coupon.maxDiscountAmount)
 
   session.couponCode = coupon.code
-  recalcPricing(session, discount)
+  await recalcPricing(session, discount)
   try {
     await session.save()
   } catch (err) {
@@ -212,7 +224,7 @@ export const applyCoupon = async (
 export const removeCoupon = async (userId: string): Promise<ICheckoutDocument> => {
   const session = await getActiveSession(userId)
   session.couponCode = undefined
-  recalcPricing(session, 0)
+  await recalcPricing(session, 0)
   await session.save()
   return session
 }

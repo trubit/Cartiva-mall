@@ -64,6 +64,29 @@ export const uploadImagePath = (
       }),
   )
 
+export const uploadDocumentPath = (
+  filePath: string,
+  folder = 'cartiva/documents',
+  extraOptions: UploadApiOptions = {},
+): Promise<CloudinaryUploadResult> =>
+  callCloudinaryUpload(
+    () =>
+      new Promise((resolve, reject) => {
+        const options: UploadApiOptions = {
+          folder,
+          overwrite: true,
+          resource_type: 'auto',
+          ...extraOptions,
+        }
+        const stream = cloudinary.uploader.upload_stream(options, (error, result) => {
+          fs.unlink(filePath, () => {})
+          if (error || !result) return reject(error ?? new Error('Cloudinary upload failed'))
+          resolve({ url: result.secure_url, publicId: result.public_id })
+        })
+        fs.createReadStream(filePath).pipe(stream)
+      }),
+  )
+
 export const deleteImage = (publicId: string): Promise<void> =>
   callCloudinaryDelete(() => cloudinary.uploader.destroy(publicId).then(() => undefined))
 

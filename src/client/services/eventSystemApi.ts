@@ -45,11 +45,6 @@ export const getSagaById = async (id: string) => {
   return res.data
 }
 
-export const triggerOrderSagaDemo = async () => {
-  const res = await api.post('/event-system/sagas/trigger-demo')
-  return res.data
-}
-
 export const getEventSystemHealth = async () => {
   const res = await api.get('/event-system/health')
   return res.data

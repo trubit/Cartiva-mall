@@ -8,6 +8,10 @@ import {
   getQuestions,
   addQuestion,
   addAnswer,
+  getSellerReviews,
+  getSellerReputationScore,
+  getModerationQueue,
+  moderateReview,
 } from './review.service.js'
 import { sendSuccess, sendCreated, sendNoContent } from '../../utils/response.js'
 import { ROLES } from '../../../../src/shared/constants/index.js'
@@ -118,6 +122,68 @@ export const createAnswer = async (
       req.body.answer as string,
     )
     sendCreated(res, q, 'Answer submitted')
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const sellerReviews = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const page = parseInt((req.query.page as string) ?? '1', 10)
+    const limit = parseInt((req.query.limit as string) ?? '10', 10)
+    const result = await getSellerReviews(req.params['sellerId'] as string, page, limit)
+    sendSuccess(res, result.reviews, 'Seller reviews fetched', 200, result.pagination)
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const sellerReputationScore = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const score = await getSellerReputationScore(req.params['sellerId'] as string)
+    sendSuccess(res, score, 'Seller reputation score fetched')
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const moderationQueue = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const status = req.query.status as string | undefined
+    const page = parseInt((req.query.page as string) ?? '1', 10)
+    const limit = parseInt((req.query.limit as string) ?? '20', 10)
+    const result = await getModerationQueue(status, page, limit)
+    sendSuccess(res, result.reviews, 'Moderation queue fetched', 200, result.pagination)
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const handleModerateReview = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const { status, moderatorNotes } = req.body as { status: string; moderatorNotes?: string }
+    const updated = await moderateReview(
+      req.params['id'] as string,
+      status as never,
+      moderatorNotes,
+    )
+    sendSuccess(res, updated, 'Review moderated successfully')
   } catch (err) {
     next(err)
   }

@@ -87,5 +87,86 @@ export interface ISellerEarnings {
   lastMonthRevenue: number
   pendingBalance: number
   availableBalance: number
+  withdrawnTotal?: number
+  inFlightWithdrawals?: number
+  settledRevenue?: number
+  currency?: string
   revenueByMonth: { _id: string; revenue: number; orders: number }[]
+}
+
+export interface ISellerPayoutAccount {
+  _id: string
+  sellerId: string
+  accountType: 'bank_account'
+  bankName: string
+  bankCode: string
+  accountNumber: string
+  accountName: string
+  recipientCode?: string
+  currency: string
+  isDefault: boolean
+  isVerified: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export type SellerWithdrawalStatus =
+  | 'pending'
+  | 'processing'
+  | 'completed'
+  | 'failed'
+  | 'cancelled'
+  | 'reversed'
+
+export interface ISellerWithdrawal {
+  _id: string
+  withdrawalNumber: string
+  sellerId: string
+  amount: number
+  fee: number
+  netAmount: number
+  currency: string
+  status: SellerWithdrawalStatus
+  payoutMethod: 'paystack' | 'stripe' | 'manual'
+  payoutAccount: {
+    bankName: string
+    bankCode: string
+    accountNumber: string
+    accountName: string
+    recipientCode?: string
+  }
+  providerReference?: string
+  providerTransferCode?: string
+  failureReason?: string
+  requestedAt: string
+  processedAt?: string
+  completedAt?: string
+  auditLog?: Array<{
+    status: string
+    note?: string
+    timestamp: string
+  }>
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ISellerLedgerEntry {
+  _id: string
+  sellerId: string
+  type:
+    | 'ORDER_SALE'
+    | 'COMMISSION_DEDUCTION'
+    | 'ORDER_REFUND'
+    | 'EARNING_RELEASE'
+    | 'WITHDRAWAL_RESERVE'
+    | 'WITHDRAWAL_SETTLED'
+    | 'WITHDRAWAL_REVERSED'
+    | 'ADJUSTMENT'
+  amount: number
+  currency: string
+  balanceAfter: number
+  referenceType: 'order' | 'withdrawal' | 'refund' | 'admin_adjustment'
+  referenceId: string
+  description: string
+  createdAt: string
 }

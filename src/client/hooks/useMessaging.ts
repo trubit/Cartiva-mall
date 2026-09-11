@@ -1,44 +1,108 @@
 import { useCallback, useEffect, useRef } from 'react'
-import { useQuery, useMutation } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { messagingService } from '../services/messagingService'
 import { useMessagingStore } from '../store/messagingStore'
+import { useAuthStore } from '../store/authStore.js'
 import { getSocket } from '../services/socketService'
 import type { IMessage } from '../../shared/types/messaging.types.js'
 
+export const CONVERSATIONS_KEY = ['conversations'] as const
+export const UNREAD_MESSAGES_KEY = ['unread-messages-count'] as const
+
 export const useConversations = () => {
-  const setConversations = useMessagingStore((s) => s.setConversations)
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
   return useQuery({
-    queryKey: ['conversations'],
+    queryKey: CONVERSATIONS_KEY,
     queryFn: async () => {
       const res = await messagingService.listConversations()
-      setConversations(res.data.data.items)
-      return res.data.data
+      const data = res.data?.data ?? { items: [], total: 0, unreadTotal: 0 }
+      useMessagingStore.getState().setConversations(data.items ?? [])
+      return data
+    },
+    enabled: isAuthenticated,
+    staleTime: 30_000,
+    retry: (failureCount, error: any) => {
+      if (error?.response?.status === 401) return false
+      return failureCount < 2
+    },
+  })
+}
+
+export const useUnreadMessagesCount = () => {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+
+  return useQuery({
+    queryKey: UNREAD_MESSAGES_KEY,
+    queryFn: async () => {
+      const res = await messagingService.getUnreadCount()
+      const counts = res.data?.data ?? { unreadConversations: 0 }
+      useMessagingStore.getState().setUnreadTotal(counts.unreadConversations)
+      return counts
+    },
+    enabled: isAuthenticated,
+    staleTime: 30_000,
+    refetchInterval: isAuthenticated ? 60_000 : false,
+    retry: (failureCount, error: any) => {
+      if (error?.response?.status === 401) return false
+      return failureCount < 2
+    },
+  })
+}
+
+export const useStartConversation = () => {
+  const qc = useQueryClient()
+  const addConversation = useMessagingStore((s) => s.addConversation)
+
+  return useMutation({
+    mutationFn: (data: {
+      recipientId: string
+      productId?: string
+      orderId?: string
+      subject?: string
+    }) => messagingService.startConversation(data.recipientId, data),
+    onSuccess: (res) => {
+      if (res.data?.data) {
+        addConversation(res.data.data)
+      }
+      qc.invalidateQueries({ queryKey: CONVERSATIONS_KEY })
+      qc.invalidateQueries({ queryKey: UNREAD_MESSAGES_KEY })
     },
   })
 }
 
 export const useMessages = (conversationId: string) => {
-  const setMessages = useMessagingStore((s) => s.setMessages)
+  const qc = useQueryClient()
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const addMessage = useMessagingStore((s) => s.addMessage)
   const updateMessage = useMessagingStore((s) => s.updateMessage)
   const setTyping = useMessagingStore((s) => s.setTyping)
-  const setActiveConversation = useMessagingStore((s) => s.setActiveConversation)
 
   useEffect(() => {
-    if (!conversationId) return
+    if (!conversationId || !isAuthenticated) return
     const s = getSocket()
-    setActiveConversation(conversationId)
+    useMessagingStore.getState().setActiveConversation(conversationId)
     s.emit('join:conversation', conversationId)
 
-    const onNew = (msg: IMessage) => {
-      if (msg.conversationId === conversationId) addMessage(msg)
+    const onNew = (payload: any) => {
+      const msg: IMessage = payload?.message ?? payload
+      if (String(msg?.conversationId) === String(conversationId)) {
+        addMessage(msg)
+        qc.invalidateQueries({ queryKey: CONVERSATIONS_KEY })
+        qc.invalidateQueries({ queryKey: UNREAD_MESSAGES_KEY })
+      }
     }
-    const onEdit = (msg: IMessage) => {
-      if (msg.conversationId === conversationId) updateMessage(msg)
+    const onEdit = (payload: any) => {
+      const msg: IMessage = payload?.message ?? payload
+      if (String(msg?.conversationId) === String(conversationId)) {
+        updateMessage(msg)
+      }
     }
-    const onDelete = (msg: IMessage) => {
-      if (msg.conversationId === conversationId) updateMessage(msg)
+    const onDelete = (payload: any) => {
+      const msg: IMessage = payload?.message ?? payload
+      if (String(msg?.conversationId) === String(conversationId)) {
+        updateMessage(msg)
+      }
     }
     const onTypingStart = ({ userId }: { userId: string }) =>
       setTyping(conversationId, userId, true)
@@ -53,33 +117,46 @@ export const useMessages = (conversationId: string) => {
 
     return () => {
       s.emit('leave:conversation', conversationId)
-      setActiveConversation(null)
+      useMessagingStore.getState().setActiveConversation(null)
       s.off('message:new', onNew)
       s.off('message:edited', onEdit)
       s.off('message:deleted', onDelete)
       s.off('typing:start', onTypingStart)
       s.off('typing:stop', onTypingStop)
     }
-  }, [conversationId, addMessage, updateMessage, setTyping, setActiveConversation])
+  }, [conversationId, isAuthenticated, addMessage, updateMessage, setTyping, qc])
 
   return useQuery({
     queryKey: ['messages', conversationId],
     queryFn: async () => {
       const res = await messagingService.getMessages(conversationId)
-      setMessages(conversationId, res.data.data.items)
-      return res.data.data
+      const items = res.data?.data?.items ?? []
+      useMessagingStore.getState().setMessages(conversationId, items)
+      return res.data?.data ?? { items: [], total: 0 }
     },
-    enabled: !!conversationId,
+    enabled: !!conversationId && isAuthenticated,
+    staleTime: 10_000,
+    retry: (failureCount, error: any) => {
+      if (error?.response?.status === 401) return false
+      return failureCount < 2
+    },
   })
 }
 
 export const useSendMessage = () => {
+  const qc = useQueryClient()
   const addMessage = useMessagingStore((s) => s.addMessage)
 
   return useMutation({
     mutationFn: ({ conversationId, content }: { conversationId: string; content: string }) =>
       messagingService.sendMessage(conversationId, content),
-    onSuccess: (res) => addMessage(res.data.data),
+    onSuccess: (res) => {
+      if (res.data?.data) {
+        addMessage(res.data.data)
+      }
+      qc.invalidateQueries({ queryKey: CONVERSATIONS_KEY })
+      qc.invalidateQueries({ queryKey: UNREAD_MESSAGES_KEY })
+    },
   })
 }
 

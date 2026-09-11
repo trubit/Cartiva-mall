@@ -13,8 +13,9 @@ import {
 } from 'react-icons/fi'
 import { useProfile } from '../../../hooks/useProfile.js'
 import { useMyOrders } from '../../../hooks/usePayment.js'
+import { useCurrency } from '../../../hooks/useCurrency.js'
 import ProfileCard from '../../../components/profile/ProfileCard/index.js'
-import { formatCurrency, formatDate } from '../../../../shared/helpers/index.js'
+import { formatDate } from '../../../../shared/helpers/index.js'
 import type { OrderStatus, OrderPaymentStatus } from '../../../../shared/types/index.js'
 
 const ORDER_STATUS_ICON: Record<OrderStatus, React.ReactNode> = {
@@ -51,6 +52,7 @@ const PAYMENT_CLS: Record<OrderPaymentStatus, string> = {
 export default function ProfilePage() {
   const { data: user, isLoading: profileLoading, error } = useProfile()
   const { data: ordersData, isLoading: ordersLoading } = useMyOrders()
+  const { formatPrice } = useCurrency()
 
   const orders = ordersData?.orders ?? []
   const recentOrders = orders.slice(0, 3)
@@ -77,9 +79,9 @@ export default function ProfilePage() {
   const memberSince = formatDate(user.createdAt, { year: 'numeric', month: 'long' })
 
   return (
-    <>
-      {/* Stats bar */}
-      <div className="profile-stats">
+    <div>
+      {/* Overview stats */}
+      <div className="profile-stats-grid">
         <div className="profile-stat">
           <div className="profile-stat__icon profile-stat__icon--orders">
             <FiShoppingBag size={20} />
@@ -94,7 +96,7 @@ export default function ProfilePage() {
             <FiDollarSign size={20} />
           </div>
           <div className="profile-stat__body">
-            <span className="profile-stat__value">{formatCurrency(totalSpent)}</span>
+            <span className="profile-stat__value">{formatPrice(totalSpent)}</span>
             <span className="profile-stat__label">Total Spent</span>
           </div>
         </div>
@@ -109,45 +111,36 @@ export default function ProfilePage() {
         </div>
       </div>
 
+      {/* Account Overview */}
       <ProfileCard user={user} />
 
       {/* Recent Orders */}
       <div className="profile-card">
-        <div
-          className="profile-card-header"
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
-        >
+        <div className="profile-card-header">
           <h2 className="profile-section-title">
             <FiPackage /> Recent Orders
           </h2>
-          <Link to="/orders" className="profile-view-all">
-            View all <FiArrowRight size={13} />
-          </Link>
+          {orders.length > 0 && (
+            <Link to="/orders" className="profile-link">
+              View all ({totalOrders}) <FiArrowRight size={14} />
+            </Link>
+          )}
         </div>
 
-        {ordersLoading && (
-          <div className="profile-orders-loading">
-            {[1, 2].map((i) => (
-              <div key={i} className="profile-skeleton" style={{ height: 72, borderRadius: 10 }} />
-            ))}
-          </div>
-        )}
-
-        {!ordersLoading && recentOrders.length === 0 && (
-          <div className="profile-orders-empty">
-            <FiPackage size={32} style={{ color: 'var(--color-neutral-300)' }} />
-            <p>No orders yet.</p>
-            <Link to="/products" className="btn btn-primary" style={{ marginTop: 4 }}>
+        {ordersLoading ? (
+          <div className="profile-skeleton" style={{ height: 100, borderRadius: 8 }} />
+        ) : recentOrders.length === 0 ? (
+          <div className="profile-empty">
+            <FiShoppingBag size={32} />
+            <p>No orders yet</p>
+            <Link to="/products" className="profile-btn profile-btn--sm">
               Start Shopping
             </Link>
           </div>
-        )}
-
-        {!ordersLoading && recentOrders.length > 0 && (
-          <ul className="profile-orders-list">
+        ) : (
+          <ul className="profile-order-list">
             {recentOrders.map((order) => (
               <li key={order._id} className="profile-order-row">
-                {/* Thumbnail stack */}
                 <div className="profile-order-thumbs">
                   {order.items.slice(0, 2).map((item, i) =>
                     item.image ? (
@@ -189,7 +182,9 @@ export default function ProfilePage() {
                 </span>
 
                 {/* Total */}
-                <span className="profile-order-total">{formatCurrency(order.grandTotal)}</span>
+                <span className="profile-order-total">
+                  {formatPrice(order.grandTotal, order.currency)}
+                </span>
               </li>
             ))}
           </ul>
@@ -221,6 +216,6 @@ export default function ProfilePage() {
           </div>
         )}
       </div>
-    </>
+    </div>
   )
 }

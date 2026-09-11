@@ -14,12 +14,18 @@ export default function PaymentPage() {
   const { data: fetchedOrder, isLoading } = useOrder(orderId ?? '')
 
   useEffect(() => {
-    if (fetchedOrder) setOrder(fetchedOrder)
-  }, [fetchedOrder, setOrder])
+    if (fetchedOrder) {
+      setOrder(fetchedOrder)
+      if (fetchedOrder.paymentStatus === 'paid') {
+        navigate(`/payment/success?orderId=${orderId}`, { replace: true })
+      }
+    }
+  }, [fetchedOrder, orderId, navigate, setOrder])
 
   if (!orderId) return <Navigate to="/checkout" replace />
 
   const displayAmount = fetchedOrder?.grandTotal ?? amount ?? 0
+  const displayCurrency = fetchedOrder?.currency ?? currency ?? 'USD'
 
   return (
     <div className="payment-page">
@@ -39,14 +45,18 @@ export default function PaymentPage() {
                 <p>Loading payment details…</p>
               </div>
             ) : (
-              <PaystackPayment orderId={orderId} amount={displayAmount} />
+              <PaystackPayment
+                orderId={orderId}
+                amount={displayAmount}
+                currency={displayCurrency}
+              />
             )}
           </main>
 
           <OrderSummaryPanel
             order={fetchedOrder ?? order ?? undefined}
             amount={displayAmount}
-            currency={currency}
+            currency={displayCurrency}
             orderNumber={
               fetchedOrder?.orderNumber ?? usePaymentStore.getState().orderNumber ?? undefined
             }

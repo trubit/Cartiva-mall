@@ -7,6 +7,7 @@ import {
   useRequestPayout,
 } from '../../../hooks/useVendors.js'
 import type { IVendorPayout, PayoutMethod } from '../../../../shared/types/vendors.types.js'
+import { formatCurrency } from '../../../../shared/helpers/index.js'
 
 const STATUS_PILL: Record<string, string> = {
   pending: 'status-pill status-pill--pending',
@@ -27,7 +28,7 @@ function PayoutRow({ p }: { p: IVendorPayout }) {
   return (
     <tr>
       <td>{new Date(p.createdAt).toLocaleDateString()}</td>
-      <td style={{ fontWeight: 600 }}>${p.amount.toFixed(2)}</td>
+      <td style={{ fontWeight: 600 }}>{formatCurrency(p.amount, p.currency)}</td>
       <td style={{ textTransform: 'capitalize' }}>{p.method.replace('_', ' ')}</td>
       <td>
         <span className={STATUS_PILL[p.status] ?? 'status-pill'}>{p.status}</span>
@@ -109,7 +110,7 @@ export default function PayoutDashboard() {
       <div className="sl-stats-grid" style={{ gridTemplateColumns: '1fr', maxWidth: 320 }}>
         <div className="sl-stat-card">
           <div className="sl-stat-card__body">
-            <span className="sl-stat-card__value">${totalEarnings.toFixed(2)}</span>
+            <span className="sl-stat-card__value">{formatCurrency(totalEarnings)}</span>
             <span className="sl-stat-card__label">Total Lifetime Earnings</span>
           </div>
         </div>

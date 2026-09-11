@@ -78,7 +78,14 @@ export const ApiKeyManager: React.FC = () => {
         <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
           API Key Management
         </Typography>
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpenModal(true)}>
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={(e) => {
+            e.currentTarget.blur()
+            setOpenModal(true)
+          }}
+        >
           Generate New API Key
         </Button>
       </Box>
@@ -112,7 +119,12 @@ export const ApiKeyManager: React.FC = () => {
       <TableContainer component={Paper} variant="outlined">
         <Table>
           <TableHead>
-            <TableRow sx={{ bgcolor: '#f8fafc' }}>
+            <TableRow
+              sx={{
+                bgcolor: '#f1f5f9',
+                '& .MuiTableCell-head': { fontWeight: 700, fontSize: '0.875rem', color: '#0f172a' },
+              }}
+            >
               <TableCell>Name / Prefix</TableCell>
               <TableCell>Environment</TableCell>
               <TableCell>Scopes</TableCell>

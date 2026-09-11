@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { FiEdit3, FiTrash2, FiPlus } from 'react-icons/fi'
-import { formatCurrency } from '../../../../shared/helpers/index.js'
+import { useCurrency } from '../../../hooks/useCurrency.js'
 import type { IProduct } from '../../../../shared/types/index.js'
 
 interface ProductTableProps {
@@ -11,7 +11,8 @@ interface ProductTableProps {
   compact?: boolean
 }
 
-const PLACEHOLDER = 'https://placehold.co/44x44/eee/999?text=img'
+const PLACEHOLDER =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Crect width='44' height='44' fill='%23f1f5f9'/%3E%3Cpath d='M14 28l5-6 4 5 5-7 6 8H14z' fill='%2394a3b8'/%3E%3Ccircle cx='18' cy='17' r='2' fill='%2394a3b8'/%3E%3C/svg%3E"
 
 function StockBadge({ qty }: { qty: number }) {
   const color =
@@ -44,6 +45,7 @@ export default function ProductTable({
   deletingId,
   compact = false,
 }: ProductTableProps) {
+  const { formatPrice } = useCurrency()
   if (loading) {
     return (
       <div className="d-flex flex-column gap-2">
@@ -120,7 +122,7 @@ export default function ProductTable({
                 </td>
               )}
               <td style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
-                {formatCurrency(p.discountPrice ?? p.price)}
+                {formatPrice(p.discountPrice ?? p.price)}
                 {p.discountPrice && (
                   <span
                     style={{
@@ -130,7 +132,7 @@ export default function ProductTable({
                       marginLeft: 5,
                     }}
                   >
-                    {formatCurrency(p.price)}
+                    {formatPrice(p.price)}
                   </span>
                 )}
               </td>

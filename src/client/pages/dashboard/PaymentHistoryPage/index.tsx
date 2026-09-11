@@ -1,11 +1,9 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FiCreditCard } from 'react-icons/fi'
 import { usePaymentHistory } from '../../../hooks/useDashboard.js'
 import LoadingSpinner from '../../../components/ui/LoadingSpinner.js'
-
-const formatCurrency = (n: number) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n)
+import { useCurrency } from '../../../hooks/useCurrency.js'
 
 const formatDate = (iso: string) =>
   new Date(iso).toLocaleDateString('en-US', {
@@ -19,6 +17,7 @@ const PAGE_LIMIT = 20
 export default function PaymentHistoryPage() {
   const [page, setPage] = useState(1)
   const { data, isLoading } = usePaymentHistory({ page, limit: PAGE_LIMIT })
+  const { formatPrice } = useCurrency()
 
   const payments = data?.data.payments ?? []
   const total = data?.data.total ?? 0
@@ -80,7 +79,7 @@ export default function PaymentHistoryPage() {
                       </td>
                       <td style={{ textTransform: 'capitalize' }}>{p.paymentMethod}</td>
                       <td style={{ fontVariantNumeric: 'tabular-nums' }}>
-                        {formatCurrency(p.amount / 100)}
+                        {formatPrice(p.amount, p.currency)}
                       </td>
                       <td>
                         <span className={`payment-status-badge payment-status-badge--${p.status}`}>

@@ -1,13 +1,12 @@
 import { Link } from 'react-router-dom'
 import { FiEye } from 'react-icons/fi'
 import { useRecentlyViewed } from '../../../hooks/useDashboard.js'
+import { useCurrency } from '../../../hooks/useCurrency.js'
 import LoadingSpinner from '../../../components/ui/LoadingSpinner.js'
-
-const formatCurrency = (n: number) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n)
 
 export default function RecentlyViewedPage() {
   const { data: products, isLoading } = useRecentlyViewed()
+  const { formatPrice: formatCurrency } = useCurrency()
 
   if (isLoading) return <LoadingSpinner />
 

@@ -1,12 +1,17 @@
 import mongoose, { type Document, type Types } from 'mongoose'
 
+export type ReviewStatus = 'PENDING' | 'PUBLISHED' | 'REJECTED' | 'HIDDEN' | 'FLAGGED' | 'DELETED'
+
 export interface IReviewDocument extends Document {
   productId: Types.ObjectId
+  sellerId?: Types.ObjectId
   userId: Types.ObjectId
+  orderId?: Types.ObjectId
   rating: number
   title?: string
   body: string
   isVerified: boolean
+  status: ReviewStatus
   helpfulVotes: Types.ObjectId[]
   reportedBy: Types.ObjectId[]
   sellerReply?: string
@@ -23,11 +28,19 @@ const reviewSchema = new mongoose.Schema<IReviewDocument>(
       required: true,
       index: true,
     },
+    sellerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Seller', index: true },
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+    orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', index: true },
     rating: { type: Number, required: true, min: 1, max: 5 },
     title: { type: String, trim: true, maxlength: 120 },
     body: { type: String, required: true, trim: true, minlength: 10, maxlength: 2000 },
     isVerified: { type: Boolean, default: false },
+    status: {
+      type: String,
+      enum: ['PENDING', 'PUBLISHED', 'REJECTED', 'HIDDEN', 'FLAGGED', 'DELETED'],
+      default: 'PUBLISHED',
+      index: true,
+    },
     helpfulVotes: { type: [mongoose.Schema.Types.ObjectId], ref: 'User', default: [] },
     reportedBy: { type: [mongoose.Schema.Types.ObjectId], ref: 'User', default: [] },
     sellerReply: { type: String, trim: true, maxlength: 2000 },

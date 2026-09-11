@@ -1,4 +1,13 @@
-export type NotificationType = 'order' | 'system' | 'promotion' | 'wishlist' | 'security'
+export type NotificationType =
+  | 'order'
+  | 'system'
+  | 'promotion'
+  | 'wishlist'
+  | 'security'
+  | 'message'
+  | 'payment'
+  | 'shipping'
+  | 'inventory'
 
 export interface INotification {
   _id: string

@@ -39,23 +39,28 @@ function TrackSkeleton() {
 
 export default function TrackOrder() {
   const { id } = useParams<{ id: string }>()
+  const isValidId = Boolean(id) && id !== ':id' && /^[0-9a-fA-F]{24}$/.test(id!)
 
   const { data: trackData, isLoading: trackLoading, isError: trackError } = useTrackOrder(id ?? '')
   const { data: order, isLoading: orderLoading } = useOrder(id ?? '')
 
   if (trackLoading || orderLoading) return <TrackSkeleton />
 
-  if (trackError || !trackData) {
+  if (!isValidId || trackError || !trackData) {
     return (
       <div className="container to-error-wrap">
         <div className="to-error-card">
           <FiAlertCircle size={44} className="to-error-icon" />
-          <h2 className="to-error-title">Tracking unavailable</h2>
+          <h2 className="to-error-title">
+            {!isValidId ? 'Invalid Order Link' : 'Tracking unavailable'}
+          </h2>
           <p className="to-error-text">
-            We couldn't load tracking information for this order. Please try again later.
+            {!isValidId
+              ? 'The URL contains a placeholder route parameter (:id). Please select an order from your history below to view its tracking details.'
+              : "We couldn't load tracking information for this order. Please try again later."}
           </p>
           <Link to="/orders" className="to-btn to-btn--primary">
-            <FiArrowLeft size={14} /> Back to Orders
+            <FiArrowLeft size={14} /> View Your Orders
           </Link>
         </div>
       </div>

@@ -1,11 +1,50 @@
 import { v4 as uuidv4 } from 'uuid'
 import { Shipment, type ShipmentStatus } from './shipment.model.js'
+import { Fulfillment } from './fulfillment.model.js'
+import { CarrierAdapter } from './carrierAdapter.js'
 import { Order } from '../order/order.model.js'
 import { AppError } from '../../middlewares/error.middleware.js'
 import { notificationService } from '../notification/notification.service.js'
 import { emitToUser } from '../../sockets/index.js'
+import { eventBus } from '../event-bus/eventBus.service.js'
 
 export const shippingService = {
+  // ─── Create Fulfillment Record ──────────────────────────────────────────────
+  async createFulfillment(
+    orderId: string,
+    sellerId: string,
+    items: { productId: string; title: string; quantity: number; sku?: string }[],
+    shippingAddress: {
+      fullName: string
+      phone: string
+      street: string
+      city: string
+      state: string
+      country: string
+      postalCode: string
+    },
+    warehouseId?: string,
+  ) {
+    const order = await Order.findById(orderId)
+    if (!order) throw new AppError('Order not found', 404)
+
+    const fulfillmentId = `FUL-${uuidv4().replace(/-/g, '').slice(0, 10).toUpperCase()}`
+
+    const fulfillment = await Fulfillment.create({
+      fulfillmentId,
+      orderId,
+      userId: order.userId,
+      sellerId,
+      warehouseId,
+      status: 'PENDING',
+      items,
+      shippingAddress,
+    })
+
+    return fulfillment
+  },
+
+  // ─── Create Shipment ────────────────────────────────────────────────────────
   async createShipment(
     orderId: string,
     userId: string,
@@ -15,6 +54,7 @@ export const shippingService = {
       shippingCost?: number
       weight?: number
       sellerId?: string
+      fulfillmentId?: string
     },
   ) {
     const order = await Order.findById(orderId)
@@ -26,33 +66,45 @@ export const shippingService = {
     const existing = await Shipment.findOne({ orderId } as object)
     if (existing) throw new AppError('Shipment already exists for this order', 409)
 
-    const trackingNumber = `TRK-${uuidv4().replace(/-/g, '').slice(0, 12).toUpperCase()}`
+    const carrierDetails = CarrierAdapter.createShipmentLabel(input.carrier)
+    const shipmentId = `SHP-${uuidv4().replace(/-/g, '').slice(0, 10).toUpperCase()}`
 
     const shipment = await Shipment.create({
+      shipmentId,
+      fulfillmentId: input.fulfillmentId,
       orderId,
       userId: order.userId,
       ...(input.sellerId ? { sellerId: input.sellerId } : {}),
-      carrier: input.carrier,
-      trackingNumber,
+      carrier: carrierDetails.carrierName,
+      trackingNumber: carrierDetails.trackingNumber,
+      trackingUrl: carrierDetails.trackingUrl,
+      labelUrl: carrierDetails.labelUrl,
       shippingCost: input.shippingCost ?? 0,
       weight: input.weight,
-      ...(input.estimatedDelivery ? { estimatedDelivery: new Date(input.estimatedDelivery) } : {}),
+      status: 'LABEL_CREATED',
+      estimatedDelivery: input.estimatedDelivery
+        ? new Date(input.estimatedDelivery)
+        : new Date(Date.now() + carrierDetails.estimatedDeliveryDays * 86400000),
       shippingAddress: order.shippingAddress,
-      events: [{ status: 'pending', description: 'Shipment created', timestamp: new Date() }],
+      events: [
+        { status: 'LABEL_CREATED', description: 'Shipping label created', timestamp: new Date() },
+      ],
     })
+
+    if (input.fulfillmentId) {
+      await Fulfillment.findByIdAndUpdate(input.fulfillmentId, { status: 'SHIPPED' })
+    }
 
     // Update order tracking info
     await Order.updateOne({ _id: orderId } as object, {
       $set: {
-        'tracking.trackingNumber': trackingNumber,
-        'tracking.carrier': input.carrier,
-        ...(input.estimatedDelivery
-          ? { 'tracking.estimatedDeliveryDate': new Date(input.estimatedDelivery) }
-          : {}),
+        'tracking.trackingNumber': carrierDetails.trackingNumber,
+        'tracking.carrier': carrierDetails.carrierName,
+        'tracking.estimatedDeliveryDate': shipment.estimatedDelivery,
       },
       $push: {
         'tracking.events': {
-          status: 'pending',
+          status: 'LABEL_CREATED',
           description: 'Label created',
           timestamp: new Date(),
         },
@@ -63,9 +115,21 @@ export const shippingService = {
       userId: order.userId,
       type: 'order',
       title: 'Shipment Created',
-      message: `Your order #${order.orderNumber} has been shipped via ${input.carrier}. Tracking: ${trackingNumber}`,
+      message: `Your order #${order.orderNumber} has been shipped via ${carrierDetails.carrierName}. Tracking: ${carrierDetails.trackingNumber}`,
       link: `/dashboard/orders/${orderId}`,
-      data: { orderId, trackingNumber },
+      data: { orderId, trackingNumber: carrierDetails.trackingNumber },
+    })
+
+    await eventBus.publish({
+      eventType: 'shipment.created',
+      aggregateId: shipmentId,
+      aggregateType: 'Shipment',
+      payload: {
+        shipmentId,
+        orderId,
+        carrier: carrierDetails.carrierName,
+        trackingNumber: carrierDetails.trackingNumber,
+      },
     })
 
     return shipment
@@ -134,16 +198,27 @@ export const shippingService = {
     shipment.status = status
     const event = { status, description, timestamp: new Date(), ...(location ? { location } : {}) }
     shipment.events.push(event)
-    if (status === 'delivered') shipment.deliveredAt = new Date()
+    if (status === 'DELIVERED') shipment.deliveredAt = new Date()
     await shipment.save()
+
+    if (shipment.fulfillmentId) {
+      await Fulfillment.findByIdAndUpdate(shipment.fulfillmentId, {
+        status:
+          status === 'DELIVERED'
+            ? 'DELIVERED'
+            : status === 'DELIVERY_FAILED'
+              ? 'FAILED'
+              : 'PROCESSING',
+      })
+    }
 
     // Mirror tracking event into Order
     await Order.updateOne({ _id: shipment.orderId } as object, {
       $set: {
         orderStatus:
-          status === 'delivered'
+          status === 'DELIVERED'
             ? 'delivered'
-            : status === 'out_for_delivery'
+            : status === 'OUT_FOR_DELIVERY'
               ? 'outForDelivery'
               : undefined,
       },
@@ -157,13 +232,13 @@ export const shippingService = {
       },
     })
 
-    // Notify buyer of meaningful status changes
+    // Notify buyer of status changes
     const notifTitles: Partial<Record<ShipmentStatus, string>> = {
-      picked_up: 'Package Picked Up',
-      in_transit: 'Shipment In Transit',
-      out_for_delivery: 'Out for Delivery',
-      delivered: 'Package Delivered',
-      failed: 'Delivery Failed',
+      PICKED_UP: 'Package Picked Up',
+      IN_TRANSIT: 'Shipment In Transit',
+      OUT_FOR_DELIVERY: 'Out for Delivery',
+      DELIVERED: 'Package Delivered',
+      DELIVERY_FAILED: 'Delivery Failed',
     }
     if (notifTitles[status]) {
       void notificationService.create({
@@ -175,6 +250,18 @@ export const shippingService = {
         data: { shipmentId, status },
       })
     }
+
+    await eventBus.publish({
+      eventType:
+        status === 'DELIVERED'
+          ? 'shipment.delivered'
+          : status === 'DELIVERY_FAILED'
+            ? 'shipment.failed'
+            : 'shipment.updated',
+      aggregateId: shipmentId,
+      aggregateType: 'Shipment',
+      payload: { shipmentId, status, description, location },
+    })
 
     emitToUser(String(shipment.userId), 'shipment:updated', { shipmentId, status, event })
     return shipment

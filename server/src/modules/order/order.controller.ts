@@ -25,14 +25,21 @@ export const createOrder = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const { order } = await orderService.createOrder(req.user!.userId, req.body as CreateOrderInput)
+    const idempotencyKey =
+      (req.headers['x-idempotency-key'] as string) ||
+      (req.headers['idempotency-key'] as string) ||
+      req.body.idempotencyKey
+    const { order } = await orderService.createOrder(req.user!.userId, {
+      ...(req.body as CreateOrderInput),
+      idempotencyKey,
+    })
     sendCreated(
       res,
       {
         orderId: order._id,
         orderNumber: order.orderNumber,
         amount: order.grandTotal,
-        currency: env.PAYSTACK_CURRENCY,
+        currency: order.currency || env.PAYSTACK_CURRENCY,
       },
       'Order created — proceed to payment',
     )
@@ -75,6 +82,51 @@ export const getOrder = async (req: Request, res: Response, next: NextFunction):
   try {
     const order = await orderService.getOrderById(req.params['id'] as string, req.user!.userId)
     sendSuccess(res, order)
+  } catch (err) {
+    next(err)
+  }
+}
+
+// ─── Get order by orderNumber ─────────────────────────────────────────────────
+export const getOrderByNumber = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const order = await orderService.getOrderByNumber(
+      req.params['orderNumber'] as string,
+      req.user!.userId,
+    )
+    sendSuccess(res, order)
+  } catch (err) {
+    next(err)
+  }
+}
+
+// ─── Order history timeline ───────────────────────────────────────────────────
+export const getOrderHistory = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const order = await orderService.getOrderById(req.params['id'] as string, req.user!.userId)
+    sendSuccess(res, order.history || [], 'Order history fetched')
+  } catch (err) {
+    next(err)
+  }
+}
+
+// ─── Order items ──────────────────────────────────────────────────────────────
+export const getOrderItems = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const order = await orderService.getOrderById(req.params['id'] as string, req.user!.userId)
+    sendSuccess(res, order.items, 'Order items fetched')
   } catch (err) {
     next(err)
   }
@@ -194,6 +246,103 @@ export const getSellerOrders = async (
       limit,
     })
     sendSuccess(res, orders, 'Seller orders fetched', 200, {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+      hasNext: page < Math.ceil(total / limit),
+      hasPrev: page > 1,
+    })
+  } catch (err) {
+    next(err)
+  }
+}
+
+// ─── Admin orders ─────────────────────────────────────────────────────────────
+export const getAdminOrders = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const { status, paymentStatus, search } = req.query as Record<string, string>
+    const page = parsePage(req.query['page'])
+    const limit = parseLimit(req.query['limit'])
+
+    const { orders, total } = await orderService.getAdminOrders({
+      status,
+      paymentStatus,
+      search,
+      page,
+      limit,
+    })
+    sendSuccess(res, orders, 'Admin orders fetched', 200, {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+      hasNext: page < Math.ceil(total / limit),
+      hasPrev: page > 1,
+    })
+  } catch (err) {
+    next(err)
+  }
+}
+
+// ─── Buyer: Submit Physical Payment Proof ────────────────────────────────────
+export const submitPhysicalPaymentProof = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const order = await orderService.submitPhysicalPaymentProof(
+      req.params['id'] as string,
+      req.user!.userId,
+      req.body,
+    )
+    sendSuccess(res, order, 'Payment proof submitted successfully — awaiting admin verification')
+  } catch (err) {
+    next(err)
+  }
+}
+
+// ─── Admin: Verify Physical Payment ──────────────────────────────────────────
+export const verifyPhysicalPayment = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const order = await orderService.verifyPhysicalPayment(
+      req.params['id'] as string,
+      req.user!.userId,
+      req.body,
+    )
+    sendSuccess(
+      res,
+      order,
+      req.body.decision === 'CONFIRM'
+        ? 'Physical payment confirmed and order updated'
+        : 'Physical payment rejected',
+    )
+  } catch (err) {
+    next(err)
+  }
+}
+
+// ─── Admin: Get Pending Physical Payments ────────────────────────────────────
+export const getPendingPhysicalPayments = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const page = parsePage(req.query['page'])
+    const limit = parseLimit(req.query['limit'])
+
+    const { orders, total } = await orderService.getPendingPhysicalPayments({ page, limit })
+    sendSuccess(res, orders, 'Pending physical payments fetched', 200, {
       page,
       limit,
       total,

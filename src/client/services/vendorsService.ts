@@ -100,6 +100,21 @@ export const vendorsService = {
     return res.data.data as IVendorDocument
   },
 
+  async uploadDocumentFile(vendorId: string, file: File) {
+    const formData = new FormData()
+    formData.append('document', file)
+    const res = await api.post(`/vendors/${vendorId}/documents/upload`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return res.data.data as {
+      url: string
+      publicId?: string
+      fileName: string
+      fileSize?: number
+      mimeType?: string
+    }
+  },
+
   async listDocuments(vendorId: string) {
     const res = await api.get(`/vendors/${vendorId}/documents`)
     return res.data.data as IVendorDocument[]

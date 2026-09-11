@@ -783,6 +783,7 @@ export default function ProductPage() {
               discountPrice={product.discountPrice}
               size="lg"
               showSave
+              showOriginalConversionNotice
             />
             <span
               className={`product-detail__stock product-detail__stock--${!inStock ? 'out' : lowStock ? 'low' : 'in'}`}
@@ -867,22 +868,92 @@ export default function ProductPage() {
             </div>
           )}
 
-          {product.sellerId && typeof product.sellerId === 'object' && (
+          {(product.sellerInfo || (product.sellerId && typeof product.sellerId === 'object')) && (
             <div
               style={{
                 marginTop: '1.25rem',
-                padding: '0.875rem 1rem',
+                padding: '1.25rem',
                 background: 'var(--color-neutral-50)',
-                borderRadius: 'var(--radius-lg)',
+                borderRadius: 'var(--radius-xl)',
                 border: '1px solid var(--color-neutral-200)',
                 fontSize: 'var(--text-sm)',
-                color: 'var(--color-neutral-600)',
               }}
             >
-              Sold by{' '}
-              <span style={{ fontWeight: 700, color: 'var(--color-brand-text)' }}>
-                {product.sellerId.firstName} {product.sellerId.lastName}
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: '50%',
+                    background: 'var(--color-neutral-200)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 700,
+                    fontSize: '1rem',
+                    color: 'var(--color-neutral-700)',
+                    overflow: 'hidden',
+                  }}
+                >
+                  {product.sellerInfo?.storeLogo ? (
+                    <img
+                      src={product.sellerInfo.storeLogo}
+                      alt="Seller Logo"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  ) : (
+                    (
+                      product.sellerInfo?.storeName?.[0] ||
+                      (typeof product.sellerId === 'object'
+                        ? product.sellerId.firstName?.[0]
+                        : 'S') ||
+                      'S'
+                    ).toUpperCase()
+                  )}
+                </div>
+                <div>
+                  <div
+                    style={{
+                      fontWeight: 700,
+                      fontSize: '0.95rem',
+                      color: 'var(--color-brand-text)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}
+                  >
+                    {product.sellerInfo?.storeName ||
+                      (typeof product.sellerId === 'object'
+                        ? `${product.sellerId.firstName || ''} ${product.sellerId.lastName || ''}`.trim()
+                        : 'Seller')}
+                    {product.sellerInfo?.isVerified && (
+                      <span
+                        style={{
+                          fontSize: '0.7rem',
+                          padding: '1px 6px',
+                          borderRadius: 4,
+                          background: 'rgba(34, 197, 94, 0.15)',
+                          color: '#22c55e',
+                          fontWeight: 700,
+                        }}
+                      >
+                        Verified
+                      </span>
+                    )}
+                  </div>
+                  {product.sellerInfo?.publicLocation && (
+                    <div
+                      style={{
+                        fontSize: '0.8rem',
+                        color: 'var(--color-neutral-500)',
+                        marginTop: 2,
+                      }}
+                    >
+                      📍 {product.sellerInfo.publicLocation}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </div>

@@ -4,7 +4,7 @@ import type { IProduct } from '../../shared/types/product.types.js'
 import type { IGuestCartItem, IServerCart, ICartTotals } from '../../shared/types/cart.types.js'
 import {
   FREE_SHIPPING_THRESHOLD_CLIENT,
-  TAX_RATE_CLIENT,
+  FLAT_TAX_FEE_CLIENT,
   FLAT_SHIPPING_COST_CLIENT,
 } from '../config/cart.constants.js'
 
@@ -49,7 +49,7 @@ const calcGuestTotals = (items: IGuestCartItem[]): ICartTotals => {
   const afterDiscount = Math.max(0, subtotal - discountAmount)
   const isFreeShipping = afterDiscount >= FREE_SHIPPING_THRESHOLD_CLIENT
   const shippingCost = subtotal === 0 ? 0 : isFreeShipping ? 0 : FLAT_SHIPPING_COST_CLIENT
-  const taxAmount = Math.round(afterDiscount * TAX_RATE_CLIENT * 100) / 100
+  const taxAmount = subtotal === 0 ? 0 : FLAT_TAX_FEE_CLIENT
   const grandTotal = Math.round((afterDiscount + shippingCost + taxAmount) * 100) / 100
   const totalItems = items.reduce((sum, i) => sum + i.quantity, 0)
 

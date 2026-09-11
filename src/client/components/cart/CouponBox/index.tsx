@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { FiTag, FiX, FiCheck } from 'react-icons/fi'
+import { useCurrency } from '../../../hooks/useCurrency.js'
 
 interface CouponBoxProps {
   appliedCode?: string
@@ -18,6 +19,7 @@ export default function CouponBox({
   isLoading,
   error,
 }: CouponBoxProps) {
+  const { formatPrice } = useCurrency()
   const [inputCode, setInputCode] = useState('')
 
   const handleApply = () => {
@@ -35,7 +37,7 @@ export default function CouponBox({
         <FiCheck className="coupon-box__icon coupon-box__icon--success" size={16} />
         <div className="coupon-box__applied-info">
           <span className="coupon-box__code">{appliedCode}</span>
-          <span className="coupon-box__discount">-${discount.toFixed(2)} off</span>
+          <span className="coupon-box__discount">–{formatPrice(discount)} off</span>
         </div>
         <button className="coupon-box__remove-btn" onClick={onRemove} aria-label="Remove coupon">
           <FiX size={16} />

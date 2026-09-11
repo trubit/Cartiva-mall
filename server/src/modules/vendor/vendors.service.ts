@@ -10,6 +10,7 @@ import { Commission } from './commission.model.js'
 import { User } from '../user/user.model.js'
 import { AppError } from '../../middlewares/error.middleware.js'
 import { notificationService } from '../notification/notification.service.js'
+import { uploadDocumentPath, isCloudinaryConfigured } from '../../config/cloudinary.js'
 import type { BusinessType, VendorStatus } from './vendor.model.js'
 import type { DocumentType } from './vendorDocument.model.js'
 import type { VerificationStepName } from './vendorVerification.model.js'
@@ -214,6 +215,26 @@ export const vendorsService = {
 
     audit(vendorId, 'document_uploaded', userId, { type: data.type, documentId: String(doc._id) })
     return doc
+  },
+
+  async uploadDocumentFile(vendorId: string, userId: string, file: Express.Multer.File) {
+    const vendor = await Vendor.findById(vendorId)
+    if (!vendor) throw new AppError('Vendor not found', 404)
+    if (String(vendor.userId) !== userId) throw new AppError('Forbidden', 403)
+
+    if (!isCloudinaryConfigured()) {
+      throw new AppError('Document storage requires Cloudinary configuration.', 503)
+    }
+
+    const { url, publicId } = await uploadDocumentPath(file.path, 'cartiva/documents')
+
+    return {
+      url,
+      publicId,
+      fileName: file.originalname,
+      fileSize: file.size,
+      mimeType: file.mimetype,
+    }
   },
 
   async listDocuments(vendorId: string, userId: string) {

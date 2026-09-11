@@ -208,6 +208,31 @@ export class CircuitBreaker {
     }
   }
 
+  getState(): CircuitState {
+    const stateMap: Record<number, CircuitState> = {
+      [STATE_CLOSED]: 'CLOSED',
+      [STATE_OPEN]: 'OPEN',
+      [STATE_HALF_OPEN]: 'HALF_OPEN',
+    }
+    return stateMap[this.state]
+  }
+
+  isOpen(): boolean {
+    if (this.state === STATE_OPEN) {
+      const elapsed = Date.now() - this.lastFailureAt
+      return elapsed < this.opts.halfOpenTimeout
+    }
+    return false
+  }
+
+  recordManualSuccess(): void {
+    this.recordSuccess()
+  }
+
+  recordManualFailure(): void {
+    this.recordFailure()
+  }
+
   reset() {
     this.state = STATE_CLOSED
     this.failures = 0
@@ -215,4 +240,35 @@ export class CircuitBreaker {
     this.totalCalls = 0
     this.lastFailureAt = 0
   }
+}
+
+// ─── Named Circuit Registry ───────────────────────────────────────────────────
+const circuitRegistry = new Map<string, CircuitBreaker>()
+
+export function getCircuitBreaker(
+  name: string,
+  opts?: Partial<CircuitBreakerOptions>,
+): CircuitBreaker {
+  let breaker = circuitRegistry.get(name)
+  if (!breaker) {
+    breaker = new CircuitBreaker({
+      name,
+      failureThreshold: opts?.failureThreshold ?? 5,
+      successThreshold: opts?.successThreshold ?? 2,
+      halfOpenTimeout: opts?.halfOpenTimeout ?? 30_000,
+      volumeThreshold: opts?.volumeThreshold ?? 5,
+      ...opts,
+    })
+    circuitRegistry.set(name, breaker)
+  }
+  return breaker
+}
+
+export function getAllCircuitStatuses(): Array<{
+  name: string
+  state: CircuitState
+  failures: number
+  totalCalls: number
+}> {
+  return Array.from(circuitRegistry.values()).map((cb) => cb.getStatus())
 }

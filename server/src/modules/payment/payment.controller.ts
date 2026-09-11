@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from 'express'
 import * as paymentService from './payment.service.js'
 import * as paystackService from './paystack.service.js'
+import * as stripeService from './stripe.service.js'
 import { sendSuccess, sendNoContent } from '../../utils/response.js'
 import { AppError } from '../../middlewares/error.middleware.js'
 import type { RefundInput } from '../../../../src/shared/validators/payment.validators.js'
@@ -15,6 +16,22 @@ export const getPaymentHistory = async (
     const limit = req.query['limit'] ? parseInt(req.query['limit'] as string, 10) : undefined
     const data = await paymentService.getPaymentHistory(req.user!.userId, { page, limit })
     sendSuccess(res, data, 'Payment history fetched')
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const getPaymentDetails = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const payment = await paymentService.getPaymentDetails(
+      req.params['id'] as string,
+      req.user!.userId,
+    )
+    sendSuccess(res, payment, 'Payment details fetched')
   } catch (err) {
     next(err)
   }
@@ -36,7 +53,7 @@ export const refundPayment = async (
 // ─── Providers ────────────────────────────────────────────────────────────────
 export const getProviders = (_req: Request, res: Response, next: NextFunction): void => {
   try {
-    sendSuccess(res, paystackService.getProviders(), 'Payment providers')
+    sendSuccess(res, paymentService.getProviders(), 'Payment providers')
   } catch (err) {
     next(err)
   }
@@ -68,12 +85,12 @@ export const paystackVerify = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const { reference } = req.body as { reference?: string }
+    const { reference, orderId } = req.body as { reference?: string; orderId?: string }
     if (!reference) {
       next(new AppError('reference is required', 400))
       return
     }
-    const order = await paystackService.verifyTransaction(reference, req.user!.userId)
+    const order = await paystackService.verifyTransaction(reference, req.user!.userId, orderId)
     sendSuccess(res, order, 'Payment verified')
   } catch (err) {
     next(err)
@@ -92,6 +109,57 @@ export const paystackWebhook = async (
       return
     }
     await paystackService.handleWebhook(req.body as Buffer, sig)
+    sendNoContent(res)
+  } catch (err) {
+    next(err)
+  }
+}
+
+// ─── Stripe ───────────────────────────────────────────────────────────────────
+export const stripeCreateIntent = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const { orderId } = req.body as { orderId?: string }
+    if (!orderId) {
+      next(new AppError('orderId is required', 400))
+      return
+    }
+    const data = await stripeService.createPaymentIntent(orderId, req.user!.userId)
+    sendSuccess(res, data, 'Stripe payment intent created')
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const stripeConfirm = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const { paymentIntentId } = req.body as { paymentIntentId?: string }
+    if (!paymentIntentId) {
+      next(new AppError('paymentIntentId is required', 400))
+      return
+    }
+    const order = await stripeService.confirmPaymentIntent(paymentIntentId, req.user!.userId)
+    sendSuccess(res, order, 'Stripe payment confirmed')
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const stripeWebhook = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const sig = (req.headers['stripe-signature'] as string) || ''
+    await stripeService.handleStripeWebhook(req.body as Buffer, sig)
     sendNoContent(res)
   } catch (err) {
     next(err)

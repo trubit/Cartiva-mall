@@ -3,11 +3,13 @@ import { Link } from 'react-router-dom'
 import { FiPlus, FiEdit, FiTrash2, FiPackage } from 'react-icons/fi'
 import { useSellerProducts, useDeleteProduct } from '../../hooks/useProducts.js'
 import { useProductStore } from '../../store/productStore.js'
+import { useCurrency } from '../../hooks/useCurrency.js'
 
 export default function SellerProducts() {
   const { filters, setFilters } = useProductStore()
   const { data, isLoading } = useSellerProducts(filters)
   const deleteMutation = useDeleteProduct()
+  const { formatPrice } = useCurrency()
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const products = data?.data ?? []
@@ -162,7 +164,7 @@ export default function SellerProducts() {
                     </td>
                     <td>
                       <div style={{ fontWeight: 700, fontSize: 'var(--text-sm)' }}>
-                        ${(product.discountPrice ?? product.price).toFixed(2)}
+                        {formatPrice(product.discountPrice ?? product.price)}
                       </div>
                       {product.discountPrice && (
                         <div
@@ -172,7 +174,7 @@ export default function SellerProducts() {
                             textDecoration: 'line-through',
                           }}
                         >
-                          ${product.price.toFixed(2)}
+                          {formatPrice(product.price)}
                         </div>
                       )}
                     </td>

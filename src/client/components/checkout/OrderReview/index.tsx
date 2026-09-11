@@ -2,7 +2,7 @@ import { FiEdit2 } from 'react-icons/fi'
 import AddressCard from '../AddressCard/index.js'
 import ShippingCard from '../ShippingCard/index.js'
 import { useCheckoutStore } from '../../../store/checkoutStore.js'
-import { formatCurrency } from '../../../../shared/helpers/index.js'
+import { useCurrency } from '../../../hooks/useCurrency.js'
 import { getImageUrl } from '../../../utils/image.js'
 
 interface OrderReviewProps {
@@ -12,6 +12,7 @@ interface OrderReviewProps {
 
 export default function OrderReview({ onPlaceOrder, isSubmitting }: OrderReviewProps) {
   const { session, shippingOptions, setStep } = useCheckoutStore()
+  const { formatPrice } = useCurrency()
 
   if (!session) return null
 
@@ -74,10 +75,10 @@ export default function OrderReview({ onPlaceOrder, isSubmitting }: OrderReviewP
               <div className="order-review__item-info">
                 <span className="order-review__item-title">{item.title}</span>
                 <span className="order-review__item-meta">
-                  Qty: {item.quantity} · {formatCurrency(item.itemPrice)} each
+                  Qty: {item.quantity} · {formatPrice(item.itemPrice)} each
                 </span>
               </div>
-              <span className="order-review__item-total">{formatCurrency(item.lineTotal)}</span>
+              <span className="order-review__item-total">{formatPrice(item.lineTotal)}</span>
             </li>
           ))}
         </ul>
@@ -91,7 +92,7 @@ export default function OrderReview({ onPlaceOrder, isSubmitting }: OrderReviewP
       >
         {isSubmitting
           ? 'Placing Order…'
-          : `Place Order · ${formatCurrency(session.pricing.grandTotal)}`}
+          : `Place Order · ${formatPrice(session.pricing.grandTotal)}`}
       </button>
 
       <p className="order-review__terms">

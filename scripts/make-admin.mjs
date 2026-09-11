@@ -27,7 +27,7 @@ try {
 }
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/trusonshopp'
-const ADMIN_EMAIL = 'trustezika831@gmail.com'
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || ''
 
 const require = createRequire(import.meta.url)
 const mongoose = require('mongoose')

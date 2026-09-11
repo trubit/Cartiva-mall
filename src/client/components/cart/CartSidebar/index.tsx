@@ -1,8 +1,8 @@
-import { useEffect, useRef } from 'react'
+﻿import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { FiX, FiShoppingCart } from 'react-icons/fi'
 import { useCart } from '../../../hooks/useCart.js'
-import { formatCurrency } from '../../../../shared/helpers/index.js'
+import { useCurrency } from '../../../hooks/useCurrency.js'
 import { getImageUrl } from '../../../utils/image.js'
 
 interface CartSidebarProps {
@@ -12,6 +12,7 @@ interface CartSidebarProps {
 
 export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
   const { items, totals, removeFromCart, updateQuantity, isMutating } = useCart()
+  const { formatPrice } = useCurrency()
   const overlayRef = useRef<HTMLDivElement>(null)
 
   // Close on Escape
@@ -122,7 +123,7 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
                         </button>
                       </div>
                       <span className="cart-sidebar__item-price">
-                        {formatCurrency(item.lineTotal)}
+                        {formatPrice(item.lineTotal)}
                       </span>
                     </div>
                   </div>
@@ -146,11 +147,11 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
           <div className="cart-sidebar__footer">
             <div className="cart-sidebar__subtotal">
               <span>Subtotal</span>
-              <strong>{formatCurrency(totals.subtotal)}</strong>
+              <strong>{formatPrice(totals.subtotal)}</strong>
             </div>
             {!totals.isFreeShipping && (
               <p className="cart-sidebar__shipping-hint">
-                Add {formatCurrency(totals.remainingForFreeShipping)} more for free shipping
+                Add {formatPrice(totals.remainingForFreeShipping)} more for free shipping
               </p>
             )}
             <Link to="/cart" className="btn btn-primary cart-sidebar__view-btn" onClick={onClose}>

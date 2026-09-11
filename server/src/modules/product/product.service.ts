@@ -1,7 +1,13 @@
 import mongoose from 'mongoose'
-import { Product, type IProductDocument } from './product.model.js'
+import { Product, type IProductDocument, type ProductLifecycleStatus } from './product.model.js'
+import { Category, type ICategoryDocument } from './category.model.js'
+import { Brand } from './brand.model.js'
+import { ProductVariant } from './variant.model.js'
+import { SellerProfile } from '../seller/seller.model.js'
+import { SellerPayoutAccount } from '../seller/sellerPayout.model.js'
 import { AppError } from '../../middlewares/error.middleware.js'
 import { cacheGet, cacheSet, cacheDelPattern, cacheIncr } from '../../utils/cache.js'
+import { eventBus } from '../event-bus/eventBus.service.js'
 import type {
   CreateProductInput,
   UpdateProductInput,
@@ -9,13 +15,8 @@ import type {
 } from '../../../../src/shared/validators/product.validators.js'
 import type { PaginationMeta } from '../../../../src/shared/types/api.types.js'
 
-// Escape all PCRE metacharacters before embedding user input in a RegExp.
-// Without this, a crafted brand string like `(a+)+b` causes catastrophic
-// backtracking in MongoDB's regex engine — a classic ReDoS attack.
 const escRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
-// Stable cache key: sort filter keys so that identical queries with different
-// parameter ordering produce the same key (avoids redundant DB hits).
 const filterCacheKey = (prefix: string, filters: object): string => {
   const sorted = Object.fromEntries(
     Object.entries(filters as Record<string, unknown>)
@@ -25,16 +26,14 @@ const filterCacheKey = (prefix: string, filters: object): string => {
   return `${prefix}:${JSON.stringify(sorted)}`
 }
 
-// ─── Cache TTLs ───────────────────────────────────────────────────────────────
 const TTL = {
-  PRODUCT_DETAIL: 120, // 2 min — individual product page
-  PRODUCT_LIST: 30, // 30 s  — paginated listing (changes often)
-  FEATURED: 300, // 5 min — featured products (rarely changes)
+  PRODUCT_DETAIL: 120,
+  PRODUCT_LIST: 30,
+  FEATURED: 300,
+  CATEGORY_TREE: 600,
+  BRAND_LIST: 600,
 }
 
-const VIEWS_FLUSH_INTERVAL_MS = 60_000 // flush buffered view counts every 60 s
-
-// ─── Build Mongo filter from query params ─────────────────────────────────────
 const buildFilter = (filters: ProductFiltersInput, extra: Record<string, unknown> = {}) => {
   const q: Record<string, unknown> = { ...extra }
 
@@ -42,8 +41,14 @@ const buildFilter = (filters: ProductFiltersInput, extra: Record<string, unknown
   if (filters.brand) q.brand = new RegExp(escRegex(filters.brand), 'i')
   if (filters.search) q.$text = { $search: filters.search }
   if (filters.inStock === true) q.stockQuantity = { $gt: 0 }
-  if (filters.isFeatured === true) q.isFeatured = true
-  if (filters.sellerId) q.sellerId = new mongoose.Types.ObjectId(filters.sellerId)
+  if (filters.sellerId) {
+    const sIdStr = String(filters.sellerId)
+    if (mongoose.Types.ObjectId.isValid(sIdStr)) {
+      q.sellerId = { $in: [new mongoose.Types.ObjectId(sIdStr), sIdStr] }
+    } else {
+      q.sellerId = sIdStr
+    }
+  }
 
   if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
     q.price = {}
@@ -56,7 +61,6 @@ const buildFilter = (filters: ProductFiltersInput, extra: Record<string, unknown
   return q
 }
 
-// ─── Build sort ───────────────────────────────────────────────────────────────
 const buildSort = (sort?: string): Record<string, 1 | -1> => {
   switch (sort) {
     case 'price_asc':
@@ -73,7 +77,6 @@ const buildSort = (sort?: string): Record<string, 1 | -1> => {
   }
 }
 
-// ─── Paginate helper ──────────────────────────────────────────────────────────
 const paginate = (page: number, limit: number, total: number): PaginationMeta => ({
   page,
   limit,
@@ -84,7 +87,9 @@ const paginate = (page: number, limit: number, total: number): PaginationMeta =>
 })
 
 // ─── Public: Get products with filters ────────────────────────────────────────
-export const getProducts = async (filters: ProductFiltersInput) => {
+export const getProducts = async (
+  filters: ProductFiltersInput & { ignorePublicStatus?: boolean },
+) => {
   const page = filters.page ?? 1
   const limit = filters.limit ?? 20
   const skip = (page - 1) * limit
@@ -93,7 +98,12 @@ export const getProducts = async (filters: ProductFiltersInput) => {
   const cached = await cacheGet<{ products: unknown[]; pagination: PaginationMeta }>(cacheKey)
   if (cached) return cached
 
-  const filter = buildFilter(filters, { status: 'active', isActive: true })
+  const extraFilter: Record<string, unknown> = {}
+  if (!filters.sellerId && !filters.ignorePublicStatus && !(filters as any).status) {
+    extraFilter.status = { $in: ['active', 'PUBLISHED', 'APPROVED', 'pending', 'DRAFT'] }
+  }
+
+  const filter = buildFilter(filters, extraFilter)
   const sort = buildSort(filters.sort)
 
   const [products, total] = await Promise.all([
@@ -101,8 +111,9 @@ export const getProducts = async (filters: ProductFiltersInput) => {
       .sort(sort)
       .skip(skip)
       .limit(limit)
-      .populate('sellerId', 'firstName lastName username profileImage')
-      .lean({ virtuals: true }),
+      .select('-__v')
+      .populate('sellerId', 'firstName lastName name storeName email')
+      .lean(),
     Product.countDocuments(filter),
   ])
 
@@ -111,390 +122,544 @@ export const getProducts = async (filters: ProductFiltersInput) => {
   return result
 }
 
-// ─── Public: Get single product ───────────────────────────────────────────────
-export const getProductById = async (id: string): Promise<IProductDocument> => {
-  if (!mongoose.isValidObjectId(id)) throw new AppError('Invalid product ID', 400)
+// Helper to construct public seller information DTO including bank details for physical transfer
+const buildPublicSellerInfo = async (userDoc: any) => {
+  if (!userDoc || typeof userDoc !== 'object') return null
+  const userId = userDoc._id || userDoc.id
+  const profile = userId ? await SellerProfile.findOne({ userId }).lean() : null
+  const bankAccount = userId
+    ? await SellerPayoutAccount.findOne({ sellerId: userId }).sort({ isDefault: -1 }).lean()
+    : null
 
-  // Serve from cache if available
-  const cacheKey = `products:detail:${id}`
-  const cached = await cacheGet<IProductDocument>(cacheKey)
-  if (cached) {
-    // Increment the view counter in Redis asynchronously — no DB write per request.
-    // A background flush job writes the accumulated count to MongoDB every minute.
-    void cacheIncr(`views:product:${id}`, VIEWS_FLUSH_INTERVAL_MS / 1000 + 120)
-    return cached
-  }
+  const storeName =
+    profile?.storeName || userDoc.storeName || `${userDoc.firstName || 'Seller'}'s Store`
+  const storeLogo = profile?.storeLogo || userDoc.profileImage || userDoc.avatar || ''
+  const storeDescription = profile?.storeDescription || ''
+  const phoneNumber = userDoc.phoneNumber || ''
+  const whatsappNumber = profile?.whatsappNumber || userDoc.phoneNumber || ''
+  const country = profile?.storeAddress?.country || userDoc.address?.country || ''
+  const state = profile?.storeAddress?.state || userDoc.address?.state || ''
+  const city = profile?.storeAddress?.city || userDoc.address?.city || ''
+  const publicLocation =
+    profile?.publicLocation || [city, state, country].filter(Boolean).join(', ')
 
-  const product = await Product.findOne({ _id: id, status: 'active', isActive: true })
-    .populate('sellerId', 'firstName lastName username profileImage')
-    .lean({ virtuals: true })
-
-  if (!product) throw new AppError('Product not found', 404)
-
-  // Increment view counter in Redis (non-blocking, batched)
-  cacheIncr(`views:product:${id}`, VIEWS_FLUSH_INTERVAL_MS / 1000 + 120).catch((err: unknown) => {
-    void err // fire-and-forget with logged failure captured at flush time
-  })
-
-  await cacheSet(cacheKey, product, TTL.PRODUCT_DETAIL)
-  return product as unknown as IProductDocument
-}
-
-// ─── Background job: flush Redis view counters → MongoDB ─────────────────────
-// Called from server startup on an interval (see index.ts).
-export const flushViewCounters = async (): Promise<void> => {
-  try {
-    const { redis } = await import('../../database/redis.js')
-    let cursor = '0'
-    const updates: Array<{ id: string; count: number }> = []
-
-    do {
-      const [nextCursor, keys] = await redis.scan(cursor, 'MATCH', 'views:product:*', 'COUNT', 100)
-      cursor = nextCursor
-      if (keys.length > 0) {
-        const pipeline = redis.pipeline()
-        keys.forEach((k) => pipeline.getdel(k))
-        const results = await pipeline.exec()
-        results?.forEach((result, idx) => {
-          const raw = result?.[1] as string | null
-          if (raw) {
-            const count = parseInt(raw, 10)
-            const id = keys[idx]!.replace('views:product:', '')
-            if (count > 0) updates.push({ id, count })
-          }
-        })
-      }
-    } while (cursor !== '0')
-
-    if (updates.length === 0) return
-
-    const bulkOps = updates.map(({ id, count }) => ({
-      updateOne: {
-        filter: { _id: id },
-        update: { $inc: { views: count } },
-      },
-    }))
-    await Product.bulkWrite(bulkOps, { ordered: false })
-  } catch (err) {
-    const { logger } = await import('../../utils/logger.js')
-    logger.error('flushViewCounters failed — view counts may be lost', { err })
+  return {
+    sellerId: userId,
+    storeName,
+    storeLogo,
+    storeDescription,
+    phoneNumber,
+    whatsappNumber,
+    country,
+    state,
+    city,
+    publicLocation,
+    rating: profile?.rating ?? 5.0,
+    isVerified: profile?.isVerified ?? false,
+    totalSales: profile?.totalSales ?? 0,
+    sellerSince: userDoc.createdAt || profile?.createdAt,
+    bankDetails: bankAccount
+      ? {
+          bankName: bankAccount.bankName,
+          bankCode: bankAccount.bankCode,
+          accountNumber: bankAccount.accountNumber,
+          accountName: bankAccount.accountName,
+          currency: bankAccount.currency || 'NGN',
+        }
+      : null,
   }
 }
 
-// ─── Cache invalidation helpers ───────────────────────────────────────────────
-export const invalidateProductCache = async (productId?: string): Promise<void> => {
-  await cacheDelPattern('products:list:*')
-  if (productId) await cacheDelPattern(`products:detail:${productId}`)
+// ─── Public: Get single product by ID ─────────────────────────────────────────
+export const getProductById = async (id: string) => {
+  const cacheKey = `product:detail:${id}`
+  const cached = await cacheGet<Record<string, unknown>>(cacheKey)
+  if (cached) return cached
+
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw new AppError('Invalid product ID format', 400)
+  }
+
+  const product = await Product.findById(id)
+    .populate(
+      'sellerId',
+      'firstName lastName username email phoneNumber profileImage address createdAt',
+    )
+    .lean()
+
+  if (!product) {
+    throw new AppError('Product not found', 404)
+  }
+
+  if (['blocked', 'SUSPENDED', 'ARCHIVED', 'REJECTED'].includes(product.status)) {
+    throw new AppError('Product is currently unavailable', 404)
+  }
+
+  const sellerInfo = await buildPublicSellerInfo(product.sellerId)
+  const result = { ...product, sellerInfo }
+
+  await cacheSet(cacheKey, result, TTL.PRODUCT_DETAIL)
+  return result
 }
 
-// ─── Public: Search products ──────────────────────────────────────────────────
-export const searchProducts = async (query: string, filters: ProductFiltersInput) => {
-  return getProducts({ ...filters, search: query })
+export const getProductBySlug = async (slug: string) => {
+  const cacheKey = `product:slug:${slug}`
+  const cached = await cacheGet<Record<string, unknown>>(cacheKey)
+  if (cached) return cached
+
+  const product = await Product.findOne({ slug: slug.toLowerCase() })
+    .populate(
+      'sellerId',
+      'firstName lastName username email phoneNumber profileImage address createdAt',
+    )
+    .lean()
+
+  if (!product) {
+    throw new AppError('Product not found', 404)
+  }
+
+  const sellerInfo = await buildPublicSellerInfo(product.sellerId)
+  const result = { ...product, sellerInfo }
+
+  await cacheSet(cacheKey, result, TTL.PRODUCT_DETAIL)
+  return result
 }
 
-// ─── Public: Get by category ──────────────────────────────────────────────────
-export const getProductsByCategory = async (category: string, filters: ProductFiltersInput) => {
-  return getProducts({ ...filters, category })
+export const searchProducts = async (q: string, filters: Partial<ProductFiltersInput> = {}) => {
+  return getProducts({ ...filters, search: q } as ProductFiltersInput)
 }
 
-// ─── Seller: Create product ───────────────────────────────────────────────────
-export const createProduct = async (
-  data: CreateProductInput,
+export const getProductsByCategory = async (
+  category: string,
+  filters: Partial<ProductFiltersInput> = {},
+) => {
+  return getProducts({ ...filters, category: category as any } as ProductFiltersInput)
+}
+
+export const getSellerProducts = async (
   sellerId: string,
-): Promise<IProductDocument> => {
-  const existing = await Product.findOne({
-    sku: data.sku.toUpperCase(),
-    status: { $ne: 'blocked' },
-    isActive: true,
-  })
-  if (existing) throw new AppError('SKU already exists', 409)
+  filters: Partial<ProductFiltersInput> = {},
+) => {
+  return getProducts({ ...filters, sellerId, ignorePublicStatus: true } as any)
+}
+
+// ─── Seller: Create product ──────────────────────────────────────────────────
+export const createProduct = async (
+  param1: string | CreateProductInput,
+  param2?: string | CreateProductInput,
+) => {
+  let sellerId: string
+  let input: CreateProductInput
+
+  if (typeof param1 === 'string') {
+    sellerId = param1
+    input = param2 as CreateProductInput
+  } else {
+    input = param1
+    sellerId = param2 as string
+  }
+
+  // Mandatory KYC & Store Gate Check
+  if (sellerId && mongoose.isValidObjectId(sellerId)) {
+    const profile = await SellerProfile.findOne({ userId: sellerId }).lean()
+    if (profile) {
+      if (profile.kycStatus !== 'VERIFIED') {
+        throw new AppError(
+          `Seller KYC Required: Cannot create product before completing KYC verification (Current status: ${profile.kycStatus || 'NOT_STARTED'}). Please verify your account at /seller/onboarding.`,
+          403,
+        )
+      }
+      if (!profile.storeCreated && !profile.storeSlug) {
+        throw new AppError(
+          'Store Required: Cannot create product before completing store setup. Please complete store onboarding at /seller/onboarding.',
+          403,
+        )
+      }
+    }
+  }
+
+  const existingSku = await Product.findOne({ sku: input.sku.toUpperCase() })
+  if (existingSku) {
+    throw new AppError(`SKU '${input.sku}' is already in use`, 409)
+  }
+
+  const slug =
+    input.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '') +
+    '-' +
+    Date.now().toString(36)
 
   const product = await Product.create({
-    title: data.title,
-    description: data.description,
-    price: data.price,
-    discountPrice: data.discountPrice,
-    images: data.images ?? [],
-    category: data.category,
-    subCategory: data.subCategory,
-    brand: data.brand,
-    stockQuantity: data.stockQuantity,
-    sku: data.sku,
-    tags: data.tags ?? [],
-    isFeatured: data.isFeatured ?? false,
+    ...input,
+    sku: input.sku.toUpperCase(),
     sellerId: new mongoose.Types.ObjectId(sellerId),
-    status: 'pending',
+    status: 'PUBLISHED',
+    visibility: 'PUBLIC',
+    slug,
     isActive: true,
   })
 
-  await invalidateProductCache()
-  return product
-}
+  await cacheDelPattern('products:*')
 
-// ─── Seller: Update product ───────────────────────────────────────────────────
-export const updateProduct = async (
-  id: string,
-  data: UpdateProductInput,
-  sellerId: string,
-  isAdmin = false,
-): Promise<IProductDocument> => {
-  if (!mongoose.isValidObjectId(id)) throw new AppError('Invalid product ID', 400)
-
-  const filter = isAdmin
-    ? { _id: id }
-    : { _id: id, sellerId: new mongoose.Types.ObjectId(sellerId) }
-  const product = await Product.findOne(filter)
-  if (!product) throw new AppError('Product not found or access denied', 404)
-
-  if (data.sku && data.sku.toUpperCase() !== product.sku) {
-    const skuExists = await Product.findOne({ sku: data.sku.toUpperCase(), _id: { $ne: id } })
-    if (skuExists) throw new AppError('SKU already exists', 409)
-  }
-
-  Object.assign(product, {
-    ...(data.title !== undefined && { title: data.title }),
-    ...(data.description !== undefined && { description: data.description }),
-    ...(data.price !== undefined && { price: data.price }),
-    ...(data.discountPrice !== undefined && { discountPrice: data.discountPrice }),
-    ...(data.images !== undefined && { images: data.images }),
-    ...(data.category !== undefined && { category: data.category }),
-    ...(data.subCategory !== undefined && { subCategory: data.subCategory }),
-    ...(data.brand !== undefined && { brand: data.brand }),
-    ...(data.stockQuantity !== undefined && { stockQuantity: data.stockQuantity }),
-    ...(data.sku !== undefined && { sku: data.sku.toUpperCase() }),
-    ...(data.tags !== undefined && { tags: data.tags }),
-    ...(data.isFeatured !== undefined && { isFeatured: data.isFeatured }),
+  await eventBus.publish({
+    eventType: 'product.created',
+    aggregateId: (product._id as mongoose.Types.ObjectId).toString(),
+    aggregateType: 'Product',
+    payload: {
+      productId: (product._id as mongoose.Types.ObjectId).toString(),
+      sku: product.sku,
+      title: product.title,
+      price: product.price,
+      sellerId,
+    },
   })
 
-  await product.save()
-  await invalidateProductCache(id)
   return product
 }
 
-// ─── Seller: Delete product (soft delete) ─────────────────────────────────────
-export const deleteProduct = async (
-  id: string,
-  sellerId: string,
-  isAdmin = false,
-): Promise<void> => {
-  if (!mongoose.isValidObjectId(id)) throw new AppError('Invalid product ID', 400)
+// ─── Seller: Update product ──────────────────────────────────────────────────
+export const updateProduct = async (
+  productId: string,
+  param2: string | UpdateProductInput,
+  param3?: string | UpdateProductInput | boolean,
+  param4 = false,
+) => {
+  let sellerId: string
+  let input: UpdateProductInput
+  let isAdmin = param4
 
-  const filter = isAdmin
-    ? { _id: id }
-    : { _id: id, sellerId: new mongoose.Types.ObjectId(sellerId) }
-  const product = await Product.findOneAndUpdate(filter, { isActive: false, status: 'blocked' })
-  if (!product) throw new AppError('Product not found or access denied', 404)
-
-  await invalidateProductCache(id)
-}
-
-// ─── Admin: Approve product ───────────────────────────────────────────────────
-export const approveProduct = async (id: string): Promise<IProductDocument> => {
-  if (!mongoose.isValidObjectId(id)) throw new AppError('Invalid product ID', 400)
-
-  const product = await Product.findByIdAndUpdate(
-    id,
-    { status: 'active', isActive: true },
-    { returnDocument: 'after' },
-  )
-  if (!product) throw new AppError('Product not found', 404)
-  await invalidateProductCache(id)
-  return product
-}
-
-// ─── Admin: Block product ─────────────────────────────────────────────────────
-export const blockProduct = async (id: string): Promise<IProductDocument> => {
-  if (!mongoose.isValidObjectId(id)) throw new AppError('Invalid product ID', 400)
-
-  const product = await Product.findByIdAndUpdate(
-    id,
-    { status: 'blocked', isActive: false },
-    { returnDocument: 'after' },
-  )
-  if (!product) throw new AppError('Product not found', 404)
-  await invalidateProductCache(id)
-  return product
-}
-
-// ─── Seller: Get own products ─────────────────────────────────────────────────
-export const getSellerProducts = async (sellerId: string, filters: ProductFiltersInput) => {
-  const page = filters.page ?? 1
-  const limit = filters.limit ?? 20
-  const skip = (page - 1) * limit
-  const sort = buildSort(filters.sort)
-
-  const filter: Record<string, unknown> = {
-    sellerId: new mongoose.Types.ObjectId(sellerId),
+  if (typeof param2 === 'string') {
+    sellerId = param2
+    input = param3 as UpdateProductInput
+  } else {
+    input = param2
+    sellerId = param3 as string
+    if (typeof param4 === 'boolean') isAdmin = param4
   }
-  if (filters.category) filter.category = filters.category
-  if (filters.search) filter.$text = { $search: filters.search }
 
-  const [products, total] = await Promise.all([
-    Product.find(filter).sort(sort).skip(skip).limit(limit).lean({ virtuals: true }),
-    Product.countDocuments(filter),
-  ])
+  const product = await Product.findById(productId)
+  if (!product) throw new AppError('Product not found', 404)
 
-  return { products, pagination: paginate(page, limit, total) }
+  if (!isAdmin && sellerId && product.sellerId.toString() !== sellerId) {
+    throw new AppError('Unauthorized: You do not own this product', 403)
+  }
+
+  if (input.sku && input.sku.toUpperCase() !== product.sku) {
+    const existing = await Product.findOne({
+      sku: input.sku.toUpperCase(),
+      _id: { $ne: productId },
+    })
+    if (existing) throw new AppError(`SKU '${input.sku}' is already in use`, 409)
+    product.sku = input.sku.toUpperCase()
+  }
+
+  Object.assign(product, input)
+  await product.save()
+
+  await cacheDelPattern('products:*')
+  await cacheDelPattern(`product:detail:${productId}`)
+
+  await eventBus.publish({
+    eventType: 'product.updated',
+    aggregateId: productId,
+    aggregateType: 'Product',
+    payload: { productId, sellerId, status: product.status },
+  })
+
+  return product
 }
 
-// ─── Get featured products ────────────────────────────────────────────────────
-export const getFeaturedProducts = async (limit = 12) => {
+export const setProductStatus = async (
+  productId: string,
+  targetStatus: ProductLifecycleStatus,
+  actorId: string,
+  isAdmin = false,
+) => {
+  const product = await Product.findById(productId)
+  if (!product) throw new AppError('Product not found', 404)
+
+  if (!isAdmin && product.sellerId.toString() !== actorId) {
+    throw new AppError('Unauthorized: Cannot modify product status', 403)
+  }
+
+  product.status = targetStatus
+  if (targetStatus === 'PUBLISHED' || targetStatus === 'active') {
+    if (!isAdmin && product.sellerId && mongoose.isValidObjectId(product.sellerId)) {
+      const profile = await SellerProfile.findOne({ userId: product.sellerId }).lean()
+      if (profile) {
+        if (profile.kycStatus !== 'VERIFIED') {
+          throw new AppError(
+            `Seller KYC Required: Cannot publish product before completing KYC verification (Current status: ${profile.kycStatus || 'NOT_STARTED'}).`,
+            403,
+          )
+        }
+        if (!profile.storeCreated && !profile.storeSlug) {
+          throw new AppError(
+            'Store Required: Cannot publish product before completing store setup.',
+            403,
+          )
+        }
+      }
+    }
+    product.publishedAt = new Date()
+    product.visibility = 'PUBLIC'
+    product.isActive = true
+  } else if (targetStatus === 'ARCHIVED') {
+    product.archivedAt = new Date()
+    product.visibility = 'ARCHIVED'
+    product.isActive = false
+  } else if (targetStatus === 'SUSPENDED' || targetStatus === 'blocked') {
+    product.isActive = false
+  }
+
+  await product.save()
+
+  await cacheDelPattern('products:*')
+  await cacheDelPattern(`product:detail:${productId}`)
+
+  await eventBus.publish({
+    eventType: `product.${targetStatus.toLowerCase()}`,
+    aggregateId: productId,
+    aggregateType: 'Product',
+    payload: { productId, status: targetStatus, actorId },
+  })
+
+  return product
+}
+
+export const approveProduct = async (productId: string) => {
+  return setProductStatus(productId, 'APPROVED', 'admin', true)
+}
+
+export const blockProduct = async (productId: string) => {
+  return setProductStatus(productId, 'SUSPENDED', 'admin', true)
+}
+
+// ─── Categories & Brands ─────────────────────────────────────────────────────
+export const createCategory = async (input: {
+  name: string
+  description?: string
+  parentCategoryId?: string
+  icon?: string
+}) => {
+  const slug = input.name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+
+  const existing = await Category.findOne({ slug })
+  if (existing) throw new AppError(`Category '${input.name}' already exists`, 409)
+
+  const category = (await Category.create({
+    name: input.name,
+    slug,
+    description: input.description,
+    parentCategoryId: input.parentCategoryId
+      ? new mongoose.Types.ObjectId(input.parentCategoryId)
+      : undefined,
+    icon: input.icon,
+    status: 'ACTIVE',
+  })) as ICategoryDocument
+
+  await cacheDelPattern('categories:*')
+
+  await eventBus.publish({
+    eventType: 'category.created',
+    aggregateId: ((category as any)._id as mongoose.Types.ObjectId).toString(),
+    aggregateType: 'Category',
+    payload: {
+      categoryId: ((category as any)._id as mongoose.Types.ObjectId).toString(),
+      name: category.name,
+    },
+  })
+
+  return category
+}
+
+export const getCategories = async () => {
+  const cacheKey = 'categories:tree'
+  const cached = await cacheGet<unknown>(cacheKey)
+  if (cached) return cached
+
+  const categories = await Category.find({ status: 'ACTIVE' }).lean()
+  await cacheSet(cacheKey, categories, TTL.CATEGORY_TREE)
+  return categories
+}
+
+export const createBrand = async (input: {
+  name: string
+  description?: string
+  logoUrl?: string
+  websiteUrl?: string
+}) => {
+  const slug = input.name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+
+  const existing = await Brand.findOne({ slug })
+  if (existing) throw new AppError(`Brand '${input.name}' already exists`, 409)
+
+  const brand = await Brand.create({
+    name: input.name,
+    slug,
+    description: input.description,
+    logoUrl: input.logoUrl,
+    websiteUrl: input.websiteUrl,
+    status: 'ACTIVE',
+  })
+
+  await cacheDelPattern('brands:*')
+
+  await eventBus.publish({
+    eventType: 'brand.created',
+    aggregateId: ((brand as any)._id as mongoose.Types.ObjectId).toString(),
+    aggregateType: 'Brand',
+    payload: {
+      brandId: ((brand as any)._id as mongoose.Types.ObjectId).toString(),
+      name: brand.name,
+    },
+  })
+
+  return brand
+}
+
+export const getBrands = async (_category?: string) => {
+  const cacheKey = 'brands:list'
+  const cached = await cacheGet<unknown>(cacheKey)
+  if (cached) return cached
+
+  const brands = await Brand.find({ status: 'ACTIVE' }).lean()
+  await cacheSet(cacheKey, brands, TTL.BRAND_LIST)
+  return brands
+}
+
+// ─── Variants & SKUs ─────────────────────────────────────────────────────────
+export const createProductVariant = async (
+  productId: string,
+  sellerId: string,
+  input: {
+    sku: string
+    title: string
+    priceOverride?: number
+    attributes?: Record<string, string | number | boolean>
+    images?: string[]
+  },
+  isAdmin = false,
+) => {
+  const product = await Product.findById(productId)
+  if (!product) throw new AppError('Product not found', 404)
+
+  if (!isAdmin && product.sellerId.toString() !== sellerId) {
+    throw new AppError('Unauthorized: You do not own this product', 403)
+  }
+
+  const existingVariant = await ProductVariant.findOne({ sku: input.sku.toUpperCase() })
+  if (existingVariant) throw new AppError(`Variant SKU '${input.sku}' is already in use`, 409)
+
+  const variantId = `var_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
+
+  const variant = await ProductVariant.create({
+    variantId,
+    productId: new mongoose.Types.ObjectId(productId),
+    sku: input.sku.toUpperCase(),
+    title: input.title,
+    priceOverride: input.priceOverride,
+    attributes: input.attributes || {},
+    images: input.images || [],
+    status: 'ACTIVE',
+  })
+
+  await eventBus.publish({
+    eventType: 'variant.created',
+    aggregateId: variantId,
+    aggregateType: 'ProductVariant',
+    payload: { productId, variantId, sku: variant.sku },
+  })
+
+  return variant
+}
+
+export const getProductVariants = async (productId: string) => {
+  return ProductVariant.find({
+    productId: new mongoose.Types.ObjectId(productId),
+    status: 'ACTIVE',
+  }).lean()
+}
+
+export const deleteProduct = async (productId: string, sellerId: string, isAdmin = false) => {
+  const product = await Product.findById(productId)
+  if (!product) throw new AppError('Product not found', 404)
+
+  if (!isAdmin && product.sellerId.toString() !== sellerId) {
+    throw new AppError('Unauthorized: You do not own this product', 403)
+  }
+
+  await Product.findByIdAndDelete(productId)
+  await cacheDelPattern('products:*')
+  await cacheDelPattern(`product:detail:${productId}`)
+
+  await eventBus.publish({
+    eventType: 'product.deleted',
+    aggregateId: productId,
+    aggregateType: 'Product',
+    payload: { productId, sellerId },
+  })
+}
+
+export const getFeaturedProducts = async (limit = 10) => {
   const cacheKey = `products:featured:${limit}`
   const cached = await cacheGet<IProductDocument[]>(cacheKey)
   if (cached) return cached
 
-  const products = await Product.find({ status: 'active', isActive: true, isFeatured: true })
+  const products = await Product.find({
+    isFeatured: true,
+    isActive: true,
+    status: { $in: ['active', 'PUBLISHED', 'APPROVED'] },
+  })
     .sort({ createdAt: -1 })
     .limit(limit)
-    .populate('sellerId', 'firstName lastName username')
-    .lean({ virtuals: true })
+    .select('-__v')
+    .populate('sellerId', 'firstName lastName name storeName email')
+    .lean()
 
   await cacheSet(cacheKey, products, TTL.FEATURED)
   return products
 }
 
-// ─── Trending products (highest view count among active products) ─────────────
 export const getTrendingProducts = async (limit = 12) => {
-  const cacheKey = `products:trending:${limit}`
-  const cached = await cacheGet<IProductDocument[]>(cacheKey)
-  if (cached) return cached
-
-  const products = await Product.find({ status: 'active', isActive: true, views: { $gt: 0 } })
-    .sort({ views: -1, ratingsAverage: -1 })
-    .limit(limit)
-    .populate('sellerId', 'firstName lastName username')
-    .lean({ virtuals: true })
-
-  await cacheSet(cacheKey, products, 120) // 2 min
-  return products
+  return getProducts({ limit, sort: 'popular' } as ProductFiltersInput).then((r) => r.products)
 }
 
-// ─── Recommended products (high-rating active products) ───────────────────────
 export const getRecommendedProducts = async (limit = 12) => {
-  const cacheKey = `products:recommended:${limit}`
-  const cached = await cacheGet<IProductDocument[]>(cacheKey)
-  if (cached) return cached
-
-  const products = await Product.find({
-    status: 'active',
-    isActive: true,
-    ratingsAverage: { $gte: 4 },
-    ratingsCount: { $gte: 1 },
-  })
-    .sort({ ratingsAverage: -1, views: -1 })
-    .limit(limit)
-    .populate('sellerId', 'firstName lastName username')
-    .lean({ virtuals: true })
-
-  // Fallback: if fewer than requested, fill with newest active products
-  if (products.length < limit) {
-    const needed = limit - products.length
-    const existingIds = products.map((p) => (p as unknown as { _id: mongoose.Types.ObjectId })._id)
-    const extras = await Product.find({
-      status: 'active',
-      isActive: true,
-      _id: { $nin: existingIds },
-    } as object)
-      .sort({ createdAt: -1 })
-      .limit(needed)
-      .populate('sellerId', 'firstName lastName username')
-      .lean({ virtuals: true })
-    products.push(...extras)
-  }
-
-  await cacheSet(cacheKey, products, 300)
-  return products
+  return getFeaturedProducts(limit)
 }
 
-// ─── Related products (same category, excluding current product) ──────────────
 export const getRelatedProducts = async (productId: string, limit = 8) => {
-  if (!mongoose.isValidObjectId(productId)) throw new AppError('Invalid product ID', 400)
-
-  const product = await Product.findOne({ _id: productId, status: 'active', isActive: true }).lean()
-  if (!product) throw new AppError('Product not found', 404)
-
-  const cacheKey = `products:related:${productId}:${limit}`
-  const cached = await cacheGet<IProductDocument[]>(cacheKey)
-  if (cached) return cached
-
-  const related = await Product.find({
-    status: 'active',
-    isActive: true,
-    _id: { $ne: new mongoose.Types.ObjectId(productId) },
-    category: product.category,
-  })
-    .sort({ ratingsAverage: -1, views: -1 })
-    .limit(limit)
-    .populate('sellerId', 'firstName lastName username')
-    .lean({ virtuals: true })
-
-  await cacheSet(cacheKey, related, 180)
-  return related
-}
-
-// ─── List all active categories with product counts ───────────────────────────
-export const getCategories = async () => {
-  const cacheKey = 'products:categories'
-  const cached = await cacheGet<{ category: string; count: number }[]>(cacheKey)
-  if (cached) return cached
-
-  const result = await Product.aggregate<{ category: string; count: number }>([
-    { $match: { status: 'active', isActive: true } },
-    { $group: { _id: '$category', count: { $sum: 1 } } },
-    { $sort: { count: -1 } },
-    { $project: { _id: 0, category: '$_id', count: 1 } },
-  ])
-
-  await cacheSet(cacheKey, result, 300)
-  return result
-}
-
-// ─── List all active brands (optionally filtered by category) ─────────────────
-export const getBrands = async (category?: string) => {
-  const cacheKey = `products:brands:${category ?? 'all'}`
-  const cached = await cacheGet<{ brand: string; count: number }[]>(cacheKey)
-  if (cached) return cached
-
-  const match: Record<string, unknown> = {
-    status: 'active',
-    isActive: true,
-    brand: { $nin: [null, ''] },
-  }
-  if (category) match.category = category
-
-  const result = await Product.aggregate<{ brand: string; count: number }>([
-    { $match: match },
-    { $group: { _id: '$brand', count: { $sum: 1 } } },
-    { $sort: { count: -1 } },
-    { $limit: 50 },
-    { $project: { _id: 0, brand: '$_id', count: 1 } },
-  ])
-
-  await cacheSet(cacheKey, result, 300)
-  return result
-}
-
-// ─── Autocomplete suggestions (fast title/brand prefix search) ────────────────
-export const getSearchSuggestions = async (q: string, limit = 8): Promise<string[]> => {
-  if (!q || q.trim().length < 1) return []
-
-  const safe = q.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  const cacheKey = `products:suggestions:${safe.toLowerCase()}:${limit}`
-  const cached = await cacheGet<string[]>(cacheKey)
-  if (cached) return cached
-
-  const docs = await Product.find(
-    {
-      status: 'active',
-      isActive: true,
-      title: { $regex: safe, $options: 'i' },
-    },
-    { title: 1 },
+  const current = await Product.findById(productId)
+  if (!current) return []
+  return getProducts({ category: current.category, limit } as ProductFiltersInput).then(
+    (r) => r.products,
   )
-    .limit(limit)
-    .lean()
-
-  const suggestions = [...new Set(docs.map((d) => d.title))].slice(0, limit)
-  await cacheSet(cacheKey, suggestions, 60)
-  return suggestions
 }
+
+export const getSearchSuggestions = async (q: string) => {
+  if (!q.trim()) return []
+  const products = await Product.find({
+    title: new RegExp(escRegex(q), 'i'),
+    isActive: true,
+  })
+    .limit(5)
+    .select('title category')
+    .lean()
+  return products.map((p) => p.title)
+}
+
+export const incrementViews = async (productId: string) => {
+  await cacheIncr(`product:views:${productId}`)
+  await Product.findByIdAndUpdate(productId, { $inc: { views: 1 } })
+}
+
+export const flushViewCounters = async () => {}

@@ -7,7 +7,6 @@ import { cacheGet, cacheSet } from '../utils/cache.js'
 import type { TokenPayload, UserRole } from '../../../src/shared/types/auth.types.js'
 
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       user?: TokenPayload
@@ -15,24 +14,25 @@ declare global {
   }
 }
 
-// Cache verified JWT payloads so the same token is only decoded once per minute.
-// Key: first 16 bytes of SHA-256(token) — enough entropy to avoid collisions
-// without storing the full sensitive token in Redis.
-// TTL: min(60 s, token's remaining lifetime) — we use a fixed 60 s because the
-// access token already expires in 15 min, so stale entries self-evict quickly.
 async function verifyWithCache(token: string): Promise<TokenPayload> {
   const cacheKey = `jwt:${crypto.createHash('sha256').update(token).digest('hex').slice(0, 32)}`
 
   const cached = await cacheGet<TokenPayload>(cacheKey)
   if (cached) return cached
 
-  // jwt.verify is sync and fast (~0.1 ms for HS256) but caching eliminates
-  // repeated work for the same long-lived token hitting many endpoints in a session.
-  const payload = jwt.verify(token, env.JWT_ACCESS_SECRET) as TokenPayload
+  let payload: TokenPayload
+  try {
+    payload = jwt.verify(token, env.JWT_ACCESS_SECRET, { algorithms: ['HS256'] }) as TokenPayload
+  } catch (primaryErr) {
+    if (env.JWT_PREVIOUS_SECRET) {
+      payload = jwt.verify(token, env.JWT_PREVIOUS_SECRET, {
+        algorithms: ['HS256'],
+      }) as TokenPayload
+    } else {
+      throw primaryErr
+    }
+  }
 
-  // TTL = min(60 s, remaining token lifetime).
-  // Without this cap a token expiring in 5 s would be cached as "valid" for 60 s after
-  // jwt.verify already rejected the next call — closing the post-expiry grace window.
   const nowSecs = Math.floor(Date.now() / 1000)
   const remainingSecs = payload.exp ? Math.max(1, payload.exp - nowSecs) : 60
   const cacheTtl = Math.min(60, remainingSecs)
@@ -55,12 +55,16 @@ export const authenticate = async (
 
     const payload = await verifyWithCache(token)
 
-    // Reject tokens belonging to deactivated accounts without waiting for
-    // the token to expire. The blocklist is written by admin.toggleUserActive.
     const isBlocked = await cacheGet<boolean>(`blocklist:user:${payload.userId}`)
     if (isBlocked) throw new AppError('Account has been deactivated', 401)
 
     req.user = payload
+
+    // Propagate trusted internal identity context downstream
+    req.headers['x-user-id'] = payload.userId
+    req.headers['x-user-role'] = payload.role
+    req.headers['x-service-identity'] = 'api-gateway'
+
     next()
   } catch (err) {
     if (err instanceof AppError) return next(err)
@@ -76,9 +80,17 @@ export const authorize =
     next()
   }
 
-// Attaches req.user when a valid token is present; continues without error otherwise.
-// Use for endpoints that personalize their response when authenticated but are also
-// publicly accessible.
+export const hasPermission =
+  (requiredPermission: string) =>
+  (req: Request, _res: Response, next: NextFunction): void => {
+    if (!req.user) return next(new AppError('Authentication required', 401))
+    const userPermissions = req.user.permissions || []
+    if (req.user.role !== 'admin' && !userPermissions.includes(requiredPermission)) {
+      return next(new AppError('Forbidden: missing required permission', 403))
+    }
+    next()
+  }
+
 export const optionalAuthenticate = async (
   req: Request,
   _res: Response,
@@ -93,7 +105,12 @@ export const optionalAuthenticate = async (
 
     const payload = await verifyWithCache(token)
     const isBlocked = await cacheGet<boolean>(`blocklist:user:${payload.userId}`)
-    if (!isBlocked) req.user = payload
+    if (!isBlocked) {
+      req.user = payload
+      req.headers['x-user-id'] = payload.userId
+      req.headers['x-user-role'] = payload.role
+      req.headers['x-service-identity'] = 'api-gateway'
+    }
   } catch {
     // Ignore invalid tokens on optional auth routes
   }

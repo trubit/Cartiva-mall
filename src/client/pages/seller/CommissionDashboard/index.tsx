@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom'
 import { useMyVendorDetail, useVendorAnalytics } from '../../../hooks/useVendors.js'
+import { useCurrency } from '../../../hooks/useCurrency.js'
 
 export default function CommissionDashboard() {
   const { data: vendorData, isLoading: vendorLoading } = useMyVendorDetail()
   const vendorId = vendorData?.vendor ? String(vendorData.vendor._id) : ''
   const { data: analytics, isLoading: analyticsLoading } = useVendorAnalytics(vendorId)
+  const { formatPrice } = useCurrency()
 
   const isLoading = vendorLoading || (!!vendorId && analyticsLoading)
 
@@ -66,8 +68,8 @@ export default function CommissionDashboard() {
 
       <div className="sl-stats-grid">
         {[
-          { label: 'Total Revenue', value: `$${summary.totalRevenue.toFixed(2)}` },
-          { label: 'Total Earnings', value: `$${summary.totalEarnings.toFixed(2)}` },
+          { label: 'Total Revenue', value: formatPrice(summary.totalRevenue) },
+          { label: 'Total Earnings', value: formatPrice(summary.totalEarnings) },
           { label: 'Total Orders', value: String(summary.totalOrders) },
         ].map((stat) => (
           <div key={stat.label} className="sl-stat-card">
@@ -103,10 +105,10 @@ export default function CommissionDashboard() {
                 {recent.map((c) => (
                   <tr key={c._id}>
                     <td>{new Date(c.createdAt).toLocaleDateString()}</td>
-                    <td>${c.saleAmount.toFixed(2)}</td>
-                    <td style={{ color: '#e53e3e' }}>-${c.commissionAmount.toFixed(2)}</td>
+                    <td>{formatPrice(c.saleAmount)}</td>
+                    <td style={{ color: '#e53e3e' }}>-{formatPrice(c.commissionAmount)}</td>
                     <td style={{ color: '#22863a', fontWeight: 600 }}>
-                      ${c.sellerEarning.toFixed(2)}
+                      {formatPrice(c.sellerEarning)}
                     </td>
                     <td>
                       <span className={statusPill(c.status)}>{c.status}</span>

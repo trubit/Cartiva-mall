@@ -165,11 +165,18 @@ export default function RegisterPage() {
           </div>
         </form>
 
-        <SocialLogin />
+        <SocialLogin role={watch('role')} />
 
         <p className="auth-terms">
-          By creating an account, you agree to Cartiva&apos;s <a href="#">Conditions of Use</a> and{' '}
-          <a href="#">Privacy Notice</a>.
+          By creating an account, you agree to Cartiva&apos;s{' '}
+          <Link to="/conditions" className="auth-link" style={{ fontWeight: 600 }}>
+            Conditions of Use
+          </Link>{' '}
+          and{' '}
+          <Link to="/privacy" className="auth-link" style={{ fontWeight: 600 }}>
+            Privacy Notice
+          </Link>
+          .
         </p>
 
         <div className="auth-footer">

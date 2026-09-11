@@ -7,6 +7,11 @@ import {
   getBestSellers,
   getNewArrivals,
   getHomeRecommendations,
+  getSimilarProducts,
+  getRelatedProducts,
+  getTrendingProducts,
+  getPopularProducts,
+  getRecentlyViewed,
 } from './recommendation.service.js'
 
 // ─── Behaviour tracking ───────────────────────────────────────────────────────
@@ -110,6 +115,91 @@ export const newArrivals = async (
     const limit = Math.min(parseInt(String(rawLimit ?? '12'), 10), 48)
     const products = await getNewArrivals(limit)
     sendSuccess(res, products, 'New arrivals fetched')
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const similarProducts = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const productId = req.params['productId'] as string
+    const rawLimit = Array.isArray(req.query.limit) ? req.query.limit[0] : req.query.limit
+    const limit = Math.min(parseInt(String(rawLimit ?? '8'), 10), 24)
+    const products = await getSimilarProducts(productId, limit)
+    sendSuccess(res, products, 'Similar products fetched')
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const relatedProducts = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const productId = req.params['productId'] as string
+    const rawLimit = Array.isArray(req.query.limit) ? req.query.limit[0] : req.query.limit
+    const limit = Math.min(parseInt(String(rawLimit ?? '8'), 10), 24)
+    const products = await getRelatedProducts(productId, limit)
+    sendSuccess(res, products, 'Related products fetched')
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const trendingProducts = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const rawLimit = Array.isArray(req.query.limit) ? req.query.limit[0] : req.query.limit
+    const limit = Math.min(parseInt(String(rawLimit ?? '12'), 10), 48)
+    const products = await getTrendingProducts(limit)
+    sendSuccess(res, products, 'Trending products fetched')
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const popularProducts = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const rawLimit = Array.isArray(req.query.limit) ? req.query.limit[0] : req.query.limit
+    const limit = Math.min(parseInt(String(rawLimit ?? '12'), 10), 48)
+    const products = await getPopularProducts(limit)
+    sendSuccess(res, products, 'Popular products fetched')
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const recentlyViewed = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const userId = req.user?.userId
+    const sessionId =
+      (req.headers['x-anonymous-session-id'] as string) || (req.query.sessionId as string)
+    const identifier = userId || sessionId
+    if (!identifier) {
+      sendSuccess(res, [], 'No viewing history')
+      return
+    }
+    const rawLimit = Array.isArray(req.query.limit) ? req.query.limit[0] : req.query.limit
+    const limit = Math.min(parseInt(String(rawLimit ?? '12'), 10), 48)
+    const products = await getRecentlyViewed(identifier, limit)
+    sendSuccess(res, products, 'Recently viewed products fetched')
   } catch (err) {
     next(err)
   }

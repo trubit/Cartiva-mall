@@ -55,6 +55,7 @@ export const PAYMENT_STATUS = {
   PAID: 'paid',
   FAILED: 'failed',
   REFUNDED: 'refunded',
+  PARTIALLY_REFUNDED: 'partially_refunded',
 } as const
 
 export const PAGINATION = {

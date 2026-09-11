@@ -127,3 +127,16 @@ export const deleteMessage = async (
     next(err)
   }
 }
+
+export const getUnreadCount = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const data = await messagingService.getUnreadCount(req.user!.userId)
+    sendSuccess(res, data, 'Unread message counts')
+  } catch (err) {
+    next(err)
+  }
+}

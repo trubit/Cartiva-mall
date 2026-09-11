@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore.js'
+import { useSellerKycStatus } from '../hooks/useSellerKyc.js'
 import MainLayout from '../layouts/MainLayout.js'
 import NavbarLayout from '../layouts/NavbarLayout.js'
 import LoadingSpinner from '../components/ui/LoadingSpinner.js'
@@ -23,6 +24,24 @@ const CartPage = lazy(() => import('../pages/cart/CartPage.js'))
 const CheckoutPage = lazy(() => import('../pages/checkout/CheckoutPage.js'))
 const OrdersPage = lazy(() => import('../pages/orders/OrdersPage.js'))
 const NotFoundPage = lazy(() => import('../pages/NotFoundPage.js'))
+
+// Information & Legal pages
+const ConditionsOfUsePage = lazy(() => import('../pages/info/ConditionsOfUsePage.js'))
+const PrivacyNoticePage = lazy(() => import('../pages/info/PrivacyNoticePage.js'))
+const AboutUsPage = lazy(() => import('../pages/info/AboutUsPage.js'))
+const CareersPage = lazy(() => import('../pages/info/CareersPage.js'))
+const PressPage = lazy(() => import('../pages/info/PressPage.js'))
+const InvestorsPage = lazy(() => import('../pages/info/InvestorsPage.js'))
+const AffiliatePage = lazy(() => import('../pages/info/AffiliatePage.js'))
+const AdvertisePage = lazy(() => import('../pages/info/AdvertisePage.js'))
+const BusinessCardPage = lazy(() => import('../pages/info/BusinessCardPage.js'))
+const ReloadBalancePage = lazy(() => import('../pages/info/ReloadBalancePage.js'))
+const GiftCardsPage = lazy(() => import('../pages/info/GiftCardsPage.js'))
+const ShippingRatesPage = lazy(() => import('../pages/info/ShippingRatesPage.js'))
+const HelpPage = lazy(() => import('../pages/info/HelpPage.js'))
+const AdPrivacyChoicesPage = lazy(() => import('../pages/info/AdPrivacyChoicesPage.js'))
+const PaymentSecurityPage = lazy(() => import('../pages/info/PaymentSecurityPage.js'))
+const ReturnsPolicyPage = lazy(() => import('../pages/info/ReturnsPolicyPage.js'))
 
 // Payment pages
 const PaymentPage = lazy(() => import('../pages/payment/PaymentPage/index.js'))
@@ -53,6 +72,7 @@ const SellerOrders = lazy(() => import('../pages/seller/SellerOrders/index.js'))
 const SellerAnalytics = lazy(() => import('../pages/seller/SellerAnalytics/index.js'))
 const SellerSettings = lazy(() => import('../pages/seller/SellerSettings/index.js'))
 const SellerPayouts = lazy(() => import('../pages/seller/SellerPayouts/index.js'))
+const SellerFees = lazy(() => import('../pages/seller/FeePayment/index.js'))
 const SellerInventory = lazy(() => import('../pages/seller/SellerInventory.js'))
 
 // Dashboard pages
@@ -60,6 +80,9 @@ const DashboardLayout = lazy(() => import('../pages/dashboard/DashboardLayout/in
 const DashboardPage = lazy(() => import('../pages/dashboard/DashboardPage/index.js'))
 const WishlistPage = lazy(() => import('../pages/dashboard/WishlistPage/index.js'))
 const NotificationsPage = lazy(() => import('../pages/dashboard/NotificationsPage/index.js'))
+const NotificationPreferencesPage = lazy(
+  () => import('../pages/dashboard/NotificationPreferencesPage/index.js'),
+)
 const PaymentHistoryPage = lazy(() => import('../pages/dashboard/PaymentHistoryPage/index.js'))
 const RecentlyViewedPage = lazy(() => import('../pages/dashboard/RecentlyViewedPage/index.js'))
 const AccountSettingsPage = lazy(() => import('../pages/dashboard/AccountSettingsPage/index.js'))
@@ -81,6 +104,8 @@ const AdminShipping = lazy(() => import('../pages/admin/AdminShipping/index.js')
 const AdminReturns = lazy(() => import('../pages/admin/AdminReturns/index.js'))
 const AdminVendors = lazy(() => import('../pages/admin/AdminVendors/index.js'))
 const AdminVendorApproval = lazy(() => import('../pages/admin/AdminVendorApproval/index.js'))
+const AdminSearchAnalytics = lazy(() => import('../pages/admin/AdminSearchAnalytics/index.js'))
+const AdminNotifications = lazy(() => import('../pages/admin/AdminNotifications/index.js'))
 
 // Phase 17-21 pages
 const ShipmentTracking = lazy(() => import('../pages/dashboard/ShipmentTracking/index.js'))
@@ -96,7 +121,15 @@ const WorkflowManager = lazy(() => import('../pages/admin/WorkflowManager/index.
 // Phase 26 admin pages
 const IamDashboard = lazy(() => import('../pages/admin/IamDashboard/index.js'))
 
-// Phase 27 & 28 admin pages
+// Phase 43 - 46 pages
+const AdminFraudCases = lazy(() => import('../pages/admin/AdminFraudCases/index.js'))
+const AiBiDashboard = lazy(() => import('../pages/admin/AiBiDashboard/index.js'))
+const AdminOptimization = lazy(() => import('../pages/admin/AdminOptimization/index.js'))
+const AdminAutonomy = lazy(() => import('../pages/admin/AdminAutonomy/index.js'))
+const AdminIntegrations = lazy(() => import('../pages/admin/AdminIntegrations/index.js'))
+const PartnerDashboard = lazy(() => import('../pages/partner/PartnerDashboard/index.js'))
+const SellerAutonomy = lazy(() => import('../pages/seller/SellerAutonomy/index.js'))
+const CustomerAppeals = lazy(() => import('../pages/dashboard/CustomerAppeals/index.js'))
 const DeveloperDashboard = lazy(
   () => import('../pages/admin/DeveloperPlatform/DeveloperDashboard.js'),
 )
@@ -110,11 +143,13 @@ const GodModeDashboard = lazy(() => import('../pages/admin/GodModeDashboard/inde
 // Phase 21 vendor pages
 const VendorRegistration = lazy(() => import('../pages/seller/VendorRegistration/index.js'))
 const VendorOnboarding = lazy(() => import('../pages/seller/VendorOnboarding/index.js'))
+const StoreSetup = lazy(() => import('../pages/seller/StoreSetup/index.js'))
 const VendorVerification = lazy(() => import('../pages/seller/VendorVerification/index.js'))
 const StorefrontBuilder = lazy(() => import('../pages/seller/StorefrontBuilder/index.js'))
 const CommissionDashboard = lazy(() => import('../pages/seller/CommissionDashboard/index.js'))
 const PayoutDashboard = lazy(() => import('../pages/seller/PayoutDashboard/index.js'))
 const DocumentManager = lazy(() => import('../pages/seller/DocumentManager/index.js'))
+const AdminKycVerification = lazy(() => import('../pages/admin/AdminKycVerification/index.js'))
 
 const SuspenseWrap = ({ children }: { children: React.ReactNode }) => (
   <Suspense fallback={<LoadingSpinner fullscreen />}>{children}</Suspense>
@@ -127,9 +162,39 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
 
 const SellerRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, user } = useAuthStore()
+  const { data: kycData, isLoading: isKycLoading } = useSellerKycStatus()
+
   if (!isAuthenticated) return <Navigate to="/login" replace />
-  if (user?.role !== 'seller' && user?.role !== 'admin') return <Navigate to="/" replace />
-  return <>{children}</>
+
+  // 1. If user is already registered as seller or admin, allow immediately
+  if (user?.role === 'seller' || user?.role === 'admin') {
+    return <>{children}</>
+  }
+
+  // 2. While verifying status, show clean non-infinite loader
+  if (isKycLoading && !kycData) {
+    return (
+      <div
+        style={{
+          minHeight: '70vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <LoadingSpinner />
+      </div>
+    )
+  }
+
+  // 3. If KYC is verified, sync user role in store and grant access
+  if (kycData?.isVerified || kycData?.kycStatus === 'VERIFIED') {
+    useAuthStore.getState().updateUser({ role: 'seller' })
+    return <>{children}</>
+  }
+
+  // 4. Otherwise, redirect to KYC onboarding
+  return <Navigate to="/seller/kyc" replace />
 }
 
 const AdminRoute = ({ children }: { children: React.ReactNode }) => {
@@ -157,6 +222,27 @@ export default function AppRouter() {
           <Route path="/deals" element={<DealsPage />} />
           <Route path="/category/:category" element={<CategoryPage />} />
           <Route path="/cart" element={<CartPage />} />
+
+          {/* Information & Legal Pages */}
+          <Route path="/conditions" element={<ConditionsOfUsePage />} />
+          <Route path="/terms" element={<ConditionsOfUsePage />} />
+          <Route path="/privacy" element={<PrivacyNoticePage />} />
+          <Route path="/privacy-choices" element={<AdPrivacyChoicesPage />} />
+          <Route path="/ad-privacy-choices" element={<AdPrivacyChoicesPage />} />
+          <Route path="/privacy/choices" element={<AdPrivacyChoicesPage />} />
+          <Route path="/about" element={<AboutUsPage />} />
+          <Route path="/careers" element={<CareersPage />} />
+          <Route path="/press" element={<PressPage />} />
+          <Route path="/investors" element={<InvestorsPage />} />
+          <Route path="/affiliate" element={<AffiliatePage />} />
+          <Route path="/advertise" element={<AdvertisePage />} />
+          <Route path="/business-card" element={<BusinessCardPage />} />
+          <Route path="/payment" element={<PaymentSecurityPage />} />
+          <Route path="/reload" element={<ReloadBalancePage />} />
+          <Route path="/gift-cards" element={<GiftCardsPage />} />
+          <Route path="/shipping" element={<ShippingRatesPage />} />
+          <Route path="/returns" element={<ReturnsPolicyPage />} />
+          <Route path="/help" element={<HelpPage />} />
           <Route
             path="/checkout"
             element={
@@ -243,22 +329,28 @@ export default function AppRouter() {
             }
           >
             <Route index element={<SellerDashboard />} />
+            <Route path="overview" element={<SellerDashboard />} />
+            <Route path="dashboard" element={<SellerDashboard />} />
             <Route path="products" element={<SellerProducts />} />
             <Route path="products/create" element={<SellerProductCreate />} />
             <Route path="products/edit/:id" element={<SellerProductEdit />} />
             <Route path="orders" element={<SellerOrders />} />
+            <Route path="messages" element={<MessagingPage />} />
             <Route path="analytics" element={<SellerAnalytics />} />
             <Route path="payouts" element={<SellerPayouts />} />
+            <Route path="fees" element={<SellerFees />} />
             <Route path="inventory" element={<SellerInventory />} />
+            <Route path="autonomy" element={<SellerAutonomy />} />
             <Route path="settings" element={<SellerSettings />} />
             <Route path="verification" element={<VendorVerification />} />
             <Route path="storefront" element={<StorefrontBuilder />} />
             <Route path="commissions" element={<CommissionDashboard />} />
             <Route path="vendor-payouts" element={<PayoutDashboard />} />
             <Route path="documents" element={<DocumentManager />} />
+            <Route path="document" element={<DocumentManager />} />
           </Route>
 
-          {/* Vendor registration/onboarding — full screen, PrivateRoute not SellerRoute */}
+          {/* Vendor registration/onboarding — full screen, PrivateRoute */}
           <Route
             path="/seller/register"
             element={
@@ -275,6 +367,46 @@ export default function AppRouter() {
               </PrivateRoute>
             }
           />
+          <Route
+            path="/seller/kyc"
+            element={
+              <PrivateRoute>
+                <VendorOnboarding />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/seller/kyc/onboarding"
+            element={
+              <PrivateRoute>
+                <VendorOnboarding />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/seller/store/setup"
+            element={
+              <PrivateRoute>
+                <StoreSetup />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/seller/store/onboarding"
+            element={
+              <PrivateRoute>
+                <StoreSetup />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/seller/store-setup"
+            element={
+              <PrivateRoute>
+                <StoreSetup />
+              </PrivateRoute>
+            }
+          />
 
           {/* Admin dashboard */}
           <Route
@@ -288,6 +420,8 @@ export default function AppRouter() {
             <Route index element={<AdminDashboard />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="sellers" element={<AdminSellers />} />
+            <Route path="sellers/kyc" element={<AdminKycVerification />} />
+            <Route path="kyc" element={<AdminKycVerification />} />
             <Route path="products" element={<AdminProducts />} />
             <Route path="orders" element={<AdminOrders />} />
             <Route path="inventory" element={<AdminInventory />} />
@@ -307,7 +441,24 @@ export default function AppRouter() {
             <Route path="developer-platform" element={<DeveloperDashboard />} />
             <Route path="event-system" element={<EventMonitorDashboard />} />
             <Route path="godmode" element={<GodModeDashboard />} />
+            <Route path="search" element={<AdminSearchAnalytics />} />
+            <Route path="notifications" element={<AdminNotifications />} />
+            <Route path="fraud-cases" element={<AdminFraudCases />} />
+            <Route path="ai-bi" element={<AiBiDashboard />} />
+            <Route path="optimization" element={<AdminOptimization />} />
+            <Route path="autonomy" element={<AdminAutonomy />} />
+            <Route path="integrations" element={<AdminIntegrations />} />
           </Route>
+
+          {/* Partner Portal */}
+          <Route
+            path="/partner/integrations"
+            element={
+              <PrivateRoute>
+                <PartnerDashboard />
+              </PrivateRoute>
+            }
+          />
 
           {/* Profile — nested layout with sidebar, inside MainLayout for navbar */}
           <Route
@@ -338,13 +489,18 @@ export default function AppRouter() {
             <Route index element={<DashboardPage />} />
             <Route path="wishlist" element={<WishlistPage />} />
             <Route path="notifications" element={<NotificationsPage />} />
+            <Route path="notifications/preferences" element={<NotificationPreferencesPage />} />
             <Route path="payments" element={<PaymentHistoryPage />} />
             <Route path="recently-viewed" element={<RecentlyViewedPage />} />
             <Route path="account" element={<AccountSettingsPage />} />
             <Route path="security" element={<SecurityPage />} />
             <Route path="shipments" element={<ShipmentTracking />} />
             <Route path="returns" element={<ReturnsPage />} />
+            <Route path="appeals" element={<CustomerAppeals />} />
+            <Route path="messages" element={<MessagingPage />} />
           </Route>
+
+          <Route path="/account/appeals" element={<Navigate to="/dashboard/appeals" replace />} />
 
           {/* Messaging */}
           <Route

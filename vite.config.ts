@@ -28,7 +28,13 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       port: clientPort,
+      strictPort: true, // fail immediately if port is busy — never silently fall back
       host: true,
+      hmr: {
+        protocol: 'ws',
+        host: 'localhost',
+        port: clientPort,
+      },
       proxy: {
         '/api': {
           target: backendTarget,
@@ -56,11 +62,13 @@ export default defineConfig(({ mode }) => {
           ws: true,
           changeOrigin: true,
           configure: (proxy) => {
-            proxy.on('error', (err) => {
-              // Suppress noisy "socket hang up" errors during WS upgrade in dev
-              if ((err as NodeJS.ErrnoException).code !== 'ECONNRESET') {
-                console.warn('[socket.io proxy error]', err.message)
-              }
+            proxy.on('error', (_err) => {
+              // Suppress noisy socket proxy errors in dev
+            })
+            proxy.on('proxyReqWs', (_proxyReq, _req, socket) => {
+              socket.on('error', (_err) => {
+                // Suppress socket ECONNRESET / hangup errors on WS stream
+              })
             })
           },
         },

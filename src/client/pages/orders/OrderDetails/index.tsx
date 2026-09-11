@@ -22,7 +22,9 @@ import OrderTimeline from '../../../components/order/OrderTimeline/index.js'
 import TrackingInfo from '../../../components/order/TrackingInfo/index.js'
 import OrderSummary from '../../../components/order/OrderSummary/index.js'
 import ReturnRequestForm from '../../../components/order/ReturnRequestForm/index.js'
-import { formatCurrency, formatDate } from '../../../../shared/helpers/index.js'
+import ConfirmDialog from '../../../components/common/ConfirmDialog/index.js'
+import { formatDate } from '../../../../shared/helpers/index.js'
+import { useCurrency } from '../../../hooks/useCurrency.js'
 import {
   CANCELLABLE_STATUSES,
   RETURNABLE_STATUSES,
@@ -87,25 +89,32 @@ function OrderDetailSkeleton() {
 
 export default function OrderDetails() {
   const { id } = useParams<{ id: string }>()
+  const isValidId = Boolean(id) && id !== ':id' && /^[0-9a-fA-F]{24}$/.test(id!)
   const navigate = useNavigate()
   const [showReturn, setShowReturn] = useState(false)
+  const [showCancelModal, setShowCancelModal] = useState(false)
 
   const { data: order, isLoading, isError } = useOrder(id ?? '')
   const { mutate: cancelOrder, isPending: cancelling, error: cancelError } = useCancelOrder()
+  const { formatPrice } = useCurrency()
 
   if (isLoading) return <OrderDetailSkeleton />
 
-  if (isError || !order) {
+  if (!isValidId || isError || !order) {
     return (
       <div className="container od-error-wrap">
         <div className="od-error-card">
           <FiPackage size={48} className="od-error-icon" />
-          <h2 className="od-error-title">Order not found</h2>
+          <h2 className="od-error-title">
+            {!isValidId ? 'Invalid Order Link' : 'Order not found'}
+          </h2>
           <p className="od-error-text">
-            We couldn't load this order. It may have been removed or you may not have access.
+            {!isValidId
+              ? 'The URL contains a placeholder route parameter (:id). Please select an order from your history below.'
+              : "We couldn't load this order. It may have been removed or you may not have access."}
           </p>
           <Link to="/orders" className="od-btn od-btn--primary">
-            <FiArrowLeft size={14} /> Back to Orders
+            <FiArrowLeft size={14} /> View Your Orders
           </Link>
         </div>
       </div>
@@ -119,9 +128,23 @@ export default function OrderDetails() {
     isWithinReturnWindow(order.createdAt) &&
     !order.returnRequest
 
-  const handleCancel = () => {
-    if (!window.confirm('Are you sure you want to cancel this order?')) return
-    cancelOrder({ orderId: order._id }, { onSuccess: () => navigate('/orders') })
+  const handleCancelClick = () => {
+    setShowCancelModal(true)
+  }
+
+  const handleConfirmCancel = () => {
+    cancelOrder(
+      { orderId: order._id },
+      {
+        onSuccess: () => {
+          setShowCancelModal(false)
+          navigate('/orders')
+        },
+        onError: () => {
+          setShowCancelModal(false)
+        },
+      },
+    )
   }
 
   return (
@@ -166,7 +189,7 @@ export default function OrderDetails() {
               {canCancel && (
                 <button
                   className="od-btn od-btn--danger"
-                  onClick={handleCancel}
+                  onClick={handleCancelClick}
                   disabled={cancelling}
                 >
                   <FiXCircle size={13} />
@@ -253,7 +276,9 @@ export default function OrderDetails() {
 
                     <div className="od-item__right">
                       <span className="od-item__qty">×{item.quantity}</span>
-                      <span className="od-item__total">{formatCurrency(item.lineTotal)}</span>
+                      <span className="od-item__total">
+                        {formatPrice(item.lineTotal, order.currency)}
+                      </span>
                     </div>
                   </li>
                 ))}
@@ -324,7 +349,7 @@ export default function OrderDetails() {
                     <div className="od-return-row">
                       <span className="od-return-label">Refund Amount</span>
                       <strong className="od-return-amount">
-                        {formatCurrency(order.returnRequest.refundAmount)}
+                        {formatPrice(order.returnRequest.refundAmount)}
                       </strong>
                     </div>
                   )}
@@ -381,6 +406,21 @@ export default function OrderDetails() {
         orderId={order._id}
         show={showReturn}
         onHide={() => setShowReturn(false)}
+      />
+
+      <ConfirmDialog
+        open={showCancelModal}
+        title="Cancel Order?"
+        message={`Are you sure you want to cancel order #${order.orderNumber}? This action cannot be undone.`}
+        confirmText="Cancel Order"
+        cancelText="Keep Order"
+        variant="danger"
+        isLoading={cancelling}
+        loadingText="Cancelling…"
+        onConfirm={handleConfirmCancel}
+        onClose={() => {
+          if (!cancelling) setShowCancelModal(false)
+        }}
       />
     </div>
   )

@@ -105,6 +105,20 @@ export const vendorsController = {
     }
   },
 
+  async uploadDocumentFile(req: Request, res: Response, next: NextFunction) {
+    try {
+      const vendorId = req.params['id'] as string
+      if (!req.file) {
+        const { AppError } = await import('../../middlewares/error.middleware.js')
+        throw new AppError('Please provide a document or image file', 400)
+      }
+      const result = await vendorsService.uploadDocumentFile(vendorId, req.user!.userId, req.file)
+      sendSuccess(res, result, 'Document file uploaded successfully')
+    } catch (err) {
+      next(err)
+    }
+  },
+
   async listDocuments(req: Request, res: Response, next: NextFunction) {
     try {
       const vendorId = req.params['id'] as string

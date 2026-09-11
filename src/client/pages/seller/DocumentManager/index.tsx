@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import {
   useMyVendorDetail,
   useVendorDocuments,
   useUploadDocument,
+  useUploadDocumentFile,
 } from '../../../hooks/useVendors.js'
+import { FiUpload, FiCheckCircle } from 'react-icons/fi'
 import type { DocumentType, IVendorDocument } from '../../../../shared/types/vendors.types.js'
 
 const DOC_TYPES: { value: DocumentType; label: string }[] = [
@@ -60,10 +62,47 @@ export default function DocumentManager() {
   const vendorId = vendorData?.vendor ? String(vendorData.vendor._id) : ''
   const { data: docs = [] } = useVendorDocuments(vendorId)
   const upload = useUploadDocument(vendorId)
+  const uploadFileMutation = useUploadDocumentFile(vendorId)
 
   const [form, setForm] = useState({ type: 'id_card' as DocumentType, fileUrl: '', fileName: '' })
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
+  const [isUploadingFile, setIsUploadingFile] = useState(false)
+  const [uploadedBadge, setUploadedBadge] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf']
+    if (!allowed.includes(file.type)) {
+      setError('Allowed file types: PDF, JPEG, PNG, WebP')
+      return
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setError('File size must be under 10MB')
+      return
+    }
+
+    setError('')
+    setIsUploadingFile(true)
+    try {
+      const res = await uploadFileMutation.mutateAsync(file)
+      if (res?.url) {
+        setForm((f) => ({
+          ...f,
+          fileUrl: res.url,
+          fileName: res.fileName || file.name,
+        }))
+        setUploadedBadge(`${file.name} (${(file.size / 1024).toFixed(0)} KB)`)
+      }
+    } catch (err: any) {
+      setError(err?.response?.data?.message || err.message || 'File upload failed')
+    } finally {
+      setIsUploadingFile(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -73,6 +112,7 @@ export default function DocumentManager() {
       await upload.mutateAsync(form)
       setSuccess(true)
       setForm({ type: 'id_card', fileUrl: '', fileName: '' })
+      setUploadedBadge('')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Upload failed')
     }
@@ -157,6 +197,45 @@ export default function DocumentManager() {
                     placeholder="https://..."
                     required
                   />
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,application/pdf"
+                    style={{ display: 'none' }}
+                    onChange={handleFileUpload}
+                  />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isUploadingFile}
+                      className="sl-btn sl-btn--outline"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        fontSize: '0.82rem',
+                      }}
+                    >
+                      <FiUpload />{' '}
+                      {isUploadingFile ? 'Uploading to storage...' : 'Upload Document / File'}
+                    </button>
+                    {uploadedBadge && (
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          fontSize: '0.8rem',
+                          color: '#059669',
+                          fontWeight: 600,
+                        }}
+                      >
+                        <FiCheckCircle />
+                        <span>{uploadedBadge}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
               {error && (
@@ -171,8 +250,12 @@ export default function DocumentManager() {
               )}
             </div>
             <div className="seller-form__actions">
-              <button type="submit" className="sl-btn sl-btn--primary" disabled={upload.isPending}>
-                {upload.isPending ? 'Uploading…' : 'Upload Document'}
+              <button
+                type="submit"
+                className="sl-btn sl-btn--primary"
+                disabled={upload.isPending || isUploadingFile}
+              >
+                {upload.isPending ? 'Saving Document…' : 'Save Document'}
               </button>
             </div>
           </form>

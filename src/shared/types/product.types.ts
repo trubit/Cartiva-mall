@@ -19,6 +19,7 @@ export interface IProduct {
   ratingsAverage: number
   ratingsCount: number
   sellerId: string | IPublicUser
+  sellerInfo?: any
   tags: string[]
   isActive: boolean
   status: ProductStatus
