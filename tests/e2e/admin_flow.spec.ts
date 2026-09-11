@@ -20,7 +20,7 @@ test.describe('Admin Enterprise Flows', () => {
   })
 
   test('admin IAM security dashboard renders permissions and roles', async ({ page }) => {
-    await page.goto('/admin/iam')
+    await page.goto('/admin/iam', { waitUntil: 'domcontentloaded', timeout: 30000 })
     await expect(page.locator('body')).toBeVisible()
   })
 

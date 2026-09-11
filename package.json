@@ -11,7 +11,7 @@
     "server": "tsx watch server/src/index.ts",
     "kill:ports": "node scripts/kill-ports.mjs",
     "build": "tsc -b && vite build",
-    "build:server": "tsc -p tsconfig.server.json",
+    "build:server": "tsc -b tsconfig.server.json --force",
     "lint": "eslint .",
     "preview": "vite preview",
     "format": "prettier --write .",

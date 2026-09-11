@@ -19,7 +19,7 @@ test.describe('Homepage', () => {
     const header = page.locator('header, [class*="amz-nav"]').first()
     await expect(header).toBeVisible()
     // Logo text or image should appear in the nav
-    const logoEl = header.locator('text=Cartiva, img[alt*="Cartiva"], a[href="/"]').first()
+    const logoEl = header.locator('.amz-logo, [aria-label*="Cartiva"], a[href="/"]').first()
     await expect(logoEl).toBeVisible()
   })
 

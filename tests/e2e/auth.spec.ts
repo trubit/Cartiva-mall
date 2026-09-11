@@ -20,13 +20,9 @@ test.describe('Login page', () => {
   })
 
   test('shows validation errors on empty form submission', async ({ page }) => {
-    await page.locator('button[type="submit"], form button').first().click()
-    // Some validation feedback should appear (either native or custom)
-    const hasError =
-      (await page
-        .locator('[class*="error"], [role="alert"], .invalid-feedback, [aria-invalid="true"]')
-        .count()) > 0 || (await page.locator('input:invalid').count()) > 0
-    expect(hasError).toBe(true)
+    await page.locator('button[type="submit"]').click()
+    const errorEl = page.locator('.auth-error-msg, [role="alert"]').first()
+    await expect(errorEl).toBeVisible({ timeout: 8000 })
   })
 
   test('has a link to the registration page', async ({ page }) => {
