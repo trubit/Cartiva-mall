@@ -89,7 +89,7 @@ jobs:
         run: npm run test:coverage
 
       - name: Upload client coverage report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: client-coverage
@@ -135,7 +135,7 @@ jobs:
           JWT_REFRESH_SECRET: ci-test-jwt-refresh-secret-32chars-min
 
       - name: Upload server coverage report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: server-coverage
@@ -270,7 +270,7 @@ jobs:
         run: npm run build
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: build-${{ github.sha }}
           path: dist/
