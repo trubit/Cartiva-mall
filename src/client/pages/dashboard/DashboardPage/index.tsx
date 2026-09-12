@@ -62,7 +62,7 @@ export default function DashboardPage() {
             </span>
           </div>
           <div className="dashboard-overview-card__value">
-            {formatCurrency(orderStats.totalSpent)}
+            {formatCurrency(orderStats.totalSpent, 'USD')}
           </div>
           <div className="dashboard-overview-card__sub">Across all paid orders</div>
         </div>
@@ -169,7 +169,7 @@ export default function DashboardPage() {
                     <td>{formatDate(order.createdAt)}</td>
                     <td>{order.items?.length ?? 0}</td>
                     <td style={{ fontVariantNumeric: 'tabular-nums' }}>
-                      {formatCurrency(order.grandTotal)}
+                      {formatCurrency(order.grandTotal, order.currency || 'USD')}
                     </td>
                     <td>
                       <span

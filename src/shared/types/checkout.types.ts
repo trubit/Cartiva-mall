@@ -30,6 +30,7 @@ export interface IShippingOption {
   label: string
   description: string
   cost: number
+  currency?: string
   estimatedDays: string
 }
 

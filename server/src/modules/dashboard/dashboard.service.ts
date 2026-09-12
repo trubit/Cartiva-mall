@@ -37,7 +37,34 @@ export const getDashboardSummary = async (userId: string) => {
           shipped: { $sum: { $cond: [{ $eq: ['$orderStatus', ORDER_STATUS.SHIPPED] }, 1, 0] } },
           delivered: { $sum: { $cond: [{ $eq: ['$orderStatus', ORDER_STATUS.DELIVERED] }, 1, 0] } },
           cancelled: { $sum: { $cond: [{ $eq: ['$orderStatus', ORDER_STATUS.CANCELLED] }, 1, 0] } },
-          totalSpent: { $sum: { $cond: [{ $eq: ['$paymentStatus', 'paid'] }, '$grandTotal', 0] } },
+          totalSpent: {
+            $sum: {
+              $cond: [
+                { $eq: ['$paymentStatus', 'paid'] },
+                {
+                  $cond: [
+                    {
+                      $and: [
+                        { $gt: ['$originalAmount', 0] },
+                        { $eq: ['$originalCurrency', 'USD'] },
+                      ],
+                    },
+                    '$originalAmount',
+                    {
+                      $cond: [
+                        {
+                          $and: [{ $gt: ['$exchangeRateUsed', 0] }, { $ne: ['$currency', 'USD'] }],
+                        },
+                        { $divide: ['$grandTotal', '$exchangeRateUsed'] },
+                        '$grandTotal',
+                      ],
+                    },
+                  ],
+                },
+                0,
+              ],
+            },
+          },
         },
       },
     ]),
@@ -46,7 +73,9 @@ export const getDashboardSummary = async (userId: string) => {
     Order.find({ userId })
       .sort({ createdAt: -1 })
       .limit(5)
-      .select('orderNumber orderStatus paymentStatus grandTotal createdAt items')
+      .select(
+        'orderNumber orderStatus paymentStatus grandTotal currency originalCurrency originalAmount createdAt items',
+      )
       .lean(),
   ])
 

@@ -9,7 +9,7 @@ import type {
   ApplyCouponInput,
 } from '../../../../src/shared/validators/checkout.validators.js'
 import type { ShippingMethod } from '../../../../src/shared/types/checkout.types.js'
-import { SHIPPING_OPTIONS, CHECKOUT_SESSION_TTL_MS } from '../../config/checkout.config.js'
+import { CHECKOUT_SESSION_TTL_MS } from '../../config/checkout.config.js'
 import { FLAT_TAX_FEE } from '../../config/cart.config.js'
 
 import { getAuthoritativeShippingFee } from '../shipping/shippingConfig.service.js'
@@ -242,10 +242,16 @@ const getActiveSession = async (userId: string): Promise<ICheckoutDocument> => {
 }
 
 // ─── Exposed shipping options ─────────────────────────────────────────────────
-export const getShippingOptions = () =>
-  (
-    Object.entries(SHIPPING_OPTIONS) as [
-      ShippingMethod,
-      (typeof SHIPPING_OPTIONS)[ShippingMethod],
-    ][]
-  ).map(([method, opt]) => ({ method, ...opt }))
+export const getShippingOptions = async (currency = 'USD') => {
+  const fee = await getAuthoritativeShippingFee(currency)
+  return [
+    {
+      method: 'standard' as ShippingMethod,
+      label: 'Verified Doorstep Delivery',
+      description: 'Reliable doorstep delivery fulfilled by Cartiva Logistics with live tracking',
+      cost: fee,
+      currency: (currency || 'USD').toUpperCase(),
+      estimatedDays: '3–5 business days',
+    },
+  ]
+}

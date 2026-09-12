@@ -14,7 +14,8 @@ export const getCheckout = async (
 ): Promise<void> => {
   try {
     const session = await checkoutService.getOrCreateCheckout(req.user!.userId)
-    const shippingOptions = checkoutService.getShippingOptions()
+    const currency = (req.query['currency'] as string) || 'USD'
+    const shippingOptions = await checkoutService.getShippingOptions(currency)
     sendSuccess(res, { session, shippingOptions })
   } catch (err) {
     next(err)

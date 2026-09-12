@@ -70,3 +70,11 @@ export const useUpdateAdminShippingConfig = () => {
     },
   })
 }
+
+export const usePublicShippingConfig = () =>
+  useQuery({
+    queryKey: ['shipping', 'public-config'],
+    queryFn: () => shippingService.getShippingConfig(),
+    select: (res) => res.data.data,
+    staleTime: 60_000,
+  })
