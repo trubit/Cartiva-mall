@@ -87,7 +87,7 @@ export default function CommissionPolicyManager() {
     }
 
     try {
-      await updateMutation.mutateAsync({
+      const res = await updateMutation.mutateAsync({
         baseSellerFee,
         baseCurrency,
         commissionType: commissionType as any,
@@ -96,12 +96,22 @@ export default function CommissionPolicyManager() {
         currencyRates,
         reason: reason.trim() || 'Admin dynamic commission adjustment',
       })
+      if (res?.data) {
+        setBaseSellerFee(res.data.baseSellerFee ?? baseSellerFee)
+        setBaseCurrency(res.data.baseCurrency ?? baseCurrency)
+        setCommissionType(res.data.commissionType ?? commissionType)
+        setPercentageRate(res.data.percentageRate ?? percentageRate)
+        setBaseUsdRate(res.data.baseUsdRate ?? baseUsdRate)
+        if (res.data.currencyRates && typeof res.data.currencyRates === 'object') {
+          setCurrencyRates({ ...res.data.currencyRates })
+        }
+      }
       setFeedback({
         type: 'success',
-        message: 'Marketplace commission policy updated successfully and active in real-time!',
+        message: `Marketplace commission policy updated successfully (v${res?.data?.version ?? 'new'}) and active in real-time!`,
       })
       setReason('')
-      refetch()
+      await refetch()
     } catch (err: any) {
       const msg =
         err?.response?.data?.message || err?.message || 'Failed to update commission policy.'

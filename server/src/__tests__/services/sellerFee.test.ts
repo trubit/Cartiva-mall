@@ -5,9 +5,12 @@ import { Product } from '../../modules/product/product.model.js'
 import { Order } from '../../modules/order/order.model.js'
 import { SellerFee } from '../../modules/fee/sellerFee.model.js'
 import { SellerLedger } from '../../modules/seller/sellerPayout.model.js'
+import { MarketplaceCommissionPolicy } from '../../modules/fee/marketplaceFee.model.js'
 import * as sellerFeeService from '../../modules/fee/sellerFee.service.js'
 
 beforeEach(async () => {
+  await sellerFeeService.clearCommissionPolicyCache()
+  await MarketplaceCommissionPolicy.deleteMany({})
   await User.deleteMany({})
   await SellerProfile.deleteMany({})
   await Product.deleteMany({})

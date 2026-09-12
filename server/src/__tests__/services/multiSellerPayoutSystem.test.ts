@@ -3,6 +3,7 @@ import mongoose from 'mongoose'
 import {
   recordOrderSellerEarnings,
   reverseOrderSellerEarnings,
+  clearCommissionPolicyCache,
 } from '../../modules/fee/sellerFee.service.js'
 import { requestWithdrawal } from '../../modules/seller/seller.service.js'
 import { SellerProfile } from '../../modules/seller/seller.model.js'
@@ -12,6 +13,7 @@ import {
   SellerPayoutAccount,
 } from '../../modules/seller/sellerPayout.model.js'
 import { SellerFee } from '../../modules/fee/sellerFee.model.js'
+import { MarketplaceCommissionPolicy } from '../../modules/fee/marketplaceFee.model.js'
 import { Order } from '../../modules/order/order.model.js'
 import { Product } from '../../modules/product/product.model.js'
 
@@ -23,8 +25,10 @@ describe('Multi-Seller Marketplace Payment, Ledger & Payout System', () => {
   const productBId = new mongoose.Types.ObjectId()
 
   beforeEach(async () => {
+    await clearCommissionPolicyCache()
     // Reset test database collections
     await Promise.all([
+      MarketplaceCommissionPolicy.deleteMany({}),
       SellerProfile.deleteMany({}),
       SellerLedger.deleteMany({}),
       SellerWithdrawal.deleteMany({}),

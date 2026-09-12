@@ -3,6 +3,7 @@ import { nanoid } from 'nanoid'
 import { SellerFee, type ISellerFeeDocument } from './sellerFee.model.js'
 import {
   MarketplaceCommissionPolicy,
+  MARKETPLACE_POLICY_SINGLETON_KEY,
   type IMarketplaceCommissionPolicyDocument,
   type CommissionType,
 } from './marketplaceFee.model.js'
@@ -55,27 +56,39 @@ export const getCommissionPolicy = async (): Promise<IMarketplaceCommissionPolic
     return memoryPolicyCache
   }
 
-  let policy = await MarketplaceCommissionPolicy.findOne({ isActive: true }).sort({ version: -1 })
+  let policy = await MarketplaceCommissionPolicy.findOne({
+    $or: [{ policyKey: MARKETPLACE_POLICY_SINGLETON_KEY }, { isActive: true }],
+  }).sort({ version: -1 })
 
   if (!policy) {
-    policy = await MarketplaceCommissionPolicy.create({
-      baseSellerFee: 200,
-      baseCurrency: 'NGN',
-      commissionType: 'FLAT_PER_UNIT',
-      percentageRate: 0,
-      currencyRates: CARTIVA_COMMISSION_CONFIG.RATES,
-      baseUsdRate: CARTIVA_COMMISSION_CONFIG.BASE_USD_RATE,
-      isActive: true,
-      version: 1,
-      auditTrail: [
-        {
-          modifiedBy: new mongoose.Types.ObjectId(),
-          modifierEmail: 'system@cartiva.mall',
-          reason: 'Initial system baseline commission policy seed',
-          timestamp: new Date(),
+    policy = await MarketplaceCommissionPolicy.findOneAndUpdate(
+      { policyKey: MARKETPLACE_POLICY_SINGLETON_KEY },
+      {
+        $setOnInsert: {
+          policyKey: MARKETPLACE_POLICY_SINGLETON_KEY,
+          baseSellerFee: 200,
+          baseCurrency: 'NGN',
+          commissionType: 'FLAT_PER_UNIT',
+          percentageRate: 0,
+          currencyRates: CARTIVA_COMMISSION_CONFIG.RATES,
+          baseUsdRate: CARTIVA_COMMISSION_CONFIG.BASE_USD_RATE,
+          isActive: true,
+          version: 1,
+          auditTrail: [
+            {
+              modifiedBy: new mongoose.Types.ObjectId(),
+              modifierEmail: 'system@cartiva.mall',
+              reason: 'Initial system baseline commission policy seed',
+              timestamp: new Date(),
+            },
+          ],
         },
-      ],
-    })
+      },
+      { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true },
+    )
+    if (!policy) {
+      throw new AppError('Failed to initialize marketplace commission policy', 500)
+    }
     logger.info('Seeded initial MarketplaceCommissionPolicy baseline')
   }
 
@@ -178,26 +191,62 @@ export const updateCommissionPolicy = async (
     timestamp: new Date(),
   }
 
-  const updated = await MarketplaceCommissionPolicy.findByIdAndUpdate(
-    currentPolicy._id,
+  const targetId = currentPolicy?._id
+    ? mongoose.Types.ObjectId.isValid(String(currentPolicy._id))
+      ? new mongoose.Types.ObjectId(String(currentPolicy._id))
+      : currentPolicy._id
+    : undefined
+
+  const query = targetId
+    ? {
+        $or: [
+          { _id: targetId },
+          { policyKey: MARKETPLACE_POLICY_SINGLETON_KEY },
+          { isActive: true },
+        ],
+      }
+    : { $or: [{ policyKey: MARKETPLACE_POLICY_SINGLETON_KEY }, { isActive: true }] }
+
+  const updated = await MarketplaceCommissionPolicy.findOneAndUpdate(
+    query,
     {
       $set: {
+        policyKey: MARKETPLACE_POLICY_SINGLETON_KEY,
         baseSellerFee: input.baseSellerFee,
         baseCurrency,
         commissionType,
         percentageRate,
         currencyRates: updatedCurrencyRates,
         baseUsdRate,
-        lastModifiedBy: adminUserId,
+        lastModifiedBy: new mongoose.Types.ObjectId(adminUserId),
         isActive: true,
         version: newVersion,
       },
       $push: { auditTrail: { $each: [auditEntry], $slice: -50 } },
     },
-    { returnDocument: 'after', upsert: true },
+    { returnDocument: 'after', upsert: true, runValidators: true },
   )
 
+  if (!updated) {
+    throw new AppError('Failed to update marketplace commission policy', 500)
+  }
+
   await clearCommissionPolicyCache()
+
+  // Immediately re-prime cache with the authoritative updated document
+  const plainUpdated = updated.toObject ? updated.toObject() : updated
+  try {
+    await redis.set(
+      COMMISSION_POLICY_CACHE_KEY,
+      JSON.stringify(plainUpdated),
+      'EX',
+      CACHE_TTL_SECONDS,
+    )
+  } catch {
+    // ignore redis error
+  }
+  memoryPolicyCache = plainUpdated
+  memoryCacheExpiry = Date.now() + 60_000
 
   logger.info(`Marketplace Commission Policy updated by admin ${admin.email} (v${updated.version})`)
   return updated

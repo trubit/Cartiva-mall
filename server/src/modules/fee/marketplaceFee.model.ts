@@ -2,6 +2,8 @@ import mongoose, { Schema, type Document, type Types } from 'mongoose'
 
 export type CommissionType = 'FLAT_PER_UNIT' | 'PERCENTAGE' | 'HYBRID'
 
+export const MARKETPLACE_POLICY_SINGLETON_KEY = 'AUTHORITATIVE_MARKETPLACE_COMMISSION_POLICY'
+
 export interface ICommissionAuditEntry {
   modifiedBy: Types.ObjectId | string
   modifierEmail?: string
@@ -12,6 +14,7 @@ export interface ICommissionAuditEntry {
 }
 
 export interface IMarketplaceCommissionPolicyDocument extends Document {
+  policyKey?: string
   baseSellerFee: number
   baseCurrency: string
   commissionType: CommissionType
@@ -40,6 +43,11 @@ const commissionAuditSchema = new Schema<ICommissionAuditEntry>(
 
 const marketplaceCommissionPolicySchema = new Schema<IMarketplaceCommissionPolicyDocument>(
   {
+    policyKey: {
+      type: String,
+      default: MARKETPLACE_POLICY_SINGLETON_KEY,
+      index: true,
+    },
     baseSellerFee: {
       type: Number,
       required: true,

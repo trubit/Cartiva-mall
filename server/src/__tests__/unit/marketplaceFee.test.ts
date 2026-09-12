@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterAll } from 'vitest'
 import {
   getCommissionPolicy,
   updateCommissionPolicy,
@@ -75,5 +75,38 @@ describe('Marketplace Commission Dynamic Policy Unit Tests', () => {
         baseSellerFee: -50,
       }),
     ).rejects.toThrow('Base seller fee cannot be negative')
+  })
+
+  it('permanently persists updated commission policy across cache evictions without reverting to baseline seed', async () => {
+    // 1. Initial seed should be 200
+    const initial = await getCommissionPolicy()
+    expect(initial.baseSellerFee).toBe(200)
+
+    // 2. Update to 750
+    const updated = await updateCommissionPolicy(adminUser._id.toString(), {
+      baseSellerFee: 750,
+      baseCurrency: 'NGN',
+      reason: 'Permanent board approved adjustment',
+    })
+    expect(updated.baseSellerFee).toBe(750)
+    expect(updated.version).toBe(2)
+
+    // 3. Simulate total cache eviction / process restart
+    await clearCommissionPolicyCache()
+
+    // 4. Fetch policy again from database
+    const persisted = await getCommissionPolicy()
+    expect(persisted.baseSellerFee).toBe(750)
+    expect(persisted.version).toBe(2)
+    expect(persisted.auditTrail.slice(-1)[0]?.reason).toBe('Permanent board approved adjustment')
+
+    // 5. Ensure commission calculation reflects the 750 fee
+    const perUnit = await getCartivaCommissionPerUnit('NGN')
+    expect(perUnit).toBe(750)
+  })
+
+  afterAll(async () => {
+    await MarketplaceCommissionPolicy.deleteMany({})
+    await clearCommissionPolicyCache()
   })
 })
