@@ -2,10 +2,7 @@ import type { FC } from 'react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  FaShippingFast,
-  FaPlane,
   FaBoxOpen,
-  FaGlobeAmericas,
   FaTruck,
   FaSearch,
   FaCheckCircle,
@@ -13,64 +10,33 @@ import {
   FaClock,
   FaArrowRight,
 } from 'react-icons/fa'
+import { usePublicShippingConfig } from '../../hooks/useShipping.js'
+import { useCurrency } from '../../hooks/useCurrency.js'
+import { formatMoney } from '../../../shared/utils/money.js'
+
+const CURRENCY_DETAILS: Record<string, { name: string; region: string; icon: string }> = {
+  NGN: { name: 'Nigerian Naira', region: 'Nigeria & West Africa', icon: '🇳🇬' },
+  USD: { name: 'US Dollar', region: 'United States & Americas', icon: '🇺🇸' },
+  EUR: { name: 'Euro', region: 'European Union', icon: '🇪🇺' },
+  GBP: { name: 'British Pound', region: 'United Kingdom', icon: '🇬🇧' },
+  CAD: { name: 'Canadian Dollar', region: 'Canada', icon: '🇨🇦' },
+  AUD: { name: 'Australian Dollar', region: 'Australia', icon: '🇦🇺' },
+}
 
 export const ShippingRatesPage: FC = () => {
   const [trackingNumber, setTrackingNumber] = useState<string>('')
+  const { data: config, isLoading } = usePublicShippingConfig()
+  const { currentCurrency, formatPrice } = useCurrency()
 
-  const rates = [
-    {
-      name: 'Standard Ground Delivery',
-      time: '3–5 Business Days',
-      thresholdRate: 'FREE on orders $35+',
-      standardRate: '$4.99 flat rate',
-      icon: FaBoxOpen,
-      color: '#2563eb',
-      bg: '#eff6ff',
-      features: [
-        'Full end-to-end tracking',
-        'Safe contactless doorstep drop',
-        'Carbon-neutral transit',
-      ],
-    },
-    {
-      name: 'Cartiva Express 2-Day',
-      time: '2 Business Days',
-      thresholdRate: '$7.99 (orders $35+)',
-      standardRate: '$9.99 flat rate',
-      icon: FaShippingFast,
-      color: '#d97706',
-      bg: '#fef3c7',
-      features: ['Guaranteed delivery date', 'Priority warehouse dispatch', 'SMS delivery alerts'],
-    },
-    {
-      name: 'Priority Next-Day Air',
-      time: '1 Business Day',
-      thresholdRate: '$14.99 (orders $35+)',
-      standardRate: '$17.99 flat rate',
-      icon: FaPlane,
-      color: '#dc2626',
-      bg: '#fef2f2',
-      features: [
-        'Next-morning flight routing',
-        'Signature on delivery',
-        '100% money-back time guarantee',
-      ],
-    },
-    {
-      name: 'Global International Express',
-      time: '5–9 Business Days',
-      thresholdRate: 'Calculated by Weight',
-      standardRate: 'From $19.99',
-      icon: FaGlobeAmericas,
-      color: '#7c3aed',
-      bg: '#f5f3ff',
-      features: [
-        '140+ countries covered',
-        'Prepaid customs & duties',
-        'Multi-carrier localized handover',
-      ],
-    },
-  ]
+  const liveRates: Record<string, number> = {}
+  if (config?.rates && typeof config.rates === 'object') {
+    Object.assign(liveRates, config.rates)
+  } else if (config?.fixedRates && typeof config.fixedRates === 'object') {
+    Object.assign(liveRates, config.fixedRates)
+  }
+
+  const currencies = Object.keys(CURRENCY_DETAILS)
+  const activeRate = liveRates[currentCurrency]
 
   return (
     <div style={{ background: '#f8fafc', minHeight: '100vh', padding: '40px 16px 80px' }}>
@@ -101,7 +67,7 @@ export const ShippingRatesPage: FC = () => {
               marginBottom: '20px',
             }}
           >
-            <FaTruck /> Fast & Transparent Delivery
+            <FaTruck /> Authoritative Admin Dynamic Shipping
           </div>
           <h1
             style={{
@@ -112,7 +78,7 @@ export const ShippingRatesPage: FC = () => {
               color: '#ffffff',
             }}
           >
-            Shipping Rates & Delivery Estimates
+            Shipping Rates & Delivery Logistics
           </h1>
           <p
             style={{
@@ -123,8 +89,9 @@ export const ShippingRatesPage: FC = () => {
               margin: 0,
             }}
           >
-            Enjoy FREE Standard Ground Shipping on eligible orders over $35, real-time GPS parcel
-            tracking, and priority next-day air options.
+            Transparent doorstep delivery rates centrally configured and guaranteed by Cartiva Mall
+            administrators. All shipments include full GPS tracking and comprehensive parcel transit
+            insurance.
           </p>
         </div>
 
@@ -196,79 +163,165 @@ export const ShippingRatesPage: FC = () => {
           </form>
         </div>
 
-        {/* Shipping Options Grid */}
+        {/* Active Currency Highlight Card */}
+        <div
+          style={{
+            background:
+              'linear-gradient(135deg, rgba(37,99,235,0.08) 0%, rgba(255,153,0,0.08) 100%)',
+            border: '2px solid rgba(37, 99, 235, 0.25)',
+            borderRadius: '20px',
+            padding: '28px 32px',
+            marginBottom: '36px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '20px',
+          }}
+        >
+          <div>
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                color: '#2563eb',
+                fontSize: '12px',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                marginBottom: '6px',
+              }}
+            >
+              <FaBoxOpen /> Current Selected Currency Rate
+            </div>
+            <h2 style={{ fontSize: '24px', fontWeight: 800, margin: '0 0 6px', color: '#0f172a' }}>
+              Standard Doorstep Delivery ({currentCurrency})
+            </h2>
+            <p style={{ margin: 0, fontSize: '14px', color: '#64748b' }}>
+              Authoritative platform shipping fee applied at checkout for {currentCurrency} orders.
+            </p>
+          </div>
+
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: '32px', fontWeight: 900, color: '#16a34a' }}>
+              {isLoading
+                ? 'Loading…'
+                : typeof activeRate === 'number'
+                  ? formatPrice(activeRate, currentCurrency)
+                  : 'Configured at Checkout'}
+            </div>
+            <span
+              style={{
+                display: 'inline-block',
+                marginTop: '4px',
+                background: '#dcfce7',
+                color: '#15803d',
+                fontSize: '12px',
+                fontWeight: 700,
+                padding: '4px 10px',
+                borderRadius: '6px',
+              }}
+            >
+              Authoritative Admin Rate
+            </span>
+          </div>
+        </div>
+
+        {/* Currency Rates Matrix Grid */}
+        <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a', marginBottom: '16px' }}>
+          Configured Regional Delivery Rates
+        </h3>
+        <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '24px', marginTop: 0 }}>
+          Live rates maintained directly by platform administrators for each supported global
+          currency:
+        </p>
+
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-            gap: '24px',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: '20px',
             marginBottom: '48px',
           }}
         >
-          {rates.map((r) => {
-            const Icon = r.icon
+          {currencies.map((curr) => {
+            const details = CURRENCY_DETAILS[curr] || {
+              name: curr,
+              region: 'Global',
+              icon: '🌐',
+            }
+            const rate = liveRates[curr]
+            const isCurrent = curr === currentCurrency
+
             return (
               <div
-                key={r.name}
+                key={curr}
                 style={{
                   background: '#ffffff',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '20px',
-                  padding: '32px 24px',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+                  border: isCurrent ? '2px solid #2563eb' : '1px solid #e2e8f0',
+                  borderRadius: '18px',
+                  padding: '24px',
+                  boxShadow: isCurrent
+                    ? '0 10px 15px -3px rgba(37, 99, 235, 0.15)'
+                    : '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
+                  position: 'relative',
                 }}
               >
                 <div>
                   <div
                     style={{
-                      width: '52px',
-                      height: '52px',
-                      borderRadius: '14px',
-                      background: r.bg,
-                      color: r.color,
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '22px',
-                      marginBottom: '20px',
-                    }}
-                  >
-                    <Icon />
-                  </div>
-                  <h3
-                    style={{
-                      fontSize: '18px',
-                      fontWeight: 800,
-                      color: '#0f172a',
-                      margin: '0 0 8px',
-                    }}
-                  >
-                    {r.name}
-                  </h3>
-                  <div
-                    style={{
-                      display: 'inline-block',
-                      background: '#f1f5f9',
-                      color: '#475569',
-                      fontSize: '12px',
-                      fontWeight: 700,
-                      padding: '3px 8px',
-                      borderRadius: '4px',
+                      justifyContent: 'space-between',
                       marginBottom: '16px',
                     }}
                   >
-                    <FaClock style={{ marginRight: '4px' }} /> {r.time}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{ fontSize: '28px' }}>{details.icon}</span>
+                      <div>
+                        <h4
+                          style={{
+                            margin: 0,
+                            fontSize: '16px',
+                            fontWeight: 800,
+                            color: '#0f172a',
+                          }}
+                        >
+                          {curr}
+                        </h4>
+                        <span style={{ fontSize: '12px', color: '#64748b' }}>{details.name}</span>
+                      </div>
+                    </div>
+                    {isCurrent && (
+                      <span
+                        style={{
+                          background: '#eff6ff',
+                          color: '#2563eb',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          padding: '2px 8px',
+                          borderRadius: '4px',
+                        }}
+                      >
+                        Active
+                      </span>
+                    )}
                   </div>
 
-                  <div style={{ marginBottom: '20px' }}>
-                    <div style={{ fontSize: '20px', fontWeight: 800, color: '#16a34a' }}>
-                      {r.thresholdRate}
+                  <div style={{ marginBottom: '16px' }}>
+                    <div style={{ fontSize: '26px', fontWeight: 800, color: '#0f172a' }}>
+                      {isLoading
+                        ? '…'
+                        : typeof rate === 'number'
+                          ? formatMoney(rate, curr)
+                          : 'Unset'}
                     </div>
-                    <div style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>
-                      Standard: {r.standardRate}
+                    <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
+                      Doorstep Delivery · {details.region}
                     </div>
                   </div>
 
@@ -277,26 +330,49 @@ export const ShippingRatesPage: FC = () => {
                       display: 'grid',
                       gap: '8px',
                       borderTop: '1px solid #f1f5f9',
-                      paddingTop: '16px',
+                      paddingTop: '14px',
                     }}
                   >
-                    {r.features.map((feat) => (
-                      <div
-                        key={feat}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          fontSize: '13px',
-                          color: '#475569',
-                        }}
-                      >
-                        <FaCheckCircle
-                          style={{ color: '#10b981', fontSize: '12px', flexShrink: 0 }}
-                        />
-                        <span>{feat}</span>
-                      </div>
-                    ))}
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontSize: '12px',
+                        color: '#475569',
+                      }}
+                    >
+                      <FaCheckCircle
+                        style={{ color: '#10b981', fontSize: '11px', flexShrink: 0 }}
+                      />
+                      <span>Live GPS parcel tracking</span>
+                    </div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontSize: '12px',
+                        color: '#475569',
+                      }}
+                    >
+                      <FaCheckCircle
+                        style={{ color: '#10b981', fontSize: '11px', flexShrink: 0 }}
+                      />
+                      <span>Full transit insurance</span>
+                    </div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontSize: '12px',
+                        color: '#475569',
+                      }}
+                    >
+                      <FaClock style={{ color: '#64748b', fontSize: '11px', flexShrink: 0 }} />
+                      <span>3–5 Business Days estimated</span>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -1,5 +1,6 @@
 import mongoose from 'mongoose'
 import { redis } from '../../database/redis.js'
+import { cacheDelPattern } from '../../utils/cache.js'
 import { Product, type IProductDocument } from '../product/product.model.js'
 import { Order } from '../order/order.model.js'
 import { UserBehavior, EVENT_SCORES, type BehaviorEventType } from './userBehavior.model.js'
@@ -179,40 +180,20 @@ export async function getBestSellers(limit = 12, category?: string): Promise<obj
   const cached = await redis.get(key)
   if (cached) return JSON.parse(cached) as object[]
 
-  const sixMonthsAgo = new Date(Date.now() - 180 * 24 * 3600 * 1000)
+  const filter: Record<string, unknown> = {
+    status: { $in: ['PUBLISHED', 'active', 'APPROVED'] },
+    stockQuantity: { $gt: 0 },
+    ...(category ? { category: category as ProductCategory } : {}),
+  }
 
-  const pipeline: mongoose.PipelineStage[] = [
-    {
-      $match: {
-        orderStatus: { $in: ['confirmed', 'shipped', 'delivered'] },
-        createdAt: { $gte: sixMonthsAgo },
-      },
-    },
-    { $unwind: '$items' },
-    { $group: { _id: '$items.productId', totalSold: { $sum: '$items.quantity' } } },
-    { $sort: { totalSold: -1 } },
-    { $limit: limit * 3 },
-    { $lookup: { from: 'products', localField: '_id', foreignField: '_id', as: 'product' } },
-    { $unwind: '$product' },
-    {
-      $match: {
-        'product.status': 'active',
-        'product.isActive': true,
-        'product.stockQuantity': { $gt: 0 },
-        ...(category ? { 'product.category': category } : {}),
-      },
-    },
-    { $addFields: { 'product.totalSold': '$totalSold' } },
-    { $replaceRoot: { newRoot: '$product' } },
-    { $limit: limit },
-  ]
-
-  const result = await Order.aggregate(pipeline)
+  // Fast-path: query indexed soldCount directly on Product to avoid expensive full Order unwind
+  let result = await Product.find(filter as object)
+    .sort({ soldCount: -1, ratingsAverage: -1 })
+    .limit(limit)
+    .lean()
 
   if (result.length < limit) {
-    const existingIds = result.map(
-      (p: Record<string, unknown>) => new mongoose.Types.ObjectId(String(p._id)),
-    )
+    const existingIds = result.map((p) => new mongoose.Types.ObjectId(String(p._id)))
     const fill = await Product.find({
       status: { $in: ['PUBLISHED', 'active', 'APPROVED'] },
       stockQuantity: { $gt: 0 },
@@ -222,11 +203,11 @@ export async function getBestSellers(limit = 12, category?: string): Promise<obj
       .sort({ ratingsAverage: -1, ratingsCount: -1 })
       .limit(limit - result.length)
       .lean()
-    result.push(...fill)
+    result = [...result, ...fill]
   }
 
   void redis.setex(key, CACHE_TTL.bestSellers, JSON.stringify(result))
-  return result
+  return result as unknown as object[]
 }
 
 // ─── New Arrivals ─────────────────────────────────────────────────────────────
@@ -278,10 +259,8 @@ export async function getHomeRecommendations(userId?: string): Promise<{
 // ─── Invalidate caches (call after purchase) ──────────────────────────────────
 
 export async function invalidateProductCaches(productId: string): Promise<void> {
-  const fbtKeys = await redis.keys(`rec:fbt:${productId}:*`)
-  if (fbtKeys.length) await redis.del(...fbtKeys)
-  const bsKeys = await redis.keys('rec:bestsellers:*')
-  if (bsKeys.length) await redis.del(...bsKeys)
+  await cacheDelPattern(`rec:fbt:${productId}:*`)
+  await cacheDelPattern('rec:bestsellers:*')
 }
 
 // ─── Similar Products ─────────────────────────────────────────────────────────

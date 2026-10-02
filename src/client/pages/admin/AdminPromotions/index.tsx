@@ -11,6 +11,7 @@ import {
   useTogglePromotion,
 } from '../../../hooks/usePromotions.js'
 import type { ICoupon, IPromotion } from '../../../../shared/types/promotion.types.js'
+import ConfirmDialog from '../../../components/common/ConfirmDialog/index.js'
 
 type Tab = 'coupons' | 'promotions'
 
@@ -20,6 +21,11 @@ export default function AdminPromotions() {
   const [tab, setTab] = useState<Tab>('coupons')
   const [showCouponForm, setShowCouponForm] = useState(false)
   const [showPromoForm, setShowPromoForm] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: string
+    type: 'coupon' | 'promotion'
+    name?: string
+  } | null>(null)
 
   const { data: couponsData } = useAdminCoupons()
   const { data: promosData } = useAdminPromotions()
@@ -559,7 +565,7 @@ export default function AdminPromotions() {
                       </button>
                       <button
                         onClick={() => {
-                          if (confirm('Delete coupon?')) deleteCoupon(c._id)
+                          setDeleteTarget({ id: c._id, type: 'coupon', name: c.code })
                         }}
                         style={{
                           background: 'none',
@@ -662,7 +668,7 @@ export default function AdminPromotions() {
                       </button>
                       <button
                         onClick={() => {
-                          if (confirm('Delete promotion?')) deletePromo(p._id)
+                          setDeleteTarget({ id: p._id, type: 'promotion', name: p.title })
                         }}
                         style={{
                           background: 'none',
@@ -681,6 +687,26 @@ export default function AdminPromotions() {
           </table>
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title={deleteTarget?.type === 'coupon' ? 'Delete Coupon' : 'Delete Promotion'}
+        message={`Are you sure you want to delete ${deleteTarget?.name ? `"${deleteTarget.name}"` : `this ${deleteTarget?.type || 'item'}`}? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+        onConfirm={() => {
+          if (!deleteTarget) return
+          if (deleteTarget.type === 'coupon') {
+            deleteCoupon(deleteTarget.id)
+          } else {
+            deletePromo(deleteTarget.id)
+          }
+          setDeleteTarget(null)
+        }}
+        onClose={() => setDeleteTarget(null)}
+      />
     </div>
   )
 }

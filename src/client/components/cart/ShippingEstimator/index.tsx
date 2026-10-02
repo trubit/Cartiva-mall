@@ -1,5 +1,6 @@
-import { FiTruck } from 'react-icons/fi'
+import { FiTruck, FiShield } from 'react-icons/fi'
 import { useCurrency } from '../../../hooks/useCurrency.js'
+import { usePublicShippingConfig } from '../../../hooks/useShipping.js'
 import type { ICartTotals } from '../../../../shared/types/cart.types.js'
 
 interface ShippingEstimatorProps {
@@ -7,42 +8,57 @@ interface ShippingEstimatorProps {
 }
 
 export default function ShippingEstimator({ totals }: ShippingEstimatorProps) {
-  const { formatPrice } = useCurrency()
-  const progress = Math.min(100, (totals.subtotal / totals.freeShippingThreshold) * 100)
+  const { currentCurrency, formatPrice } = useCurrency()
+  const { data: config, isLoading } = usePublicShippingConfig()
+
+  // Dynamic admin-configured rate for active currency
+  let dynamicRate: number | undefined
+  if (config?.rates && typeof config.rates === 'object') {
+    dynamicRate = (config.rates as Record<string, number>)[currentCurrency]
+  } else if (config?.fixedRates && typeof config.fixedRates === 'object') {
+    dynamicRate = (config.fixedRates as Record<string, number>)[currentCurrency]
+  }
+
+  const effectiveFee =
+    typeof dynamicRate === 'number'
+      ? dynamicRate
+      : totals.shippingCost > 0
+        ? totals.shippingCost
+        : undefined
 
   return (
     <div className="shipping-estimator">
       <div className="shipping-estimator__header">
         <FiTruck size={18} />
-        <span className="shipping-estimator__title">Shipping</span>
+        <span className="shipping-estimator__title">Authoritative Doorstep Delivery</span>
       </div>
 
-      {totals.isFreeShipping ? (
-        <div className="shipping-estimator__free">
-          <span className="shipping-estimator__badge shipping-estimator__badge--free">FREE</span>
-          <span>You qualify for free shipping!</span>
+      <div style={{ marginTop: '8px' }}>
+        <div className="shipping-estimator__cost-row">
+          <span>Standard Delivery ({currentCurrency})</span>
+          <strong style={{ color: 'var(--color-primary, #FF9900)', fontSize: '15px' }}>
+            {isLoading
+              ? 'Calculating…'
+              : effectiveFee !== undefined
+                ? formatPrice(effectiveFee, currentCurrency)
+                : 'Calculated at checkout'}
+          </strong>
         </div>
-      ) : (
-        <div className="shipping-estimator__progress-wrap">
-          <p className="shipping-estimator__hint">
-            Add <strong>{formatPrice(totals.remainingForFreeShipping)}</strong> more for free
-            shipping
-          </p>
-          <div
-            className="shipping-estimator__bar"
-            role="progressbar"
-            aria-valuenow={progress}
-            aria-valuemin={0}
-            aria-valuemax={100}
-          >
-            <div className="shipping-estimator__bar-fill" style={{ width: `${progress}%` }} />
-          </div>
-          <div className="shipping-estimator__cost-row">
-            <span>Flat rate shipping</span>
-            <strong>{formatPrice(totals.shippingCost)}</strong>
-          </div>
+
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            marginTop: '8px',
+            fontSize: '12px',
+            color: 'var(--color-neutral-400, #9ca3af)',
+          }}
+        >
+          <FiShield size={13} style={{ color: '#10b981', flexShrink: 0 }} />
+          <span>Full transit insurance & live tracking included</span>
         </div>
-      )}
+      </div>
     </div>
   )
 }

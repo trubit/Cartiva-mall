@@ -11,6 +11,8 @@ import {
   FiZap,
   FiAward,
   FiPackage,
+  FiCheck,
+  FiLock,
 } from 'react-icons/fi'
 import {
   useFeaturedProducts,
@@ -26,6 +28,7 @@ import QuickViewModal from '../../components/product/QuickViewModal/index.js'
 import { PRODUCT_CATEGORIES } from '../../../shared/constants/index.js'
 import type { IProduct } from '../../../shared/types/product.types.js'
 import Logo from '../../components/ui/Logo/index.js'
+import { HUMAN_IMAGES } from '../../constants/images.js'
 
 const CATEGORY_ICONS: Record<string, string> = {
   Electronics: '💻',
@@ -66,35 +69,87 @@ export default function HomePage() {
 
   return (
     <>
-      {/* ── Hero ─────────────────────────────────────────────── */}
-      <section className="hero-banner">
-        <div className="container" style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{ maxWidth: 600 }}>
-            <div style={{ marginBottom: '1.25rem' }}>
-              <Logo size="lg" theme="dark" />
-            </div>
-            <span className="hero-banner__tagline">Trusted · Fast · Secure</span>
+      {/* ── Full-Bleed Hero ───────────────────────────────────── */}
+      <section className="hero-banner hero-banner--fullbleed" aria-label="Welcome to Cartiva Mall">
+        {/* Full-bleed background photo layer */}
+        <div className="hero-banner__bg-layer" aria-hidden="true">
+          <img
+            src={HUMAN_IMAGES.homeHeroShopper.url}
+            srcSet={`${HUMAN_IMAGES.homeHeroShopper.url.replace('&w=1920', '&w=640')} 640w, ${HUMAN_IMAGES.homeHeroShopper.url.replace('&w=1920', '&w=1024')} 1024w, ${HUMAN_IMAGES.homeHeroShopper.url.replace('&w=1920', '&w=1440')} 1440w, ${HUMAN_IMAGES.homeHeroShopper.url} 1920w`}
+            sizes="100vw"
+            alt=""
+            className="hero-banner__bg-img"
+            loading="eager"
+            fetchPriority="high"
+            width={HUMAN_IMAGES.homeHeroShopper.width}
+            height={HUMAN_IMAGES.homeHeroShopper.height}
+          />
+          <div className="hero-banner__overlay" />
+        </div>
 
-            <h1 className="hero-banner__title">Shop Smarter. Live Better.</h1>
+        {/* Content container layered over image */}
+        <div className="container hero-banner__container">
+          {/* Brand & Badge Header Row */}
+          <div className="hero-banner__header">
+            <Logo size="lg" theme="dark" />
+            <div className="hero-banner__tagline">
+              <FiShield className="hero-banner__tagline-icon" />
+              <span>Trusted &middot; Fast &middot; Secure</span>
+            </div>
+          </div>
+
+          <div className="hero-banner__content">
+            <h1 className="hero-banner__title">
+              Shop Smarter.
+              <span className="hero-banner__title-accent">Live Better.</span>
+            </h1>
 
             <p className="hero-banner__subtitle">
               Discover thousands of products from verified sellers. Great deals, fast delivery, easy
-              returns.
+              returns, and zero-risk buyer escrow protection.
             </p>
 
-            {/* Standalone search */}
-            <div style={{ maxWidth: 560, marginBottom: 'var(--space-6)' }}>
+            {/* Real Search component with suggestions & route integration */}
+            <div className="hero-banner__search-wrap">
               <ProductSearch placeholder="Search products, brands, categories…" />
             </div>
 
+            {/* Real CTAs connected to platform routes */}
             <div className="hero-banner__actions">
-              <Link to="/products" className="hero-btn-primary">
-                <FiShoppingBag size={16} />
-                Shop Now
+              <Link to="/products" className="hero-btn-primary" id="hero-shop-now-btn">
+                <FiShoppingBag size={18} />
+                <span>Shop Now</span>
               </Link>
-              <Link to="/register" className="hero-btn-secondary">
-                Become a Seller <FiArrowRight size={14} />
+              <Link
+                to={isAuthenticated ? '/seller/register' : '/register'}
+                className="hero-btn-secondary"
+                id="hero-become-seller-btn"
+              >
+                <span>Become a Seller</span>
+                <FiArrowRight size={16} />
               </Link>
+            </div>
+
+            {/* Honest Trust Assurance (No fabricated metrics) */}
+            <div className="hero-banner__trust-pill">
+              <div className="hero-banner__trust-item">
+                <FiCheck className="hero-banner__trust-check" />
+                <span>Buyer Escrow Guarantee</span>
+              </div>
+              <span className="hero-banner__trust-divider" aria-hidden="true">
+                &bull;
+              </span>
+              <div className="hero-banner__trust-item">
+                <FiCheck className="hero-banner__trust-check" />
+                <span>100% Verified Sellers</span>
+              </div>
+              <span className="hero-banner__trust-divider" aria-hidden="true">
+                &bull;
+              </span>
+              <div className="hero-banner__trust-item">
+                <FiLock className="hero-banner__trust-check" />
+                <span>PCI-DSS Encrypted Payments</span>
+              </div>
             </div>
           </div>
         </div>
@@ -453,32 +508,69 @@ export default function HomePage() {
       </section>
 
       {/* ── CTA banner ──────────────────────────────────────── */}
-      <section style={{ background: 'var(--color-navbar-bg)', padding: 'var(--space-10) 0' }}>
-        <div className="container" style={{ textAlign: 'center' }}>
-          <h2
-            style={{
-              color: '#fff',
-              fontSize: 'var(--text-2xl)',
-              fontWeight: 700,
-              marginBottom: 'var(--space-2)',
-            }}
-          >
-            Start Selling on Cartiva
-          </h2>
-          <p
-            style={{
-              color: 'rgba(255,255,255,.7)',
-              fontSize: 'var(--text-sm)',
-              marginBottom: 'var(--space-6)',
-              maxWidth: 440,
-              margin: '0 auto var(--space-6)',
-            }}
-          >
-            Reach millions of buyers. List your products today and grow your business.
-          </p>
-          <Link to="/register" className="hero-btn-primary">
-            Create Seller Account <FiArrowRight size={14} />
-          </Link>
+      <section className="seller-cta-section">
+        <div className="container">
+          <div className="seller-cta-card">
+            <div className="seller-cta-visual">
+              <img
+                src={HUMAN_IMAGES.homeSellerMerchant.url}
+                alt={HUMAN_IMAGES.homeSellerMerchant.alt}
+                className="seller-cta-img"
+                loading="lazy"
+                width={HUMAN_IMAGES.homeSellerMerchant.width}
+                height={HUMAN_IMAGES.homeSellerMerchant.height}
+              />
+            </div>
+            <div className="seller-cta-content">
+              <span className="seller-cta-tag">Merchant Community</span>
+              <h2
+                style={{
+                  color: '#fff',
+                  fontSize: 'var(--text-2xl)',
+                  fontWeight: 800,
+                  marginBottom: 'var(--space-2)',
+                }}
+              >
+                Grow Your Business on Cartiva
+              </h2>
+              <p
+                style={{
+                  color: 'rgba(255,255,255,.8)',
+                  fontSize: 'var(--text-sm)',
+                  lineHeight: 1.6,
+                  marginBottom: 'var(--space-3)',
+                }}
+              >
+                Join verified independent merchants connecting with active buyers across Nigeria and
+                Africa. Enjoy automated payouts, multi-currency pricing, and dedicated vendor
+                support.
+              </p>
+
+              <ul className="seller-cta-perks">
+                <li className="seller-cta-perk-item">
+                  <FiCheck style={{ color: '#10b981', flexShrink: 0 }} /> Instant escrow payouts
+                  directly to your local bank
+                </li>
+                <li className="seller-cta-perk-item">
+                  <FiCheck style={{ color: '#10b981', flexShrink: 0 }} /> Multi-currency support
+                  (NGN, USD, EUR, GBP)
+                </li>
+                <li className="seller-cta-perk-item">
+                  <FiCheck style={{ color: '#10b981', flexShrink: 0 }} /> Comprehensive inventory
+                  and analytics dashboard
+                </li>
+              </ul>
+
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <Link to="/register" className="hero-btn-primary">
+                  Create Seller Account <FiArrowRight size={14} />
+                </Link>
+                <Link to="/seller/onboarding" className="hero-btn-secondary">
+                  Learn More
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 

@@ -9,6 +9,7 @@ import AuthButton from '../../../../client/components/auth/AuthButton/index.js'
 import SocialLogin from '../../../../client/components/auth/SocialLogin/index.js'
 import { useLogin, useResendVerification } from '../../../hooks/useAuth.js'
 import { loginSchema, type LoginInput } from '../../../../shared/validators/auth.validators.js'
+import { HUMAN_IMAGES } from '../../../constants/images.js'
 
 export default function LoginPage() {
   const [params] = useSearchParams()
@@ -36,8 +37,15 @@ export default function LoginPage() {
     if (email) resend(email)
   }
 
+  const loginShowcase = {
+    image: HUMAN_IMAGES.authSignIn,
+    tag: 'Trusted Marketplace',
+    headline: 'Seamless Marketplace Shopping with Guaranteed Protection',
+    trustText: 'Buyer Escrow Guarantee · 100% Verified Sellers · End-to-End Encryption',
+  }
+
   return (
-    <AuthFormCard title="Sign In" subtitle="Welcome back to Cartiva">
+    <AuthFormCard title="Sign In" subtitle="Welcome back to Cartiva" showcase={loginShowcase}>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
         {registered && (
           <div className="auth-alert auth-alert-success">

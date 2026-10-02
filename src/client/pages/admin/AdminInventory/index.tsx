@@ -18,6 +18,7 @@ import {
   useResolveAlert,
 } from '../../../hooks/useInventory.js'
 import type { IWarehouse } from '../../../services/inventoryService.js'
+import ConfirmDialog from '../../../components/common/ConfirmDialog/index.js'
 
 type Tab = 'warehouses' | 'alerts' | 'movements'
 
@@ -44,6 +45,9 @@ export default function AdminInventory() {
   const [tab, setTab] = useState<Tab>('warehouses')
   const [showForm, setShowForm] = useState(false)
   const [editingWh, setEditingWh] = useState<IWarehouse | null>(null)
+  const [warehouseToDelete, setWarehouseToDelete] = useState<{ id: string; name: string } | null>(
+    null,
+  )
   const [form, setForm] = useState({
     name: '',
     code: '',
@@ -57,7 +61,7 @@ export default function AdminInventory() {
   const { data: movementsData } = useMovements()
   const { mutate: createWh } = useCreateWarehouse()
   const { mutate: updateWh } = useUpdateWarehouse()
-  const { mutate: deleteWh } = useDeleteWarehouse()
+  const { mutate: deleteWh, isPending: isDeletingWh } = useDeleteWarehouse()
   const { mutate: resolveAlert } = useResolveAlert()
 
   const alerts = alertsData?.items ?? []
@@ -341,7 +345,7 @@ export default function AdminInventory() {
                 </button>
                 <button
                   onClick={() => {
-                    if (confirm('Delete this warehouse?')) deleteWh(wh._id)
+                    setWarehouseToDelete({ id: wh._id, name: wh.name })
                   }}
                   style={{
                     background: 'none',
@@ -519,6 +523,27 @@ export default function AdminInventory() {
           </table>
         </div>
       )}
+
+      {/* Delete Warehouse Confirmation Dialog */}
+      <ConfirmDialog
+        open={Boolean(warehouseToDelete)}
+        title="Delete Warehouse"
+        message={`Are you sure you want to delete warehouse "${warehouseToDelete?.name || ''}"? This action cannot be undone.`}
+        confirmText="Delete Warehouse"
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={isDeletingWh}
+        onConfirm={async () => {
+          if (!warehouseToDelete) return
+          try {
+            await deleteWh(warehouseToDelete.id)
+            setWarehouseToDelete(null)
+          } catch {
+            setWarehouseToDelete(null)
+          }
+        }}
+        onClose={() => setWarehouseToDelete(null)}
+      />
     </div>
   )
 }

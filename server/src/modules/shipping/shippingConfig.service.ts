@@ -60,13 +60,22 @@ export const getAuthoritativeShippingFee = async (currency = 'USD'): Promise<num
   } else if (typeof config.fixedRates === 'object' && config.fixedRates !== null) {
     baseUsdRate = (config.fixedRates as Record<string, number>)['USD']
   }
-  const baseUsd = typeof baseUsdRate === 'number' ? baseUsdRate : DEFAULT_SHIPPING_RATES['USD']
+
+  if (typeof baseUsdRate !== 'number' || isNaN(baseUsdRate) || baseUsdRate < 0) {
+    throw new AppError(
+      `Authoritative shipping configuration is unconfigured for currency ${curr}. Please configure shipping prices in Admin settings.`,
+      503,
+    )
+  }
 
   try {
-    const conversion = await currencyService.convert(baseUsd, 'USD', curr)
+    const conversion = await currencyService.convert(baseUsdRate, 'USD', curr)
     return roundMoney(conversion.targetAmount, curr)
-  } catch {
-    return roundMoney(baseUsd, curr)
+  } catch (_err) {
+    throw new AppError(
+      `Unable to calculate authoritative dynamic shipping fee for currency ${curr}. Dynamic shipping rate conversion failed.`,
+      503,
+    )
   }
 }
 

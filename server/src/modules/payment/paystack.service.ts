@@ -259,7 +259,7 @@ export const verifyTransaction = async (
       const bulkOps = updated.items.map((item: any) => ({
         updateOne: {
           filter: { _id: item.productId, stockQuantity: { $gte: item.quantity } },
-          update: { $inc: { stockQuantity: -item.quantity } },
+          update: { $inc: { stockQuantity: -item.quantity, soldCount: item.quantity } },
         },
       }))
       const result = await Product.bulkWrite(bulkOps, { ordered: false, ...s })
@@ -498,7 +498,7 @@ export const handleWebhook = async (rawBody: Buffer, signature: string) => {
         const bulkOps = confirmed.items.map((item: any) => ({
           updateOne: {
             filter: { _id: item.productId, stockQuantity: { $gte: item.quantity } },
-            update: { $inc: { stockQuantity: -item.quantity } },
+            update: { $inc: { stockQuantity: -item.quantity, soldCount: item.quantity } },
           },
         }))
         const result = await Product.bulkWrite(bulkOps, { ordered: false, ...s })

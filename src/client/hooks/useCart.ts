@@ -5,7 +5,6 @@ import { cartService } from '../services/cartService.js'
 import type { IServerCart, ICartDisplayItem, ICartTotals } from '../../shared/types/cart.types.js'
 import type { IProduct } from '../../shared/types/product.types.js'
 import type { AddToCartInput } from '../../shared/validators/cart.validators.js'
-import { FREE_SHIPPING_THRESHOLD_CLIENT } from '../config/cart.constants.js'
 
 export const CART_KEY = ['cart'] as const
 
@@ -102,9 +101,6 @@ export const useSyncCartMutation = () => {
 // ─── Server cart totals ───────────────────────────────────────────────────────
 const serverTotals = (cart: IServerCart): ICartTotals => {
   const totalItems = cart.items.reduce((s, i) => s + i.quantity, 0)
-  const afterDiscount = Math.max(0, cart.cartTotal - cart.discountAmount)
-  const isFreeShipping = afterDiscount >= FREE_SHIPPING_THRESHOLD_CLIENT
-  const remaining = Math.max(0, FREE_SHIPPING_THRESHOLD_CLIENT - afterDiscount)
   return {
     subtotal: cart.cartTotal,
     discountAmount: cart.discountAmount,
@@ -112,9 +108,9 @@ const serverTotals = (cart: IServerCart): ICartTotals => {
     taxAmount: cart.taxAmount,
     grandTotal: cart.grandTotal,
     totalItems,
-    isFreeShipping,
-    freeShippingThreshold: FREE_SHIPPING_THRESHOLD_CLIENT,
-    remainingForFreeShipping: remaining,
+    isFreeShipping: cart.shippingCost === 0,
+    freeShippingThreshold: 0,
+    remainingForFreeShipping: 0,
   }
 }
 

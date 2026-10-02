@@ -4,24 +4,29 @@ import { FiPlus, FiEdit, FiTrash2, FiPackage } from 'react-icons/fi'
 import { useSellerProducts, useDeleteProduct } from '../../hooks/useProducts.js'
 import { useProductStore } from '../../store/productStore.js'
 import { useCurrency } from '../../hooks/useCurrency.js'
+import ConfirmDialog from '../../components/common/ConfirmDialog/index.js'
 
 export default function SellerProducts() {
   const { filters, setFilters } = useProductStore()
   const { data, isLoading } = useSellerProducts(filters)
   const deleteMutation = useDeleteProduct()
   const { formatPrice } = useCurrency()
-  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [productToDelete, setProductToDelete] = useState<{ id: string; title: string } | null>(null)
 
   const products = data?.data ?? []
   const pagination = data?.pagination
 
-  const handleDelete = async (id: string, title: string) => {
-    if (!window.confirm(`Delete "${title}"? This cannot be undone.`)) return
-    setDeletingId(id)
+  const handleDelete = (id: string, title: string) => {
+    setProductToDelete({ id, title })
+  }
+
+  const confirmDelete = async () => {
+    if (!productToDelete) return
     try {
-      await deleteMutation.mutateAsync(id)
-    } finally {
-      setDeletingId(null)
+      await deleteMutation.mutateAsync(productToDelete.id)
+      setProductToDelete(null)
+    } catch {
+      setProductToDelete(null)
     }
   }
 
@@ -223,7 +228,7 @@ export default function SellerProducts() {
                         </Link>
                         <button
                           onClick={() => handleDelete(product._id, product.title)}
-                          disabled={deletingId === product._id}
+                          disabled={deleteMutation.isPending && productToDelete?.id === product._id}
                           style={{
                             padding: '0.375rem',
                             border: '1px solid var(--color-danger-50)',
@@ -233,7 +238,10 @@ export default function SellerProducts() {
                             display: 'flex',
                             alignItems: 'center',
                             color: 'var(--color-danger)',
-                            opacity: deletingId === product._id ? 0.5 : 1,
+                            opacity:
+                              deleteMutation.isPending && productToDelete?.id === product._id
+                                ? 0.5
+                                : 1,
                           }}
                           title="Delete"
                         >
@@ -278,6 +286,19 @@ export default function SellerProducts() {
           )}
         </div>
       )}
+
+      {/* Delete Product Confirmation */}
+      <ConfirmDialog
+        open={Boolean(productToDelete)}
+        title="Delete Product"
+        message={`Are you sure you want to delete "${productToDelete?.title || 'this product'}"? This action cannot be undone.`}
+        confirmText="Delete Product"
+        cancelText="Cancel"
+        variant="danger"
+        isLoading={deleteMutation.isPending}
+        onConfirm={confirmDelete}
+        onClose={() => setProductToDelete(null)}
+      />
     </div>
   )
 }

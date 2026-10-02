@@ -1,10 +1,11 @@
 import { useCurrency } from '../../../hooks/useCurrency.js'
+import { usePublicShippingConfig } from '../../../hooks/useShipping.js'
 import { Money, formatMoney } from '../../../../shared/utils/money.js'
 import type { ICheckoutPricing, ShippingMethod } from '../../../../shared/types/checkout.types.js'
 
 const SHIPPING_LABELS: Record<ShippingMethod, string> = {
-  standard: 'Standard Shipping',
-  express: 'Express Shipping',
+  standard: 'Standard Doorstep Delivery',
+  express: 'Express Delivery',
   sameDay: 'Same Day Delivery',
 }
 
@@ -22,15 +23,31 @@ export default function PriceBreakdown({
   compact,
 }: PriceBreakdownProps) {
   const { convertAmount, currentCurrency } = useCurrency()
-  const shippingLabel = SHIPPING_LABELS[shippingMethod]
+  const { data: shippingConfig } = usePublicShippingConfig()
+  const shippingLabel = SHIPPING_LABELS[shippingMethod] || 'Standard Shipping'
+
+  let dynamicShippingFee: number | undefined
+  if (shippingConfig?.rates && typeof shippingConfig.rates === 'object') {
+    const fixed = (shippingConfig.rates as Record<string, number>)[currentCurrency]
+    if (typeof fixed === 'number' && !isNaN(fixed) && fixed >= 0) {
+      dynamicShippingFee = fixed
+    }
+  } else if (shippingConfig?.fixedRates && typeof shippingConfig.fixedRates === 'object') {
+    const fixed = (shippingConfig.fixedRates as Record<string, number>)[currentCurrency]
+    if (typeof fixed === 'number' && !isNaN(fixed) && fixed >= 0) {
+      dynamicShippingFee = fixed
+    }
+  }
+
+  const effectiveShipping =
+    dynamicShippingFee !== undefined ? dynamicShippingFee : convertAmount(pricing.shippingFee)
 
   const subtotalConv = convertAmount(pricing.subtotal)
   const discountConv = convertAmount(pricing.discountAmount)
-  const shippingConv = convertAmount(pricing.shippingFee)
   const taxConv = convertAmount(pricing.taxAmount)
   const calculatedTotal = Money.from(subtotalConv)
     .subtract(discountConv)
-    .add(shippingConv)
+    .add(effectiveShipping)
     .add(taxConv)
     .round(currentCurrency)
 
@@ -50,8 +67,8 @@ export default function PriceBreakdown({
 
       <div className="price-breakdown__line">
         <span>{shippingLabel}</span>
-        <span className={pricing.shippingFee === 0 ? 'price-breakdown__free' : ''}>
-          {pricing.shippingFee === 0 ? 'FREE' : formatMoney(shippingConv, currentCurrency)}
+        <span className={effectiveShipping === 0 ? 'price-breakdown__free' : ''}>
+          {effectiveShipping === 0 ? 'FREE' : formatMoney(effectiveShipping, currentCurrency)}
         </span>
       </div>
 

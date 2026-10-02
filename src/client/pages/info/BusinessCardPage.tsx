@@ -10,6 +10,7 @@ import {
   FaFileInvoiceDollar,
   FaArrowRight,
 } from 'react-icons/fa'
+import { HUMAN_IMAGES } from '../../constants/images.js'
 
 export const BusinessCardPage: FC = () => {
   const [activePlan, setActivePlan] = useState<'cashback' | 'terms'>('cashback')
@@ -332,6 +333,110 @@ export const BusinessCardPage: FC = () => {
               </div>
             )
           })}
+        </div>
+
+        {/* Commercial Purchasing Executive Spotlight */}
+        <div
+          style={{
+            background: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderRadius: '24px',
+            padding: '36px',
+            marginBottom: '48px',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: '36px',
+            alignItems: 'center',
+          }}
+        >
+          <div style={{ position: 'relative' }}>
+            <div
+              style={{
+                borderRadius: '16px',
+                overflow: 'hidden',
+                boxShadow: '0 12px 20px -5px rgba(0, 0, 0, 0.12)',
+              }}
+            >
+              <img
+                src={HUMAN_IMAGES.businessCardExecutive.url}
+                alt={HUMAN_IMAGES.businessCardExecutive.alt}
+                loading="lazy"
+                width={HUMAN_IMAGES.businessCardExecutive.width}
+                height={HUMAN_IMAGES.businessCardExecutive.height}
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  display: 'block',
+                  aspectRatio: HUMAN_IMAGES.businessCardExecutive.aspectRatio,
+                  objectFit: 'cover',
+                }}
+              />
+            </div>
+          </div>
+
+          <div>
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: '#eff6ff',
+                color: '#2563eb',
+                padding: '4px 12px',
+                borderRadius: '9999px',
+                fontSize: '12px',
+                fontWeight: 700,
+                marginBottom: '14px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
+              }}
+            >
+              Corporate Treasury & Purchasing
+            </div>
+            <h3
+              style={{
+                fontSize: '24px',
+                fontWeight: 800,
+                color: '#0f172a',
+                margin: '0 0 12px',
+                lineHeight: 1.3,
+              }}
+            >
+              Built for Finance Directors, Procurement Leads & Growing Startups
+            </h3>
+            <p style={{ fontSize: '15px', color: '#475569', lineHeight: 1.7, margin: '0 0 16px' }}>
+              Whether you are procuring bulk inventory from verified global suppliers or equipping
+              regional teams with corporate purchasing cards, Cartiva Titanium provides complete
+              accounting transparency.
+            </p>
+            <p style={{ fontSize: '15px', color: '#475569', lineHeight: 1.7, margin: '0 0 24px' }}>
+              Set granular spend controls per employee, enforce automatic invoice matching, and
+              capture up to 5% cash back straight to your corporate ledger.
+            </p>
+            <button
+              onClick={() =>
+                setApplyNotice(
+                  'Corporate treasury specialists are available to review tailored credit lines over $50,000. Contact enterprise-support@cartiva.mall.',
+                )
+              }
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: '#0f172a',
+                color: '#ffffff',
+                padding: '12px 24px',
+                borderRadius: '10px',
+                fontWeight: 600,
+                fontSize: '14px',
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              Request Treasury Consultation <FaArrowRight size={12} />
+            </button>
+          </div>
         </div>
 
         {/* Reward Plan Selector */}

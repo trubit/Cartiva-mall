@@ -66,8 +66,9 @@ export async function cacheIncr(key: string, ttlSeconds?: number): Promise<numbe
 }
 
 /**
- * Check if a value already exists in a Redis set (for idempotency checks).
- * Adds the value and sets TTL on first call; returns true if it already existed.
+ * Check if a value already exists in a Redis key namespace (for idempotency checks).
+ * Atomically sets the key with individual TTL on first call; returns true if it already existed.
+ * Avoids unbounded single-set memory bloat and global TTL refresh at 10M+ scale.
  */
 export async function cacheSetAdd(
   setKey: string,
@@ -75,12 +76,12 @@ export async function cacheSetAdd(
   ttlSeconds: number,
 ): Promise<boolean> {
   try {
-    const added = await redis.sadd(setKey, member)
-    if (added === 1) {
-      await redis.expire(setKey, ttlSeconds)
-      return false // first time we see this member
+    const key = `idemp:${setKey}:${member}`
+    const result = await redis.set(key, '1', 'EX', ttlSeconds, 'NX')
+    if (result === 'OK') {
+      return false // first time we see this member -> not a duplicate
     }
-    return true // already existed → duplicate
+    return true // already existed -> duplicate
   } catch {
     return false // on Redis failure, allow through (fail-open)
   }

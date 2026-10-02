@@ -13,11 +13,10 @@ export default defineConfig({
 
     // Avoid worker thread/process IPC startup timeouts on Windows
     pool: 'forks',
-    poolOptions: {
-      forks: {
-        singleFork: true,
-      },
+    forks: {
+      singleFork: true,
     },
+    isolate: false,
     fileParallelism: false,
     testTimeout: 60000,
     hookTimeout: 60000,

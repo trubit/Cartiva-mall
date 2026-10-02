@@ -13,6 +13,7 @@ import {
   registerSchema,
   type RegisterInput,
 } from '../../../../shared/validators/auth.validators.js'
+import { HUMAN_IMAGES } from '../../../constants/images.js'
 
 const getPasswordStrength = (pwd: string) => {
   if (!pwd) return { level: 0, label: '', cls: '' }
@@ -49,8 +50,15 @@ export default function RegisterPage() {
 
   const onSubmit = (data: RegisterInput) => register(data)
 
+  const registerShowcase = {
+    image: HUMAN_IMAGES.authRegister,
+    tag: 'Empowering Merchants & Buyers',
+    headline: 'Your Gateway to Global Multi-Vendor Commerce',
+    trustText: 'Fast Onboarding · Automated Payouts · Multi-Currency Support',
+  }
+
   return (
-    <AuthFormCard title="Create Account" wide>
+    <AuthFormCard title="Create Account" wide showcase={registerShowcase}>
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
         {isError && errorMsg && <div className="auth-alert auth-alert-error">{errorMsg}</div>}
 

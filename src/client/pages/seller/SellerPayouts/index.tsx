@@ -24,6 +24,7 @@ import SellerStatsCard from '../../../components/seller/SellerStatsCard/index.js
 import { RevenueBarChart } from '../../../components/seller/RevenueChart/index.js'
 import WithdrawalModal from '../../../components/seller/WithdrawalModal/index.js'
 import AddBankAccountModal from '../../../components/seller/AddBankAccountModal/index.js'
+import ConfirmDialog from '../../../components/common/ConfirmDialog/index.js'
 import { useCurrency } from '../../../hooks/useCurrency.js'
 import type {
   ISellerPayoutAccount,
@@ -42,20 +43,26 @@ export default function SellerPayouts() {
   const [isAddBankModalOpen, setIsAddBankModalOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<'withdrawals' | 'ledger' | 'accounts'>('withdrawals')
   const [actionError, setActionError] = useState<string | null>(null)
+  const [accountToDelete, setAccountToDelete] = useState<{ id: string; name: string } | null>(null)
 
   const { formatPrice } = useCurrency()
   const currency = data?.currency || 'NGN'
   const availableBalance = data?.availableBalance ?? 0
   const canWithdraw = availableBalance > 0
 
-  const handleDeleteAccount = async (id: string, name: string) => {
+  const handleDeleteAccount = (id: string, name: string) => {
     setActionError(null)
-    if (window.confirm(`Are you sure you want to remove ${name}?`)) {
-      try {
-        await deleteAccountMutation.mutateAsync(id)
-      } catch (err: any) {
-        setActionError(err.response?.data?.message || 'Failed to remove account')
-      }
+    setAccountToDelete({ id, name })
+  }
+
+  const confirmDeleteAccount = async () => {
+    if (!accountToDelete) return
+    try {
+      await deleteAccountMutation.mutateAsync(accountToDelete.id)
+      setAccountToDelete(null)
+    } catch (err: any) {
+      setActionError(err.response?.data?.message || 'Failed to remove account')
+      setAccountToDelete(null)
     }
   }
 
@@ -540,6 +547,19 @@ export default function SellerPayouts() {
       <AddBankAccountModal
         isOpen={isAddBankModalOpen}
         onClose={() => setIsAddBankModalOpen(false)}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={Boolean(accountToDelete)}
+        title="Remove Bank Account"
+        message={`Are you sure you want to remove ${accountToDelete?.name || 'this bank account'}? This action cannot be undone.`}
+        confirmText="Remove Account"
+        cancelText="Keep Account"
+        variant="danger"
+        isLoading={deleteAccountMutation.isPending}
+        onConfirm={confirmDeleteAccount}
+        onClose={() => setAccountToDelete(null)}
       />
     </div>
   )

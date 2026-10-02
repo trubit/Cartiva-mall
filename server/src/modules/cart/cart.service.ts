@@ -10,12 +10,8 @@ import type {
   AddToCartInput,
   SyncCartInput,
 } from '../../../../src/shared/validators/cart.validators.js'
-import {
-  FLAT_TAX_FEE,
-  FREE_SHIPPING_THRESHOLD,
-  FLAT_SHIPPING_COST,
-  MAX_CART_ITEMS,
-} from '../../config/cart.config.js'
+import { FLAT_TAX_FEE, MAX_CART_ITEMS } from '../../config/cart.config.js'
+import { getAuthoritativeShippingFee } from '../shipping/shippingConfig.service.js'
 
 const PRODUCT_POPULATE =
   'title images price discountPrice stockQuantity sku status isActive category brand'
@@ -25,12 +21,12 @@ const invalidateCheckout = (userId: string) =>
     .exec()
     .catch(() => {})
 
-const recalculate = (cart: ICartDocument): void => {
+const recalculate = async (cart: ICartDocument): Promise<void> => {
   const subtotal = cart.items.reduce((s, i) => s + i.itemPrice * i.quantity, 0)
   const discountAmount = cart.discountAmount ?? 0
   const afterDiscount = Math.max(0, subtotal - discountAmount)
   const shippingCost =
-    afterDiscount >= FREE_SHIPPING_THRESHOLD ? 0 : subtotal === 0 ? 0 : FLAT_SHIPPING_COST
+    subtotal === 0 ? 0 : await getAuthoritativeShippingFee(cart.currency || 'USD')
   const taxAmount = subtotal === 0 ? 0 : FLAT_TAX_FEE
   const grandTotal = Math.round((afterDiscount + shippingCost + taxAmount) * 100) / 100
 
@@ -150,7 +146,7 @@ export const addToCart = async (
     })
   }
 
-  recalculate(cart)
+  await recalculate(cart)
   await cart.save()
   await cart.populate('items.productId', PRODUCT_POPULATE)
 
@@ -238,7 +234,7 @@ export const updateCartItem = async (
     cart.items[itemIdx].quantity = quantity
   }
 
-  recalculate(cart)
+  await recalculate(cart)
   await cart.save()
   await cart.populate('items.productId', PRODUCT_POPULATE)
 
@@ -290,7 +286,7 @@ export const removeCartItem = async (
     return false
   })
 
-  recalculate(cart)
+  await recalculate(cart)
   await cart.save()
   await cart.populate('items.productId', PRODUCT_POPULATE)
 
@@ -320,7 +316,7 @@ export const clearCart = async (userId?: string, sessionId?: string): Promise<vo
     cart.items = []
     cart.couponCode = undefined
     cart.discountAmount = 0
-    recalculate(cart)
+    await recalculate(cart)
     await cart.save()
 
     const cacheKey = getCacheKey(userId, sessionId)
@@ -360,7 +356,7 @@ export const mergeCart = async (userId: string, guestSessionId: string): Promise
       }
     }
 
-    recalculate(userCart)
+    await recalculate(userCart)
     await userCart.save()
     await Cart.deleteOne({ _id: guestCart._id })
   }

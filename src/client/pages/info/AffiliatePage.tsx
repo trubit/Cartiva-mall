@@ -2,6 +2,7 @@ import type { FC } from 'react'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FaMoneyBillWave, FaPercentage, FaCalculator, FaArrowRight } from 'react-icons/fa'
+import { HUMAN_IMAGES } from '../../constants/images.js'
 
 export const AffiliatePage: FC = () => {
   const [traffic, setTraffic] = useState<number>(25000)
@@ -49,7 +50,7 @@ export const AffiliatePage: FC = () => {
           style={{
             background: 'linear-gradient(135deg, #064e3b 0%, #059669 50%, #047857 100%)',
             borderRadius: '24px',
-            padding: '56px 40px',
+            padding: '48px 40px',
             color: '#ffffff',
             marginBottom: '40px',
             boxShadow: '0 20px 25px -5px rgba(5, 150, 105, 0.25)',
@@ -57,76 +58,115 @@ export const AffiliatePage: FC = () => {
         >
           <div
             style={{
-              display: 'inline-flex',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+              gap: '40px',
               alignItems: 'center',
-              gap: '8px',
-              background: 'rgba(255, 255, 255, 0.2)',
-              border: '1px solid rgba(255, 255, 255, 0.3)',
-              color: '#ffffff',
-              padding: '6px 16px',
-              borderRadius: '9999px',
-              fontSize: '13px',
-              fontWeight: 600,
-              marginBottom: '20px',
             }}
           >
-            <FaMoneyBillWave /> Cartiva Associates & Creator Program
-          </div>
-          <h1
-            style={{
-              fontSize: '42px',
-              fontWeight: 800,
-              margin: '0 0 16px',
-              letterSpacing: '-0.02em',
-              color: '#ffffff',
-            }}
-          >
-            Earn Up to 15% Commission on Millions of Products
-          </h1>
-          <p
-            style={{
-              fontSize: '18px',
-              color: '#d1fae5',
-              maxWidth: '780px',
-              lineHeight: 1.7,
-              margin: '0 0 32px',
-            }}
-          >
-            Monetize your website, social channels, newsletters, and community blogs. Recommend
-            trending products from verified merchants and get paid real-time payouts directly to
-            your bank account.
-          </p>
-          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-            <Link
-              to="/register"
-              style={{
-                background: '#ffffff',
-                color: '#047857',
-                padding: '14px 28px',
-                borderRadius: '10px',
-                fontWeight: 800,
-                fontSize: '15px',
-                textDecoration: 'none',
-                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-              }}
-            >
-              Join the Affiliate Program Free
-            </Link>
-            <Link
-              to="/help"
-              style={{
-                background: 'rgba(255, 255, 255, 0.15)',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
-                color: '#ffffff',
-                padding: '14px 28px',
-                borderRadius: '10px',
-                fontWeight: 700,
-                fontSize: '15px',
-                textDecoration: 'none',
-              }}
-            >
-              Affiliate Policy & FAQ
-            </Link>
+            <div>
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  color: '#ffffff',
+                  padding: '6px 16px',
+                  borderRadius: '9999px',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  marginBottom: '20px',
+                }}
+              >
+                <FaMoneyBillWave /> Cartiva Associates & Creator Program
+              </div>
+              <h1
+                style={{
+                  fontSize: '38px',
+                  fontWeight: 800,
+                  margin: '0 0 16px',
+                  letterSpacing: '-0.02em',
+                  color: '#ffffff',
+                  lineHeight: 1.2,
+                }}
+              >
+                Earn Up to 15% Commission on Millions of Products
+              </h1>
+              <p
+                style={{
+                  fontSize: '16px',
+                  color: '#d1fae5',
+                  lineHeight: 1.7,
+                  margin: '0 0 28px',
+                }}
+              >
+                Monetize your website, social channels, newsletters, and community blogs. Recommend
+                trending products from verified merchants and get paid real-time payouts directly to
+                your bank account.
+              </p>
+              <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                <Link
+                  to="/register"
+                  style={{
+                    background: '#ffffff',
+                    color: '#047857',
+                    padding: '14px 28px',
+                    borderRadius: '10px',
+                    fontWeight: 800,
+                    fontSize: '15px',
+                    textDecoration: 'none',
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                  }}
+                >
+                  Join the Affiliate Program Free
+                </Link>
+                <Link
+                  to="/help"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.15)',
+                    border: '1px solid rgba(255, 255, 255, 0.3)',
+                    color: '#ffffff',
+                    padding: '14px 28px',
+                    borderRadius: '10px',
+                    fontWeight: 700,
+                    fontSize: '15px',
+                    textDecoration: 'none',
+                  }}
+                >
+                  Affiliate Policy & FAQ
+                </Link>
+              </div>
+            </div>
+
+            <div style={{ position: 'relative' }}>
+              <div
+                style={{
+                  borderRadius: '18px',
+                  overflow: 'hidden',
+                  boxShadow: '0 20px 30px rgba(0, 0, 0, 0.35)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  background: '#064e3b',
+                }}
+              >
+                <img
+                  src={HUMAN_IMAGES.affiliateCreator.url}
+                  alt={HUMAN_IMAGES.affiliateCreator.alt}
+                  loading="eager"
+                  fetchPriority="high"
+                  width={HUMAN_IMAGES.affiliateCreator.width}
+                  height={HUMAN_IMAGES.affiliateCreator.height}
+                  style={{
+                    width: '100%',
+                    height: 'auto',
+                    display: 'block',
+                    aspectRatio: HUMAN_IMAGES.affiliateCreator.aspectRatio,
+                    objectFit: 'cover',
+                  }}
+                />
+              </div>
+            </div>
           </div>
         </div>
 

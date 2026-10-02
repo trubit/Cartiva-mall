@@ -193,7 +193,7 @@ export const confirmPaymentIntent = async (paymentIntentId: string, userId: stri
       const bulkOps = updatedOrder.items.map((item) => ({
         updateOne: {
           filter: { _id: item.productId, stockQuantity: { $gte: item.quantity } },
-          update: { $inc: { stockQuantity: -item.quantity } },
+          update: { $inc: { stockQuantity: -item.quantity, soldCount: item.quantity } },
         },
       }))
       await Product.bulkWrite(bulkOps, { ordered: false, ...s }).catch((err) =>

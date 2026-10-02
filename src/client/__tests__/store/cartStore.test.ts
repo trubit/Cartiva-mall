@@ -2,10 +2,6 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { useCartStore } from '../../store/cartStore.js'
 import type { IProduct } from '../../../shared/types/product.types.js'
 import { PRODUCT_CATEGORIES } from '../../../shared/constants/index.js'
-import {
-  FREE_SHIPPING_THRESHOLD_CLIENT,
-  FLAT_SHIPPING_COST_CLIENT,
-} from '../../config/cart.constants.js'
 
 function makeProduct(overrides: Partial<IProduct> = {}): IProduct {
   return {
@@ -166,16 +162,10 @@ describe('cartStore — guestTotals', () => {
     expect(useCartStore.getState().guestTotals().subtotal).toBe(50)
   })
 
-  it('charges flat shipping when below FREE_SHIPPING_THRESHOLD_CLIENT', () => {
+  it('does not apply hardcoded static shipping for guest cart (handled authoritatively by dynamic config)', () => {
     useCartStore.getState().addGuestItem(makeProduct({ price: 10 }), 1)
-    expect(useCartStore.getState().guestTotals().shippingCost).toBe(FLAT_SHIPPING_COST_CLIENT)
-  })
-
-  it('grants free shipping when at or above FREE_SHIPPING_THRESHOLD_CLIENT', () => {
-    useCartStore.getState().addGuestItem(makeProduct({ price: FREE_SHIPPING_THRESHOLD_CLIENT }), 1)
-    const totals = useCartStore.getState().guestTotals()
-    expect(totals.isFreeShipping).toBe(true)
-    expect(totals.shippingCost).toBe(0)
+    expect(useCartStore.getState().guestTotals().shippingCost).toBe(0)
+    expect(useCartStore.getState().guestTotals().isFreeShipping).toBe(false)
   })
 
   it('calculates flat tax fee at FLAT_TAX_FEE_CLIENT for cart items', () => {

@@ -13,6 +13,7 @@ import { AppError } from '../../middlewares/error.middleware.js'
 import { logSecurityEvent } from '../iam/auditLog.service.js'
 
 import { redis } from '../../database/redis.js'
+import { cacheDelPattern } from '../../utils/cache.js'
 
 interface CreateInput {
   userId: string | Types.ObjectId
@@ -27,8 +28,7 @@ interface CreateInput {
 
 const invalidateUserNotifCache = async (userId: string) => {
   try {
-    const keys = await redis.keys(`notif:*:${userId}*`)
-    if (keys.length > 0) await redis.del(...keys)
+    await cacheDelPattern(`notif:*:${userId}*`)
   } catch {
     // Redis fail-safe
   }

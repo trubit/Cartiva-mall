@@ -141,6 +141,9 @@ const userSchema = new mongoose.Schema<IUserDocument>(
 
 userSchema.index({ resetPasswordToken: 1 }, { sparse: true })
 userSchema.index({ emailVerificationToken: 1 }, { sparse: true })
+userSchema.index({ role: 1, createdAt: -1 })
+userSchema.index({ accountStatus: 1, createdAt: -1 })
+userSchema.index({ createdAt: -1 })
 // Text index for admin listUsers search (email, username, firstName, lastName)
 userSchema.index({ email: 'text', username: 'text', firstName: 'text', lastName: 'text' })
 

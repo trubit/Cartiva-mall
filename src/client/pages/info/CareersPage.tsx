@@ -14,6 +14,7 @@ import {
   FaArrowRight,
   FaHeart,
 } from 'react-icons/fa'
+import { HUMAN_IMAGES } from '../../constants/images.js'
 
 export const CareersPage: FC = () => {
   const [activeTrack, setActiveTrack] = useState<string>('all')
@@ -131,7 +132,7 @@ export const CareersPage: FC = () => {
           style={{
             background: 'linear-gradient(135deg, #1e1b4b 0%, #4338ca 50%, #1e293b 100%)',
             borderRadius: '24px',
-            padding: '56px 40px',
+            padding: '48px 40px',
             color: '#ffffff',
             marginBottom: '40px',
             boxShadow: '0 20px 25px -5px rgba(67, 56, 202, 0.25)',
@@ -139,80 +140,119 @@ export const CareersPage: FC = () => {
         >
           <div
             style={{
-              display: 'inline-flex',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+              gap: '40px',
               alignItems: 'center',
-              gap: '8px',
-              background: 'rgba(255, 255, 255, 0.2)',
-              border: '1px solid rgba(255, 255, 255, 0.3)',
-              color: '#ffffff',
-              padding: '6px 16px',
-              borderRadius: '9999px',
-              fontSize: '13px',
-              fontWeight: 600,
-              marginBottom: '20px',
             }}
           >
-            <FaHandsHelping /> Join as a Founding Volunteer & Early Starter
-          </div>
-          <h1
-            style={{
-              fontSize: '42px',
-              fontWeight: 800,
-              margin: '0 0 16px',
-              letterSpacing: '-0.02em',
-              color: '#ffffff',
-            }}
-          >
-            We’re Just Getting Started — Build Cartiva with Us!
-          </h1>
-          <p
-            style={{
-              fontSize: '18px',
-              color: '#e0e7ff',
-              maxWidth: '780px',
-              lineHeight: 1.7,
-              margin: '0 0 32px',
-            }}
-          >
-            Cartiva is at its exciting early launch stage. We invite passionate beginners, aspiring
-            developers, community champions, and creative volunteers to collaborate directly with
-            our founding team, gain hands-on experience, and help shape the next big commerce
-            platform.
-          </p>
-          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-            <a
-              href="mailto:careers@cartiva.com?subject=Volunteer / Early Starter Application"
-              style={{
-                background: '#ffffff',
-                color: '#4338ca',
-                padding: '14px 28px',
-                borderRadius: '10px',
-                fontWeight: 800,
-                fontSize: '15px',
-                textDecoration: 'none',
-                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}
-            >
-              <FaHeart style={{ color: '#ef4444' }} /> Apply as a Volunteer
-            </a>
-            <Link
-              to="/about"
-              style={{
-                background: 'rgba(255, 255, 255, 0.15)',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
-                color: '#ffffff',
-                padding: '14px 28px',
-                borderRadius: '10px',
-                fontWeight: 700,
-                fontSize: '15px',
-                textDecoration: 'none',
-              }}
-            >
-              Learn About Our Mission
-            </Link>
+            <div>
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  border: '1px solid rgba(255, 255, 255, 0.3)',
+                  color: '#ffffff',
+                  padding: '6px 16px',
+                  borderRadius: '9999px',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  marginBottom: '20px',
+                }}
+              >
+                <FaHandsHelping /> Join as a Founding Volunteer & Early Starter
+              </div>
+              <h1
+                style={{
+                  fontSize: '38px',
+                  fontWeight: 800,
+                  margin: '0 0 16px',
+                  letterSpacing: '-0.02em',
+                  color: '#ffffff',
+                  lineHeight: 1.2,
+                }}
+              >
+                We’re Just Getting Started — Build Cartiva with Us!
+              </h1>
+              <p
+                style={{
+                  fontSize: '16px',
+                  color: '#e0e7ff',
+                  lineHeight: 1.7,
+                  margin: '0 0 28px',
+                }}
+              >
+                Cartiva is at its exciting early launch stage. We invite passionate beginners,
+                aspiring developers, community champions, and creative volunteers to collaborate
+                directly with our founding team, gain hands-on experience, and help shape the next
+                big commerce platform.
+              </p>
+              <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                <a
+                  href="mailto:careers@cartiva.com?subject=Volunteer / Early Starter Application"
+                  style={{
+                    background: '#ffffff',
+                    color: '#4338ca',
+                    padding: '14px 28px',
+                    borderRadius: '10px',
+                    fontWeight: 800,
+                    fontSize: '15px',
+                    textDecoration: 'none',
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                  }}
+                >
+                  <FaHeart style={{ color: '#ef4444' }} /> Apply as a Volunteer
+                </a>
+                <Link
+                  to="/about"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.15)',
+                    border: '1px solid rgba(255, 255, 255, 0.3)',
+                    color: '#ffffff',
+                    padding: '14px 28px',
+                    borderRadius: '10px',
+                    fontWeight: 700,
+                    fontSize: '15px',
+                    textDecoration: 'none',
+                  }}
+                >
+                  Learn About Our Mission
+                </Link>
+              </div>
+            </div>
+
+            <div style={{ position: 'relative' }}>
+              <div
+                style={{
+                  borderRadius: '18px',
+                  overflow: 'hidden',
+                  boxShadow: '0 20px 30px rgba(0, 0, 0, 0.35)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  background: '#1e1b4b',
+                }}
+              >
+                <img
+                  src={HUMAN_IMAGES.careersCulture.url}
+                  alt={HUMAN_IMAGES.careersCulture.alt}
+                  loading="eager"
+                  fetchPriority="high"
+                  width={HUMAN_IMAGES.careersCulture.width}
+                  height={HUMAN_IMAGES.careersCulture.height}
+                  style={{
+                    width: '100%',
+                    height: 'auto',
+                    display: 'block',
+                    aspectRatio: HUMAN_IMAGES.careersCulture.aspectRatio,
+                    objectFit: 'cover',
+                  }}
+                />
+              </div>
+            </div>
           </div>
         </div>
 

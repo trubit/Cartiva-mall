@@ -2,6 +2,9 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import App from './App.js'
+import { registerServiceWorker } from './client/pwa.js'
+
+registerServiceWorker()
 
 const root = document.getElementById('root')
 if (!root) throw new Error('Root element not found')

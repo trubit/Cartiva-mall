@@ -11,6 +11,7 @@ import {
   FaCheckCircle,
   FaHeart,
 } from 'react-icons/fa'
+import { HUMAN_IMAGES } from '../../constants/images.js'
 
 export const AboutUsPage: FC = () => {
   const stats = [
@@ -75,7 +76,7 @@ export const AboutUsPage: FC = () => {
           style={{
             background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #1e3a8a 100%)',
             borderRadius: '24px',
-            padding: '56px 40px',
+            padding: '48px 40px',
             color: '#ffffff',
             marginBottom: '40px',
             boxShadow: '0 20px 25px -5px rgba(15, 23, 42, 0.25)',
@@ -85,79 +86,117 @@ export const AboutUsPage: FC = () => {
         >
           <div
             style={{
-              display: 'inline-flex',
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+              gap: '40px',
               alignItems: 'center',
-              gap: '8px',
-              background: 'rgba(59, 130, 246, 0.2)',
-              border: '1px solid rgba(59, 130, 246, 0.4)',
-              color: '#93c5fd',
-              padding: '6px 16px',
-              borderRadius: '9999px',
-              fontSize: '13px',
-              fontWeight: 600,
-              marginBottom: '20px',
             }}
           >
-            <FaRocket /> The Cartiva Vision
-          </div>
-          <h1
-            style={{
-              fontSize: '42px',
-              fontWeight: 800,
-              margin: '0 0 16px',
-              letterSpacing: '-0.02em',
-              lineHeight: 1.2,
-              color: '#ffffff',
-            }}
-          >
-            Transforming Global Commerce with Trust, Speed & Scale
-          </h1>
-          <p
-            style={{
-              fontSize: '18px',
-              color: '#cbd5e1',
-              maxWidth: '820px',
-              lineHeight: 1.7,
-              margin: '0 0 32px',
-            }}
-          >
-            Cartiva is a modern multi-vendor commerce powerhouse. We connect forward-thinking
-            independent sellers and global brands with millions of passionate shoppers through
-            world-class e-commerce technology, transparent escrow protection, and frictionless
-            global fulfillment.
-          </p>
-          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-            <Link
-              to="/register"
-              style={{
-                background: '#2563eb',
-                color: '#ffffff',
-                padding: '14px 28px',
-                borderRadius: '10px',
-                fontWeight: 700,
-                fontSize: '15px',
-                textDecoration: 'none',
-                boxShadow: '0 10px 15px -3px rgba(37, 99, 235, 0.4)',
-              }}
-            >
-              Start Selling on Cartiva
-            </Link>
-            <Link
-              to="/products"
-              style={{
-                background: 'rgba(255, 255, 255, 0.1)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                color: '#ffffff',
-                padding: '14px 28px',
-                borderRadius: '10px',
-                fontWeight: 700,
-                fontSize: '15px',
-                textDecoration: 'none',
-                backdropFilter: 'blur(8px)',
-              }}
-            >
-              Explore Marketplace
-            </Link>
+            <div>
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  background: 'rgba(59, 130, 246, 0.2)',
+                  border: '1px solid rgba(59, 130, 246, 0.4)',
+                  color: '#93c5fd',
+                  padding: '6px 16px',
+                  borderRadius: '9999px',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  marginBottom: '20px',
+                }}
+              >
+                <FaRocket /> The Cartiva Vision
+              </div>
+              <h1
+                style={{
+                  fontSize: '38px',
+                  fontWeight: 800,
+                  margin: '0 0 16px',
+                  letterSpacing: '-0.02em',
+                  lineHeight: 1.2,
+                  color: '#ffffff',
+                }}
+              >
+                Transforming Global Commerce with Trust, Speed & Scale
+              </h1>
+              <p
+                style={{
+                  fontSize: '16px',
+                  color: '#cbd5e1',
+                  lineHeight: 1.7,
+                  margin: '0 0 28px',
+                }}
+              >
+                Cartiva is a modern multi-vendor commerce powerhouse. We connect forward-thinking
+                independent sellers and global brands with millions of passionate shoppers through
+                world-class e-commerce technology, transparent escrow protection, and frictionless
+                global fulfillment.
+              </p>
+              <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                <Link
+                  to="/register"
+                  style={{
+                    background: '#2563eb',
+                    color: '#ffffff',
+                    padding: '14px 28px',
+                    borderRadius: '10px',
+                    fontWeight: 700,
+                    fontSize: '15px',
+                    textDecoration: 'none',
+                    boxShadow: '0 10px 15px -3px rgba(37, 99, 235, 0.4)',
+                  }}
+                >
+                  Start Selling on Cartiva
+                </Link>
+                <Link
+                  to="/products"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
+                    color: '#ffffff',
+                    padding: '14px 28px',
+                    borderRadius: '10px',
+                    fontWeight: 700,
+                    fontSize: '15px',
+                    textDecoration: 'none',
+                    backdropFilter: 'blur(8px)',
+                  }}
+                >
+                  Explore Marketplace
+                </Link>
+              </div>
+            </div>
+
+            <div style={{ position: 'relative' }}>
+              <div
+                style={{
+                  borderRadius: '18px',
+                  overflow: 'hidden',
+                  boxShadow: '0 20px 30px rgba(0, 0, 0, 0.4)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  background: '#0f172a',
+                }}
+              >
+                <img
+                  src={HUMAN_IMAGES.aboutTeam.url}
+                  alt={HUMAN_IMAGES.aboutTeam.alt}
+                  loading="eager"
+                  fetchPriority="high"
+                  width={HUMAN_IMAGES.aboutTeam.width}
+                  height={HUMAN_IMAGES.aboutTeam.height}
+                  style={{
+                    width: '100%',
+                    height: 'auto',
+                    display: 'block',
+                    aspectRatio: HUMAN_IMAGES.aboutTeam.aspectRatio,
+                    objectFit: 'cover',
+                  }}
+                />
+              </div>
+            </div>
           </div>
         </div>
 
@@ -308,6 +347,104 @@ export const AboutUsPage: FC = () => {
                 </div>
               )
             })}
+          </div>
+        </div>
+
+        {/* Artisanal Merchant Spotlight */}
+        <div
+          style={{
+            background: '#ffffff',
+            border: '1px solid #e2e8f0',
+            borderRadius: '24px',
+            padding: '36px',
+            marginBottom: '48px',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: '36px',
+            alignItems: 'center',
+          }}
+        >
+          <div style={{ position: 'relative' }}>
+            <div
+              style={{
+                borderRadius: '16px',
+                overflow: 'hidden',
+                boxShadow: '0 12px 20px -5px rgba(0, 0, 0, 0.12)',
+              }}
+            >
+              <img
+                src={HUMAN_IMAGES.aboutArtisan.url}
+                alt={HUMAN_IMAGES.aboutArtisan.alt}
+                loading="lazy"
+                width={HUMAN_IMAGES.aboutArtisan.width}
+                height={HUMAN_IMAGES.aboutArtisan.height}
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  display: 'block',
+                  aspectRatio: HUMAN_IMAGES.aboutArtisan.aspectRatio,
+                  objectFit: 'cover',
+                }}
+              />
+            </div>
+          </div>
+
+          <div>
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: '#eff6ff',
+                color: '#2563eb',
+                padding: '4px 12px',
+                borderRadius: '9999px',
+                fontSize: '12px',
+                fontWeight: 700,
+                marginBottom: '14px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.04em',
+              }}
+            >
+              Real People · Real Growth
+            </div>
+            <h3
+              style={{
+                fontSize: '24px',
+                fontWeight: 800,
+                color: '#0f172a',
+                margin: '0 0 12px',
+                lineHeight: 1.3,
+              }}
+            >
+              Empowering 50,000+ Independent Makers & Brands
+            </h3>
+            <p style={{ fontSize: '15px', color: '#475569', lineHeight: 1.7, margin: '0 0 16px' }}>
+              Behind every product listing on Cartiva is a real person — an artisan crafting
+              handmade goods, a family-run manufacturer, or a fast-scaling tech hardware team.
+            </p>
+            <p style={{ fontSize: '15px', color: '#475569', lineHeight: 1.7, margin: '0 0 24px' }}>
+              Our automated escrow architecture protects their revenue, eliminates payment fraud,
+              and delivers guaranteed next-day bank disbursements upon delivery confirmation.
+            </p>
+            <Link
+              to="/register"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: '#0f172a',
+                color: '#ffffff',
+                padding: '12px 24px',
+                borderRadius: '10px',
+                fontWeight: 600,
+                fontSize: '14px',
+                textDecoration: 'none',
+              }}
+            >
+              Join Our Merchant Community
+            </Link>
           </div>
         </div>
 
