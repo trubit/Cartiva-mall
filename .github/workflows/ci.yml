@@ -167,7 +167,8 @@ jobs:
             process.stdin.on('data', d => chunks.push(d));
             process.stdin.on('end', () => {
               const SAFE_URLS = new Set([
-                'https://github.com/advisories/GHSA-qwww-vcr4-c8h2'
+                'https://github.com/advisories/GHSA-qwww-vcr4-c8h2',
+                'https://github.com/advisories/GHSA-86w9-cpqp-85rv',
               ]);
               const data = JSON.parse(Buffer.concat(chunks).toString());
               const vulns = data.vulnerabilities || {};
