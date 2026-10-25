@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#0B2150" />
-    <title>Offline — Cartiva Mall</title>
+    <title>Offline — Cartival Mall</title>
     <style>
       :root {
         --color-brand-navy: #0B2150;
@@ -155,7 +155,7 @@
 
       <h1 class="title">You're Offline</h1>
       <p class="subtitle">
-        It looks like your network connection was lost. Cartiva Mall will automatically restore your session as soon as you are reconnected.
+        It looks like your network connection was lost. Cartival Mall will automatically restore your session as soon as you are reconnected.
       </p>
 
       <button class="retry-btn" onclick="retryConnection()">Check Connection Again</button>
@@ -166,7 +166,7 @@
     <script>
       function retryConnection() {
         if (navigator.onLine) {
-          window.location.reload();
+          window.location.href = '/';
         } else {
           var btn = document.querySelector('.retry-btn');
           btn.textContent = 'Still Offline... Retrying';
@@ -177,7 +177,7 @@
       }
 
       window.addEventListener('online', function() {
-        window.location.reload();
+        window.location.href = '/';
       });
     </script>
   </body>

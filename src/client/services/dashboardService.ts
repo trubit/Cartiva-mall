@@ -88,6 +88,14 @@ export const dashboardService = {
     return api.put('/dashboard/notifications/read-all').then(() => undefined)
   },
 
+  deleteNotification(id: string): Promise<void> {
+    return api.delete(`/dashboard/notifications/${id}`).then(() => undefined)
+  },
+
+  clearAllNotifications(): Promise<void> {
+    return api.delete('/dashboard/notifications').then(() => undefined)
+  },
+
   // ── Payment History ───────────────────────────────────────────────────────────
   getPaymentHistory(params?: { page?: number; limit?: number }): Promise<{
     data: { payments: IDashboardPayment[]; total: number }

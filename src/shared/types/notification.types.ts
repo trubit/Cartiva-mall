@@ -17,6 +17,7 @@ export interface INotification {
   message: string
   read: boolean
   link?: string
+  audience?: 'BUYER' | 'SELLER' | 'ADMIN'
   data?: Record<string, unknown>
   createdAt: string
   updatedAt: string

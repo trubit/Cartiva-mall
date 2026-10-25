@@ -37,21 +37,21 @@ export const CareersPage: FC = () => {
     },
     {
       title: 'Official Recommendation & Certificate',
-      desc: 'Earn a verified Letter of Recommendation, LinkedIn endorsement, and Certificate of Contribution from the Cartiva Founding Team.',
+      desc: 'Earn a verified Letter of Recommendation, LinkedIn endorsement, and Certificate of Contribution from the Cartival Mall Founding Team.',
       icon: FaCertificate,
       color: '#059669',
       bg: '#ecfdf5',
     },
     {
       title: 'Priority for Future Paid & Full-Time Roles',
-      desc: 'As Cartiva scales and opens full-time paid positions, active founding volunteers and early contributors are prioritized first.',
+      desc: 'As Cartival Mall scales and opens full-time paid positions, active founding volunteers and early contributors are prioritized first.',
       icon: FaAward,
       color: '#7c3aed',
       bg: '#f5f3ff',
     },
     {
-      title: 'Cartiva Wallet Credits & Perks',
-      desc: 'Receive free Cartiva Balance rewards, platform shopping discounts, and early beta access to upcoming features.',
+      title: 'Cartival Wallet Credits & Perks',
+      desc: 'Receive platform shopping discounts and early beta access to upcoming features.',
       icon: FaGift,
       color: '#d97706',
       bg: '#fef3c7',
@@ -174,7 +174,7 @@ export const CareersPage: FC = () => {
                   lineHeight: 1.2,
                 }}
               >
-                We’re Just Getting Started — Build Cartiva with Us!
+                We’re Just Getting Started — Build Cartival Mall with Us!
               </h1>
               <p
                 style={{
@@ -184,14 +184,14 @@ export const CareersPage: FC = () => {
                   margin: '0 0 28px',
                 }}
               >
-                Cartiva is at its exciting early launch stage. We invite passionate beginners,
+                Cartival Mall is at its exciting early launch stage. We invite passionate beginners,
                 aspiring developers, community champions, and creative volunteers to collaborate
                 directly with our founding team, gain hands-on experience, and help shape the next
                 big commerce platform.
               </p>
               <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
                 <a
-                  href="mailto:careers@cartiva.com?subject=Volunteer / Early Starter Application"
+                  href="mailto:careers@cartivalmall.com?subject=Volunteer / Early Starter Application"
                   style={{
                     background: '#ffffff',
                     color: '#4338ca',
@@ -488,7 +488,7 @@ export const CareersPage: FC = () => {
                   </div>
 
                   <a
-                    href={`mailto:careers@cartiva.com?subject=Volunteer Application: ${encodeURIComponent(role.title)}`}
+                    href={`mailto:careers@cartivalmall.com?subject=Volunteer Application: ${encodeURIComponent(role.title)}`}
                     style={{
                       background: '#4338ca',
                       color: '#ffffff',
@@ -548,7 +548,7 @@ export const CareersPage: FC = () => {
             </p>
           </div>
           <a
-            href="mailto:careers@cartiva.com?subject=Open Volunteer Inquiry"
+            href="mailto:careers@cartivalmall.com?subject=Open Volunteer Inquiry"
             style={{
               background: '#4338ca',
               color: '#ffffff',

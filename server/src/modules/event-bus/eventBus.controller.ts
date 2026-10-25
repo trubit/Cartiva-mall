@@ -110,7 +110,7 @@ export const discardDeadLetter = async (req: Request, res: Response): Promise<vo
     const dlq = await DeadLetterEventModel.findByIdAndUpdate(
       id,
       { status: 'DISCARDED' },
-      { new: true },
+      { returnDocument: 'after' },
     )
     res.json({ success: true, message: 'Dead letter event discarded', data: dlq })
   } catch (err: any) {

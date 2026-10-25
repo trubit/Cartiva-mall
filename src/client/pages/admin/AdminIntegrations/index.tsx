@@ -87,7 +87,7 @@ export default function AdminIntegrations() {
     },
     {
       id: 'integ_3',
-      name: 'Truson AI Analytics Engine',
+      name: 'Cartival AI Analytics Engine',
       type: 'INTERNAL_SERVICE',
       auth: 'HMAC_SIGNATURE',
       scopes: ['analytics:read'],

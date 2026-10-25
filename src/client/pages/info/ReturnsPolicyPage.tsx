@@ -93,7 +93,7 @@ export const ReturnsPolicyPage: FC = () => {
               color: '#ffffff',
             }}
           >
-            Cartiva 30-Day Returns & Replacements Policy
+            Cartival Mall 30-Day Returns & Replacements Policy
           </h1>
           <p
             style={{
@@ -104,7 +104,7 @@ export const ReturnsPolicyPage: FC = () => {
               margin: '0 0 32px',
             }}
           >
-            We stand behind every purchase on Cartiva. If you are not 100% satisfied with your
+            We stand behind every purchase on Cartival Mall. If you are not 100% satisfied with your
             order, return it easily within 30 days for a full refund or instant replacement.
           </p>
           <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>

@@ -58,22 +58,46 @@ const bootstrap = async (): Promise<void> => {
     flushViewCounters().catch(() => {})
   }, 60_000)
 
-  httpServer.on('error', (err: NodeJS.ErrnoException) => {
-    if (err.code === 'EADDRINUSE') {
-      logger.error(`Port ${env.PORT} is already in use. Stop the other process and try again.`)
-    } else {
-      logger.error('Server error', { error: err.message })
-    }
-    process.exit(1)
+  // ─── Bind HTTP port FIRST ───────────────────────────────────────────────────
+  // The /health endpoint already reports database status; wait-server.mjs checks
+  // this route.  By binding the port before connecting to databases we guarantee
+  // that wait-server.mjs can reach the health endpoint even when MongoDB or Redis
+  // are slow to respond.  This eliminates the root cause of the recurring startup
+  // failure: mongoose.connect() hanging and preventing the port from ever opening.
+  await new Promise<void>((resolve, reject) => {
+    httpServer.on('error', (err: NodeJS.ErrnoException) => {
+      if (err.code === 'EADDRINUSE' && env.isDev()) {
+        logger.warn(`Port ${env.PORT} busy — retrying in 2 s (tsx watch race)…`)
+        setTimeout(() => {
+          httpServer.listen(env.PORT, () => {
+            logger.info(`Cartiva API running on http://localhost:${env.PORT} (retry)`)
+            logger.info(`Environment: ${env.NODE_ENV}`)
+            resolve()
+          })
+        }, 2_000)
+      } else if (err.code === 'EADDRINUSE') {
+        logger.error(`Port ${env.PORT} is already in use. Stop the other process and try again.`)
+        reject(err)
+      } else {
+        logger.error('Server error', { error: err.message })
+        reject(err)
+      }
+    })
+
+    httpServer.listen(env.PORT, () => {
+      logger.info(`Cartiva API running on http://localhost:${env.PORT}`)
+      logger.info(`Environment: ${env.NODE_ENV}`)
+      resolve()
+    })
   })
 
-  httpServer.listen(env.PORT, () => {
-    logger.info(`Cartiva API running on http://localhost:${env.PORT}`)
-    logger.info(`Environment: ${env.NODE_ENV}`)
-  })
-
+  // ─── Connect databases (non-blocking in dev) ───────────────────────────────
+  // These run after the port is open so the client can start immediately.
+  // The /health endpoint reports their status; most API routes will return errors
+  // until both are connected, but that's visible and recoverable.
   await connectMongoDB()
   await connectRedis()
+
   await ensureAdmin()
   seedDefaultPermissions().catch(() => {})
   seedDefaultAccounts().catch(() => {})

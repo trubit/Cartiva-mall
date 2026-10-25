@@ -1,11 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import ProductCard from '../../components/product/ProductCard/index.js'
 import type { IProduct } from '../../../shared/types/product.types.js'
 import { PRODUCT_CATEGORIES } from '../../../shared/constants/index.js'
 
-const mockAddToCart = vi.fn()
+const { mockAddToCart } = vi.hoisted(() => ({
+  mockAddToCart: vi.fn(),
+}))
 
 vi.mock('../../hooks/useCart.js', () => ({
   useCart: () => ({ addToCart: mockAddToCart }),
@@ -37,10 +40,19 @@ function makeProduct(overrides: Partial<IProduct> = {}): IProduct {
 }
 
 function renderCard(product: IProduct, onQuickView?: (p: IProduct) => void) {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false, gcTime: 0 },
+      mutations: { retry: false },
+    },
+  })
+
   return render(
-    <MemoryRouter>
-      <ProductCard product={product} onQuickView={onQuickView} />
-    </MemoryRouter>,
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>
+        <ProductCard product={product} onQuickView={onQuickView} />
+      </MemoryRouter>
+    </QueryClientProvider>,
   )
 }
 

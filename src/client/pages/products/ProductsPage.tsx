@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FiFilter } from 'react-icons/fi'
+import { FiFilter, FiWifiOff } from 'react-icons/fi'
 import { useProducts } from '../../hooks/useProducts.js'
 import { useProductStore } from '../../store/productStore.js'
 import ProductGrid from '../../components/product/ProductGrid/index.js'
@@ -35,6 +35,32 @@ export default function ProductsPage() {
 
   return (
     <div className="container section">
+      {typeof navigator !== 'undefined' && !navigator.onLine && (
+        <div
+          role="status"
+          style={{
+            background: 'rgba(232, 160, 32, 0.12)',
+            border: '1px solid rgba(232, 160, 32, 0.4)',
+            borderRadius: '10px',
+            padding: '10px 16px',
+            marginBottom: '1.25rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            color: '#E8A020',
+            fontSize: '0.875rem',
+            fontWeight: 600,
+          }}
+        >
+          <FiWifiOff size={18} aria-hidden="true" />
+          <span>
+            {products.length > 0
+              ? "You're offline. Displaying saved catalog products from your device cache."
+              : "You're offline and no products have been cached on this device yet. Please reconnect to browse."}
+          </span>
+        </div>
+      )}
+
       {/* Top bar */}
       <div
         style={{

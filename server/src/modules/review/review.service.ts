@@ -318,7 +318,7 @@ export const moderateReview = async (
 ) => {
   if (!mongoose.isValidObjectId(reviewId)) throw new AppError('Invalid review ID', 400)
 
-  const review = await Review.findByIdAndUpdate(reviewId, { status }, { new: true })
+  const review = await Review.findByIdAndUpdate(reviewId, { status }, { returnDocument: 'after' })
   if (!review) throw new AppError('Review not found', 404)
 
   if (moderatorNotes) {

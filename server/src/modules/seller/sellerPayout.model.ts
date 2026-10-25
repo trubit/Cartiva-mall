@@ -9,6 +9,7 @@ export interface ISellerPayoutAccountDocument extends Document {
   accountNumber: string
   accountName: string
   recipientCode?: string // Paystack recipient code (e.g. RCP_...)
+  subaccountCode?: string // Paystack subaccount code (e.g. ACCT_...)
   currency: string
   isDefault: boolean
   isVerified: boolean
@@ -25,6 +26,7 @@ const sellerPayoutAccountSchema = new Schema<ISellerPayoutAccountDocument>(
     accountNumber: { type: String, required: true, trim: true, maxlength: 30 },
     accountName: { type: String, required: true, trim: true, maxlength: 150 },
     recipientCode: { type: String, trim: true },
+    subaccountCode: { type: String, trim: true },
     currency: { type: String, required: true, default: 'NGN', uppercase: true },
     isDefault: { type: Boolean, default: false },
     isVerified: { type: Boolean, default: true },
@@ -42,11 +44,13 @@ export const SellerPayoutAccount = mongoose.model<ISellerPayoutAccountDocument>(
 // ─── Withdrawal / Payout Record ───────────────────────────────────────────────
 export type WithdrawalStatus =
   | 'pending'
+  | 'pending_approval'
   | 'processing'
   | 'completed'
   | 'failed'
   | 'cancelled'
   | 'reversed'
+  | 'rejected'
 
 export interface IWithdrawalAuditEntry {
   status: WithdrawalStatus
@@ -64,6 +68,9 @@ export interface ISellerWithdrawalDocument extends Document {
   currency: string
   status: WithdrawalStatus
   payoutMethod: 'paystack' | 'stripe' | 'manual'
+  manualPayoutReference?: string
+  fulfilledBy?: Types.ObjectId
+  fulfilledAt?: Date
   payoutAccount: {
     bankName: string
     bankCode: string
@@ -76,6 +83,7 @@ export interface ISellerWithdrawalDocument extends Document {
   idempotencyKey?: string
   failureReason?: string
   requestedAt: Date
+  expectedCompletionDate?: Date
   processedAt?: Date
   completedAt?: Date
   auditLog: IWithdrawalAuditEntry[]
@@ -99,7 +107,16 @@ const sellerWithdrawalSchema = new Schema<ISellerWithdrawalDocument>(
     currency: { type: String, required: true, default: 'NGN', uppercase: true },
     status: {
       type: String,
-      enum: ['pending', 'processing', 'completed', 'failed', 'cancelled', 'reversed'],
+      enum: [
+        'pending',
+        'pending_approval',
+        'processing',
+        'completed',
+        'failed',
+        'cancelled',
+        'reversed',
+        'rejected',
+      ],
       default: 'pending',
       index: true,
     },
@@ -109,6 +126,9 @@ const sellerWithdrawalSchema = new Schema<ISellerWithdrawalDocument>(
       default: 'paystack',
       required: true,
     },
+    manualPayoutReference: { type: String, trim: true },
+    fulfilledBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    fulfilledAt: { type: Date },
     payoutAccount: {
       bankName: { type: String, required: true },
       bankCode: { type: String, required: true },
@@ -121,6 +141,7 @@ const sellerWithdrawalSchema = new Schema<ISellerWithdrawalDocument>(
     idempotencyKey: { type: String, index: true },
     failureReason: { type: String },
     requestedAt: { type: Date, default: Date.now },
+    expectedCompletionDate: { type: Date, index: true },
     processedAt: { type: Date },
     completedAt: { type: Date },
     auditLog: [

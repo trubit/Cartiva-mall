@@ -97,6 +97,15 @@ export default function OrderCard({ order }: { order: IOrder }) {
           <div className="oc-header__badges">
             <OrderStatusBadge status={order.orderStatus} showIcon />
             <PaymentStatusBadge status={order.paymentStatus} />
+            {order.deliveryConfirmedAt && (
+              <span
+                className="badge bg-success-subtle text-success border border-success-subtle d-inline-flex align-items-center gap-1"
+                style={{ fontSize: '0.75rem', padding: '3px 8px' }}
+                title={`Delivery confirmed on ${formatDate(order.deliveryConfirmedAt)}`}
+              >
+                ✓ Confirmed
+              </span>
+            )}
           </div>
         </div>
 

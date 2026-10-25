@@ -52,7 +52,7 @@ export const PaymentSecurityPage: FC = () => {
       icon: FaCreditCard,
     },
     {
-      name: 'Cartiva Wallet Balance',
+      name: 'Cartival Wallet Balance',
       desc: 'Instant 1-click checkout with 2% reload bonus rewards',
       icon: FaWallet,
     },
@@ -119,13 +119,13 @@ export const PaymentSecurityPage: FC = () => {
               margin: '0 0 32px',
             }}
           >
-            Shop with total peace of mind. Every transaction on Cartiva is safeguarded by end-to-end
-            encryption, PCI-DSS Level 1 tokenization, and our 100% money-back buyer protection
-            guarantee.
+            Shop with total peace of mind. Every transaction on Cartival Mall is safeguarded by
+            end-to-end encryption, PCI-DSS Level 1 tokenization, and our 100% money-back buyer
+            protection guarantee.
           </p>
           <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
             <Link
-              to="/reload"
+              to="/products"
               style={{
                 background: '#2563eb',
                 color: '#ffffff',
@@ -137,7 +137,7 @@ export const PaymentSecurityPage: FC = () => {
                 boxShadow: '0 10px 15px -3px rgba(37, 99, 235, 0.4)',
               }}
             >
-              Manage Cartiva Wallet
+              Shop with Escrow Protection
             </Link>
             <Link
               to="/orders"

@@ -3,6 +3,7 @@ import Navbar from '../components/layout/Navbar.js'
 import Footer from '../components/layout/Footer.js'
 import EmailVerificationBanner from '../components/layout/EmailVerificationBanner/index.js'
 import BottomNav from '../components/layout/BottomNav.js'
+import RouteErrorBoundary from '../components/RouteErrorBoundary.js'
 import { useMe } from '../hooks/useAuth.js'
 import { useAuthStore } from '../store/authStore.js'
 
@@ -20,7 +21,9 @@ export default function MainLayout() {
       <Navbar />
       <EmailVerificationBanner />
       <main style={{ flex: 1 }}>
-        <Outlet />
+        <RouteErrorBoundary>
+          <Outlet />
+        </RouteErrorBoundary>
       </main>
       {!isAuthenticated && <Footer />}
       <BottomNav />

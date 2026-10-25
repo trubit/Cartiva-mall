@@ -191,7 +191,7 @@ export const AdPrivacyChoicesPage: FC = () => {
               margin: 0,
             }}
           >
-            You have control over how Cartiva and our advertising partners use your data to
+            You have control over how Cartival Mall and our advertising partners use your data to
             personalize ads, measure campaign efficacy, and deliver custom shopping experiences.
           </p>
         </div>
@@ -237,8 +237,8 @@ export const AdPrivacyChoicesPage: FC = () => {
               </h3>
             </div>
             <p style={{ margin: 0, fontSize: '14px', color: '#64748b', lineHeight: 1.6 }}>
-              Cartiva honors browser-level opt-out signals such as Global Privacy Control (GPC).
-              When detected, cross-site tracking is automatically disabled.
+              Cartival Mall honors browser-level opt-out signals such as Global Privacy Control
+              (GPC). When detected, cross-site tracking is automatically disabled.
             </p>
           </div>
 
@@ -373,8 +373,8 @@ export const AdPrivacyChoicesPage: FC = () => {
                     Personalized Marketplace Ads & Recommendations
                   </h4>
                   <p style={{ margin: 0, fontSize: '14px', color: '#64748b', lineHeight: 1.6 }}>
-                    Allows Cartiva to use your browsing history, past purchases, and wishlist items
-                    to suggest products you are most likely to love.
+                    Allows Cartival Mall to use your browsing history, past purchases, and wishlist
+                    items to suggest products you are most likely to love.
                   </p>
                 </div>
               </div>
@@ -464,7 +464,7 @@ export const AdPrivacyChoicesPage: FC = () => {
                   </h4>
                   <p style={{ margin: 0, fontSize: '14px', color: '#64748b', lineHeight: 1.6 }}>
                     Share pseudonymous identifiers with verified advertising networks (e.g., Google,
-                    Meta) to show Cartiva deals on third-party websites and apps.
+                    Meta) to show Cartival Mall deals on third-party websites and apps.
                   </p>
                 </div>
               </div>
@@ -554,7 +554,7 @@ export const AdPrivacyChoicesPage: FC = () => {
                   </h4>
                   <p style={{ margin: 0, fontSize: '14px', color: '#64748b', lineHeight: 1.6 }}>
                     Helps us understand how customers discover products and measure the
-                    effectiveness of vendor promotions on Cartiva.
+                    effectiveness of vendor promotions on Cartival Mall.
                   </p>
                 </div>
               </div>
@@ -743,9 +743,9 @@ export const AdPrivacyChoicesPage: FC = () => {
                 What happens if I turn off personalized ads?
               </h4>
               <p style={{ margin: 0, fontSize: '14px', color: '#64748b' }}>
-                You will still see the same number of advertisements across Cartiva and partner
-                networks, but they will be generic and not based on your past shopping activity,
-                search terms, or interests.
+                You will still see the same number of advertisements across Cartival Mall and
+                partner networks, but they will be generic and not based on your past shopping
+                activity, search terms, or interests.
               </p>
             </div>
 
@@ -753,12 +753,12 @@ export const AdPrivacyChoicesPage: FC = () => {
               <h4
                 style={{ margin: '0 0 6px', fontSize: '15px', fontWeight: 700, color: '#1e293b' }}
               >
-                Does Cartiva sell my personal contact information?
+                Does Cartival Mall sell my personal contact information?
               </h4>
               <p style={{ margin: 0, fontSize: '14px', color: '#64748b' }}>
-                No. Cartiva does not sell your name, email address, phone number, physical address,
-                or payment credentials to data brokers or advertisers. Any advertising data shared
-                with advertising networks uses encrypted, non-reversible pseudonymous tokens.
+                No. Cartival Mall does not sell your name, email address, phone number, physical
+                address, or payment credentials to data brokers or advertisers. Any advertising data
+                shared with advertising networks uses encrypted, non-reversible pseudonymous tokens.
               </p>
             </div>
 

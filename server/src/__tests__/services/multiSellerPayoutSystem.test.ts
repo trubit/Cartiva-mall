@@ -131,30 +131,32 @@ describe('Multi-Seller Marketplace Payment, Ledger & Payout System', () => {
     })
     await order.save()
 
-    // Process order earnings
+    // Process order earnings (Order subtotal 50,000 + 1,000 customer shipping fee)
+    // Seller A has 20,000/50,000 (40%) -> 400 shipping -> Gross 20,400, Commission 200, Net 20,200
+    // Seller B has 30,000/50,000 (60%) -> 600 shipping -> Gross 30,600, Commission 200, Net 30,400
     await recordOrderSellerEarnings(order)
 
-    // Verify Seller A (Gross 20,000, Commission 200, Net 19,800)
+    // Verify Seller A (Gross 20,400, Commission 200, Net 20,200)
     const ledgerA = await SellerLedger.find({ sellerId: sellerAId })
     expect(ledgerA).toHaveLength(1)
     expect(ledgerA[0].type).toBe('ORDER_SALE')
-    expect(ledgerA[0].amount).toBe(19800)
-    expect(ledgerA[0].balanceAfter).toBe(19800)
+    expect(ledgerA[0].amount).toBe(20200)
+    expect(ledgerA[0].balanceAfter).toBe(20200)
 
     const profileA = await SellerProfile.findOne({ userId: sellerAId })
-    expect(profileA?.totalSales).toBe(20000)
-    expect(profileA?.totalEarnings).toBe(19800)
+    expect(profileA?.totalSales).toBe(20400)
+    expect(profileA?.totalEarnings).toBe(20200)
 
-    // Verify Seller B (Gross 30,000, Commission 200, Net 29,800)
+    // Verify Seller B (Gross 30,600, Commission 200, Net 30,400)
     const ledgerB = await SellerLedger.find({ sellerId: sellerBId })
     expect(ledgerB).toHaveLength(1)
     expect(ledgerB[0].type).toBe('ORDER_SALE')
-    expect(ledgerB[0].amount).toBe(29800)
-    expect(ledgerB[0].balanceAfter).toBe(29800)
+    expect(ledgerB[0].amount).toBe(30400)
+    expect(ledgerB[0].balanceAfter).toBe(30400)
 
     const profileB = await SellerProfile.findOne({ userId: sellerBId })
-    expect(profileB?.totalSales).toBe(30000)
-    expect(profileB?.totalEarnings).toBe(29800)
+    expect(profileB?.totalSales).toBe(30600)
+    expect(profileB?.totalEarnings).toBe(30400)
 
     // Verify individual SellerFee documents recorded
     const fees = await SellerFee.find({ orderId: order._id })
@@ -213,9 +215,10 @@ describe('Multi-Seller Marketplace Payment, Ledger & Payout System', () => {
     expect(ledgerEntries).toHaveLength(1)
 
     const profile = await SellerProfile.findOne({ userId: sellerAId })
-    expect(profile?.totalSales).toBe(40000)
-    // 40,000 - (2 * 200) = 39,600
-    expect(profile?.totalEarnings).toBe(39600)
+    // Gross: 40,000 product + 1,000 customer shipping = 41,000
+    expect(profile?.totalSales).toBe(41000)
+    // Net: 41,000 - (2 * 200) = 40,600
+    expect(profile?.totalEarnings).toBe(40600)
   })
 
   it('creates compensating ORDER_REFUND entries on refund without silent balance tampering', async () => {
@@ -264,10 +267,11 @@ describe('Multi-Seller Marketplace Payment, Ledger & Payout System', () => {
     const ledgerEntries = await SellerLedger.find({ sellerId: sellerAId }).sort({ createdAt: 1 })
     expect(ledgerEntries).toHaveLength(2)
     expect(ledgerEntries[0].type).toBe('ORDER_SALE')
-    expect(ledgerEntries[0].amount).toBe(19800)
+    // Gross 21,000 - 200 = 20,800
+    expect(ledgerEntries[0].amount).toBe(20800)
 
     expect(ledgerEntries[1].type).toBe('ORDER_REFUND')
-    expect(ledgerEntries[1].amount).toBe(-19800)
+    expect(ledgerEntries[1].amount).toBe(-20800)
     expect(ledgerEntries[1].balanceAfter).toBe(0)
 
     const profile = await SellerProfile.findOne({ userId: sellerAId })

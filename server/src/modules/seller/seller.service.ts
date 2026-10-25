@@ -1,14 +1,21 @@
 import mongoose from 'mongoose'
+import { User } from '../user/user.model.js'
 import { SellerProfile } from './seller.model.js'
 import { Product } from '../product/product.model.js'
 import { Order } from '../order/order.model.js'
 import { SellerPayoutAccount, SellerWithdrawal, SellerLedger } from './sellerPayout.model.js'
+import { SellerFee } from '../fee/sellerFee.model.js'
+import { getCommissionPolicy, getCartivaCommissionPerUnit } from '../fee/sellerFee.service.js'
+import { redis } from '../../database/redis.js'
 import * as paystackService from '../payment/paystack.service.js'
 import { createNotification } from '../notification/notification.model.js'
 import { emitToUser } from '../../sockets/index.js'
 import { AppError } from '../../middlewares/error.middleware.js'
 import { cacheGet, cacheSet, cacheDel } from '../../utils/cache.js'
 import { logger } from '../../utils/logger.js'
+import { sendAdminNewWithdrawalEmail } from '../../utils/email.js'
+import { getPayoutSettings } from '../admin/admin.service.js'
+import { calculateExpectedCompletionDate } from '../../../../src/shared/utils/businessCalendar.js'
 import type {
   OnboardSellerInput,
   UpdateSellerProfileInput,
@@ -28,8 +35,6 @@ const SELLER_EARNINGS_TTL = 120
 // Above this threshold we trade some precision for query safety and log a warning.
 const MAX_IN_PRODUCT_IDS = 2_000
 
-const PLATFORM_FEE = 0.05 // 5 % platform fee
-
 // Returns a MongoDB aggregation expression that sums lineTotal for only the seller's own items
 // within a matched order document. Prevents revenue inflation from shared multi-seller carts.
 const sellerItemRevenue = (ids: mongoose.Types.ObjectId[]) => ({
@@ -37,6 +42,63 @@ const sellerItemRevenue = (ids: mongoose.Types.ObjectId[]) => ({
     input: { $filter: { input: '$items', as: 'i', cond: { $in: ['$$i.productId', ids] } } },
     initialValue: 0,
     in: { $add: ['$$value', '$$this.lineTotal'] },
+  },
+})
+
+// Returns an aggregation expression computing seller's gross revenue (product earnings + allocated shipping fee)
+const sellerGrossRevenueExpr = (
+  sellerOid: mongoose.Types.ObjectId,
+  ids: mongoose.Types.ObjectId[],
+) => ({
+  $let: {
+    vars: {
+      alloc: {
+        $first: {
+          $filter: {
+            input: { $ifNull: ['$sellerAllocations', []] },
+            as: 'sa',
+            cond: { $eq: ['$$sa.sellerId', sellerOid] },
+          },
+        },
+      },
+      itemRev: sellerItemRevenue(ids),
+    },
+    in: {
+      $cond: [
+        { $ne: ['$$alloc', null] },
+        {
+          $ifNull: [
+            '$$alloc.grossAmount',
+            { $add: ['$$itemRev', { $ifNull: ['$$alloc.shippingFee', 0] }] },
+          ],
+        },
+        {
+          $add: [
+            '$$itemRev',
+            {
+              $cond: [
+                {
+                  $eq: [
+                    {
+                      $size: {
+                        $filter: {
+                          input: { $ifNull: ['$items', []] },
+                          as: 'it',
+                          cond: { $in: ['$$it.productId', ids] },
+                        },
+                      },
+                    },
+                    { $size: { $ifNull: ['$items', []] } },
+                  ],
+                },
+                { $ifNull: ['$shippingFee', 0] },
+                0,
+              ],
+            },
+          ],
+        },
+      ],
+    },
   },
 })
 
@@ -102,7 +164,7 @@ export const getSellerDashboard = async (sellerId: string) => {
   const orderMatch =
     productIds.length > 0 ? { 'items.productId': { $in: productIds } } : { _id: null } // matches nothing when seller has no products yet
 
-  const revenueExpr = sellerItemRevenue(productIds)
+  const revenueExpr = sellerGrossRevenueExpr(sellerOid, productIds)
 
   const [
     productStatusBreakdown,
@@ -303,7 +365,7 @@ export const calculateLiveAvailableBalance = async (sellerId: string) => {
   const orderMatch =
     productIds.length > 0 ? { 'items.productId': { $in: productIds } } : { _id: null }
 
-  const revenueExpr = sellerItemRevenue(productIds)
+  const revenueExpr = sellerGrossRevenueExpr(sellerOid, productIds)
 
   const [
     totalResult,
@@ -391,17 +453,45 @@ export const calculateLiveAvailableBalance = async (sellerId: string) => {
       { $match: { sellerId: sellerOid, status: 'completed' } },
       { $group: { _id: null, total: { $sum: '$amount' } } },
     ]),
-    // In-flight pending/processing withdrawals sum
+    // In-flight pending/pending_approval/processing withdrawals sum
     SellerWithdrawal.aggregate([
-      { $match: { sellerId: sellerOid, status: { $in: ['pending', 'processing'] } } },
+      {
+        $match: {
+          sellerId: sellerOid,
+          status: { $in: ['pending', 'pending_approval', 'processing'] },
+        },
+      },
       { $group: { _id: null, total: { $sum: '$amount' } } },
     ]),
   ])
 
+  // 1. Authoritative commission calculation from recorded SellerFee or active policy
+  const feeAgg = await SellerFee.aggregate([
+    { $match: { sellerId: sellerOid, status: { $in: ['PAID', 'PENDING', 'DUE'] } } },
+    { $group: { _id: null, total: { $sum: '$totalFee' } } },
+  ])
+  const recordedCommission = feeAgg[0]?.total ?? 0
+
   const totalGrossRevenue = totalResult[0]?.total ?? 0
   const settledGrossRevenue = settledResult[0]?.total ?? totalGrossRevenue
-  const totalNetRevenue = Math.round(totalGrossRevenue * (1 - PLATFORM_FEE) * 100) / 100
-  const settledNetRevenue = Math.round(settledGrossRevenue * (1 - PLATFORM_FEE) * 100) / 100
+  const currency = process.env.PAYSTACK_CURRENCY || 'NGN'
+
+  let totalCommission = recordedCommission
+  if (totalCommission === 0 && totalGrossRevenue > 0) {
+    const policy = await getCommissionPolicy().catch(() => null)
+    if (policy && policy.commissionType === 'PERCENTAGE' && policy.percentageRate) {
+      totalCommission = Math.round(totalGrossRevenue * (policy.percentageRate / 100) * 100) / 100
+    } else {
+      const commPerUnit = await getCartivaCommissionPerUnit(currency).catch(() => 200)
+      totalCommission = Math.min(totalGrossRevenue, commPerUnit)
+    }
+  }
+
+  const totalNetRevenue = Math.max(0, Math.round((totalGrossRevenue - totalCommission) * 100) / 100)
+  const settledNetRevenue = Math.max(
+    0,
+    Math.round((settledGrossRevenue - totalCommission) * 100) / 100,
+  )
 
   const completedWithdrawals = completedWithdrawalsResult[0]?.total ?? 0
   const inFlightWithdrawals = inFlightWithdrawalsResult[0]?.total ?? 0
@@ -418,13 +508,14 @@ export const calculateLiveAvailableBalance = async (sellerId: string) => {
   const pendingBalance =
     Math.round((unpaidPendingTotal + unsettledNet + inFlightWithdrawals) * 100) / 100
 
-  const currency = process.env.PAYSTACK_CURRENCY || 'NGN'
+  const platformFeePercent =
+    totalGrossRevenue > 0 ? Math.round((totalCommission / totalGrossRevenue) * 10000) / 100 : 0
 
   return {
     totalRevenue: totalGrossRevenue,
     netRevenue: totalNetRevenue,
     settledRevenue: settledNetRevenue,
-    platformFeePercent: PLATFORM_FEE * 100,
+    platformFeePercent,
     thisMonthRevenue: thisMonth[0]?.total ?? 0,
     lastMonthRevenue: lastMonth[0]?.total ?? 0,
     pendingBalance,
@@ -450,141 +541,242 @@ export const getSellerEarnings = async (sellerId: string) => {
 export const requestWithdrawal = async (userId: string, input: RequestWithdrawalInput) => {
   const sellerOid = new mongoose.Types.ObjectId(userId)
 
-  // 1. Amount validation
-  const amount = Math.round(input.amount * 100) / 100
-  if (isNaN(amount) || !isFinite(amount) || amount <= 0) {
-    throw new AppError('Invalid withdrawal amount', 400)
-  }
-  const MIN_WITHDRAWAL = 1
-  if (amount < MIN_WITHDRAWAL) {
-    throw new AppError(`Minimum withdrawal amount is ${MIN_WITHDRAWAL}`, 400)
-  }
-
-  // 2. Idempotency check
-  if (input.idempotencyKey) {
-    const existing = await SellerWithdrawal.findOne({
-      sellerId: sellerOid,
-      idempotencyKey: input.idempotencyKey,
-    })
-    if (existing) return existing
+  // Concurrency Mutex Lock: prevent simultaneous race conditions from the same seller
+  const lockKey = `lock:withdrawal:${userId}`
+  let lockAcquired: boolean
+  try {
+    const res = await redis.set(lockKey, 'locked', 'PX', 10000, 'NX')
+    lockAcquired = res === 'OK'
+  } catch {
+    lockAcquired = true // Fallback if redis unavailable
   }
 
-  // 3. Payout Account Verification
-  const payoutAccount = await SellerPayoutAccount.findOne({
-    _id: input.payoutAccountId,
-    sellerId: sellerOid,
-  })
-  if (!payoutAccount) {
-    throw new AppError('Payout bank account not found or does not belong to you', 404)
-  }
-
-  // 4. Live Balance Verification
-  const earnings = await calculateLiveAvailableBalance(userId)
-  if (amount > earnings.availableBalance) {
+  if (!lockAcquired) {
     throw new AppError(
-      `Insufficient available balance. Available: ${earnings.currency} ${earnings.availableBalance.toFixed(2)}, Requested: ${earnings.currency} ${amount.toFixed(2)}`,
-      400,
+      'A withdrawal request is currently being processed for your account. Please wait a moment.',
+      409,
     )
   }
 
-  // 5. Generate withdrawal record
-  const withdrawalNumber = `WD-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`
-  const fee = 0
-  const netAmount = amount - fee
-  const currency = payoutAccount.currency || earnings.currency || 'NGN'
+  try {
+    // 1. Amount validation
+    const amount = Math.round(input.amount * 100) / 100
+    if (isNaN(amount) || !isFinite(amount) || amount <= 0) {
+      throw new AppError('Invalid withdrawal amount', 400)
+    }
+    const MIN_WITHDRAWAL = 1
+    if (amount < MIN_WITHDRAWAL) {
+      throw new AppError(`Minimum withdrawal amount is ${MIN_WITHDRAWAL}`, 400)
+    }
 
-  const withdrawal = new SellerWithdrawal({
-    withdrawalNumber,
-    sellerId: sellerOid,
-    amount,
-    fee,
-    netAmount,
-    currency,
-    status: 'processing',
-    payoutMethod: 'paystack',
-    payoutAccount: {
-      bankName: payoutAccount.bankName,
-      bankCode: payoutAccount.bankCode,
-      accountNumber: payoutAccount.accountNumber,
-      accountName: payoutAccount.accountName,
-      recipientCode: payoutAccount.recipientCode,
-    },
-    idempotencyKey: input.idempotencyKey,
-    requestedAt: new Date(),
-    auditLog: [
-      {
-        status: 'processing',
-        note: `Withdrawal request submitted for ${currency} ${netAmount.toFixed(2)} to ${payoutAccount.bankName} (${payoutAccount.accountNumber})`,
-        actorId: sellerOid,
-        timestamp: new Date(),
-      },
-    ],
-  })
-
-  await withdrawal.save()
-
-  // 6. Record in Ledger
-  await SellerLedger.create({
-    sellerId: sellerOid,
-    type: 'WITHDRAWAL_RESERVE',
-    amount: -amount,
-    currency,
-    balanceAfter: earnings.availableBalance - amount,
-    referenceType: 'withdrawal',
-    referenceId: withdrawalNumber,
-    description: `Funds reserved for withdrawal ${withdrawalNumber} to ${payoutAccount.bankName} (${payoutAccount.accountNumber})`,
-  })
-
-  // Invalidate earnings cache
-  await cacheDel(`seller:earnings:${userId}`)
-
-  // 7. Initiate Real Transfer via Paystack if configured
-  if (process.env.PAYSTACK_SECRET_KEY && payoutAccount.recipientCode) {
-    try {
-      const transferRes = await paystackService.initiateTransfer({
-        amountMinor: Math.round(netAmount * 100),
-        recipientCode: payoutAccount.recipientCode,
-        reason: `Cartiva Seller Payout - ${withdrawalNumber}`,
-        reference: withdrawalNumber,
+    // 2. Idempotency check
+    if (input.idempotencyKey) {
+      const existing = await SellerWithdrawal.findOne({
+        sellerId: sellerOid,
+        idempotencyKey: input.idempotencyKey,
       })
+      if (existing) return existing
+    }
 
-      withdrawal.providerTransferCode = transferRes.transferCode
-      withdrawal.providerReference = transferRes.reference
-      if (transferRes.status === 'success') {
-        withdrawal.status = 'completed'
-        withdrawal.completedAt = new Date()
+    // 3. Payout Account Verification
+    const payoutAccount = await SellerPayoutAccount.findOne({
+      _id: input.payoutAccountId,
+      sellerId: sellerOid,
+    })
+    if (!payoutAccount) {
+      throw new AppError('Payout bank account not found or does not belong to you', 404)
+    }
+
+    // 4. Live Balance Verification under lock
+    const earnings = await calculateLiveAvailableBalance(userId)
+    if (amount > earnings.availableBalance) {
+      throw new AppError(
+        `Insufficient available balance. Available: ${earnings.currency} ${earnings.availableBalance.toFixed(2)}, Requested: ${earnings.currency} ${amount.toFixed(2)}`,
+        400,
+      )
+    }
+
+    // 5. Generate withdrawal record
+    const withdrawalNumber = `WD-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`
+    const fee = 0
+    const netAmount = amount - fee
+    const currency = payoutAccount.currency || earnings.currency || 'NGN'
+    const requestedAt = new Date()
+    const expectedCompletionDate = calculateExpectedCompletionDate(requestedAt)
+
+    const withdrawal = new SellerWithdrawal({
+      withdrawalNumber,
+      sellerId: sellerOid,
+      amount,
+      fee,
+      netAmount,
+      currency,
+      status: 'processing',
+      payoutMethod: 'paystack',
+      payoutAccount: {
+        bankName: payoutAccount.bankName,
+        bankCode: payoutAccount.bankCode,
+        accountNumber: payoutAccount.accountNumber,
+        accountName: payoutAccount.accountName,
+        recipientCode: payoutAccount.recipientCode,
+      },
+      idempotencyKey: input.idempotencyKey,
+      requestedAt,
+      expectedCompletionDate,
+      auditLog: [
+        {
+          status: 'processing',
+          note: `Withdrawal request submitted for ${currency} ${netAmount.toFixed(2)} to ${payoutAccount.bankName} (•••• ${payoutAccount.accountNumber.slice(-4)}). Processing takes up to 7 working days.`,
+          actorId: sellerOid,
+          timestamp: requestedAt,
+        },
+      ],
+    })
+
+    await withdrawal.save()
+
+    // 6. Record in Ledger
+    await SellerLedger.create({
+      sellerId: sellerOid,
+      type: 'WITHDRAWAL_RESERVE',
+      amount: -amount,
+      currency,
+      balanceAfter: earnings.availableBalance - amount,
+      referenceType: 'withdrawal',
+      referenceId: withdrawalNumber,
+      description: `Funds reserved for withdrawal ${withdrawalNumber} to ${payoutAccount.bankName} (•••• ${payoutAccount.accountNumber.slice(-4)})`,
+    })
+
+    // Invalidate earnings cache
+    await cacheDel(`seller:earnings:${userId}`)
+
+    // 7. Initiate Real Transfer via Paystack if configured
+    let routedToManual = false
+    if (process.env.PAYSTACK_SECRET_KEY && payoutAccount.recipientCode) {
+      try {
+        const transferRes = await paystackService.initiateTransfer({
+          amountMinor: Math.round(netAmount * 100),
+          recipientCode: payoutAccount.recipientCode,
+          reason: `Cartiva Seller Payout - ${withdrawalNumber}`,
+          reference: withdrawalNumber,
+        })
+
+        withdrawal.providerTransferCode = transferRes.transferCode
+        withdrawal.providerReference = transferRes.reference
+        if (transferRes.status === 'success') {
+          withdrawal.status = 'completed'
+          withdrawal.completedAt = new Date()
+          withdrawal.auditLog.push({
+            status: 'completed',
+            note: 'Payout completed successfully. Funds disbursed to bank.',
+            timestamp: new Date(),
+          })
+        }
+        await withdrawal.save()
+      } catch (err: any) {
+        logger.warn('Paystack automated transfer async dispatch queued or failed:', {
+          message: err.message,
+          withdrawalNumber,
+        })
+        withdrawal.status = 'pending_approval'
         withdrawal.auditLog.push({
-          status: 'completed',
-          note: 'Paystack transfer completed synchronously',
+          status: 'pending_approval',
+          note: 'Standard Security & Routing: Request queued for payment operations review and direct bank transfer.',
           timestamp: new Date(),
         })
+        routedToManual = true
+        await withdrawal.save()
       }
-      await withdrawal.save()
-    } catch (err: any) {
-      logger.warn('Paystack automated transfer async dispatch queued or failed:', {
-        message: err.message,
-        withdrawalNumber,
-      })
+    } else {
+      withdrawal.status = 'pending_approval'
       withdrawal.auditLog.push({
-        status: 'processing',
-        note: `Transfer queued. Provider response: ${err.message || 'Queued for processing'}`,
+        status: 'pending_approval',
+        note: 'Payment Operations Review: Queued for payment operations review and direct bank transfer.',
         timestamp: new Date(),
       })
+      routedToManual = true
       await withdrawal.save()
     }
+
+    // 8. Dispatch notification to seller and admin
+    const notifMessage = routedToManual
+      ? `Your withdrawal request for ${currency} ${amount.toFixed(2)} has been securely queued for bank fulfillment. Processing takes up to 7 working days.`
+      : `Your withdrawal request for ${currency} ${amount.toFixed(2)} has been received and is being processed. Processing takes up to 7 working days.`
+
+    const notif = await createNotification({
+      userId,
+      type: 'payment',
+      title: 'Withdrawal Requested',
+      message: notifMessage,
+      link: '/seller/payouts',
+    }).catch(() => null)
+    if (notif) emitToUser(userId, 'notification:new', notif)
+
+    try {
+      const adminUsers = await User.find({ role: 'admin' }).select('_id').lean()
+      for (const admin of adminUsers) {
+        const aNotif = await createNotification({
+          userId: admin._id.toString(),
+          type: 'payment',
+          title: 'New Withdrawal Requires Fulfillment',
+          message: `Seller withdrawal of ${currency} ${amount.toFixed(2)} (${withdrawalNumber}) is waiting for manual fulfillment.`,
+          link: '/admin/withdrawals',
+        }).catch(() => null)
+        if (aNotif) emitToUser(admin._id.toString(), 'notification:new', aNotif)
+      }
+    } catch (e) {
+      logger.warn('Failed to dispatch admin notification for withdrawal', { e })
+    }
+
+    // 9. Dispatch high-priority email notification to person(s) in charge of payouts
+    try {
+      const payoutSettings = await getPayoutSettings().catch(() => null)
+      if (payoutSettings && payoutSettings.notifyOnWithdrawalRequest !== false) {
+        const emails = payoutSettings.notificationEmails || []
+        if (emails.length > 0) {
+          const sellerProfile = await SellerProfile.findOne({ userId: sellerOid }).lean()
+          const sellerUser = await User.findById(sellerOid).lean()
+
+          const sellerStoreName =
+            sellerProfile?.storeName ||
+            `${sellerUser?.firstName || ''} ${sellerUser?.lastName || ''}`.trim() ||
+            'Seller'
+          const sellerEmail = sellerUser?.email || 'seller@cartivamall.com'
+
+          for (const recipientEmail of emails) {
+            sendAdminNewWithdrawalEmail({
+              to: recipientEmail,
+              sellerStoreName,
+              sellerEmail,
+              withdrawalNumber,
+              amount: netAmount,
+              currency,
+              bankName: payoutAccount.bankName,
+              accountNumber: payoutAccount.accountNumber,
+              accountName: payoutAccount.accountName,
+              requestedAt: new Date(),
+            }).catch((mailErr) => {
+              logger.warn('Failed to deliver withdrawal alert email to admin recipient:', {
+                recipientEmail,
+                withdrawalNumber,
+                error: mailErr.message,
+              })
+            })
+          }
+        }
+      }
+    } catch (mailDispatchErr) {
+      logger.warn('Failed to dispatch payout notification email:', { mailDispatchErr })
+    }
+
+    return withdrawal
+  } finally {
+    try {
+      await redis.del(lockKey)
+    } catch {
+      // ignore
+    }
   }
-
-  // 8. Dispatch notification
-  const notif = await createNotification({
-    userId,
-    type: 'payment',
-    title: 'Withdrawal Requested',
-    message: `Your withdrawal request for ${currency} ${amount.toFixed(2)} has been received and is being processed.`,
-    link: '/seller/payouts',
-  }).catch(() => null)
-  if (notif) emitToUser(userId, 'notification:new', notif)
-
-  return withdrawal
 }
 
 // ─── List Withdrawals ─────────────────────────────────────────────────────────
@@ -623,9 +815,13 @@ export const getSellerWithdrawals = async (
 // ─── Payout Bank Accounts ─────────────────────────────────────────────────────
 export const getSellerPayoutAccounts = async (userId: string) => {
   const sellerOid = new mongoose.Types.ObjectId(userId)
-  return SellerPayoutAccount.find({ sellerId: sellerOid })
+  const accounts = await SellerPayoutAccount.find({ sellerId: sellerOid })
     .sort({ isDefault: -1, createdAt: -1 })
     .lean()
+  return accounts.map((acc) => ({
+    ...acc,
+    accountNumber: acc.accountNumber ? `••••${acc.accountNumber.slice(-4)}` : '',
+  }))
 }
 
 export const addSellerPayoutAccount = async (userId: string, input: AddPayoutAccountInput) => {
@@ -642,8 +838,14 @@ export const addSellerPayoutAccount = async (userId: string, input: AddPayoutAcc
       if (resolved.accountName) {
         resolvedAccountName = resolved.accountName
       }
-    } catch {
-      // If bank resolution fails or mock test mode, preserve supplied name
+    } catch (err: any) {
+      if (err instanceof AppError && err.statusCode === 400) {
+        throw new AppError(`Bank verification failed: ${err.message}`, 400)
+      }
+      logger.warn('Paystack account resolution check non-fatal or failed', {
+        err,
+        accountNumber: input.accountNumber,
+      })
     }
   }
 
@@ -663,7 +865,23 @@ export const addSellerPayoutAccount = async (userId: string, input: AddPayoutAcc
     }
   }
 
-  // 3. Check existing count
+  // 3. Create Paystack Subaccount for direct payment splits
+  let subaccountCode: string | undefined
+  if (process.env.PAYSTACK_SECRET_KEY) {
+    try {
+      const subacc = await paystackService.createSubaccount({
+        businessName: resolvedAccountName,
+        settlementBank: input.bankCode,
+        accountNumber: input.accountNumber,
+        percentageCharge: 0,
+      })
+      subaccountCode = subacc.subaccountCode
+    } catch {
+      // Non-blocking for offline/testing modes
+    }
+  }
+
+  // 4. Check existing count
   const existingCount = await SellerPayoutAccount.countDocuments({ sellerId: sellerOid })
   const isDefault = input.isDefault || existingCount === 0
 
@@ -682,12 +900,13 @@ export const addSellerPayoutAccount = async (userId: string, input: AddPayoutAcc
         bankName: input.bankName.trim(),
         accountName: resolvedAccountName,
         recipientCode,
+        subaccountCode,
         currency: input.currency || 'NGN',
         isDefault,
         isVerified: true,
       },
     },
-    { upsert: true, new: true, setDefaultsOnInsert: true },
+    { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true },
   )
 
   return account

@@ -10,7 +10,11 @@ import { logger } from '../../utils/logger.js'
 import { withDbTransaction } from '../../utils/db-transaction.js'
 import { eventBus } from '../event-bus/eventBus.service.js'
 import { cacheGet, cacheSet, cacheDel } from '../../utils/cache.js'
-import { createSellerFeeForOrderItem } from '../fee/sellerFee.service.js'
+import {
+  createSellerFeeForOrderItem,
+  getCartivaCommissionPerUnit,
+} from '../fee/sellerFee.service.js'
+import { calculateSellerOrderAllocations } from './orderShippingAllocation.js'
 import { getAuthoritativeShippingFee } from '../shipping/shippingConfig.service.js'
 import { refundTransaction as paystackRefund } from '../payment/paystack.service.js'
 import {
@@ -242,9 +246,31 @@ export const createOrder = async (
       .add(taxAmount)
       .round(orderCurrency)
 
+    // Calculate seller allocations with customer-paid shipping fee allocated to fulfilling sellers
+    const commissionPerUnit = await getCartivaCommissionPerUnit(orderCurrency).catch(() => 200)
+    const sellerAllocMap = calculateSellerOrderAllocations(
+      orderItems,
+      shippingFee,
+      orderCurrency,
+      commissionPerUnit,
+    )
+    const initialSellerAllocations = Array.from(sellerAllocMap.values()).map((s) => ({
+      ...s,
+      status: 'pending' as const,
+      fulfillmentStatus: 'unfulfilled' as const,
+    }))
+    const totalPlatformCommission = roundMoney(
+      initialSellerAllocations.reduce((sum, s) => sum + s.commissionAmount, 0),
+      orderCurrency,
+    )
+    const totalSellerEarnings = roundMoney(
+      initialSellerAllocations.reduce((sum, s) => sum + s.netAmount, 0),
+      orderCurrency,
+    )
+
     if ((input as any).paymentMethodType && (input as any).paymentMethodType !== 'paystack') {
       throw new AppError(
-        'Cartiva Mall exclusively supports secure online payments via Paystack.',
+        'Cartival Mall exclusively supports secure online payments via Paystack.',
         400,
       )
     }
@@ -265,6 +291,9 @@ export const createOrder = async (
       shippingFee,
       taxAmount,
       grandTotal,
+      platformCommission: totalPlatformCommission,
+      sellerEarnings: totalSellerEarnings,
+      sellerAllocations: initialSellerAllocations,
       couponCode: session.couponCode,
       currency: orderCurrency,
       exchangeRateUsed,
@@ -626,24 +655,62 @@ export const updateOrderStatus = async (
         orderId: updated._id,
         orderStatus: input.orderStatus,
       })
+
+      // If status is updated to SHIPPED, send the mandated seller shipment notification
+      if (input.orderStatus === ORDER_STATUS.SHIPPED) {
+        notificationService
+          .create({
+            userId: sid,
+            type: 'order',
+            audience: 'SELLER',
+            title: 'Order Shipment Update',
+            message:
+              'Please ensure your shipment details and order status are up to date. The customer and Cartival Mall will be able to see the latest delivery status available in the system.',
+            link: '/seller/orders',
+            data: {
+              orderId: String(updated._id),
+              orderNumber: updated.orderNumber,
+              status: 'shipped',
+              tracking: input.tracking,
+            },
+          })
+          .catch((err) => {
+            logger.warn('Failed to send Order Shipment Update notification to seller', {
+              err,
+              sellerId: sid,
+            })
+          })
+      }
     }
   } catch (sellerErr) {
     logger.warn('Failed to emit real-time status update to sellers', { sellerErr })
   }
 
   // 3. Persistent In-App Notification for Buyer
-  const statusDisplay = input.orderStatus.replace(/_/g, ' ')
-  const notifTitle = `Order #${updated.orderNumber} ${statusDisplay.toUpperCase()}`
-  const notifMsg = `Your order #${updated.orderNumber} status is now "${statusDisplay}".${input.tracking?.carrier ? ` Carrier: ${input.tracking.carrier}.` : ''}`
+  const isShippedOrOut = [ORDER_STATUS.SHIPPED, ORDER_STATUS.OUT_FOR_DELIVERY].includes(
+    input.orderStatus as any,
+  )
+  const notifTitle = isShippedOrOut
+    ? 'Has Your Order Arrived?'
+    : `Order #${updated.orderNumber} ${input.orderStatus.replace(/_/g, ' ').toUpperCase()}`
+  const notifMsg = isShippedOrOut
+    ? 'Your order has been marked as shipped by the seller. Please confirm delivery only after the product has physically arrived at your doorstep. Once you confirm successful delivery, the seller and Cartival Mall will be notified, and your order status will be updated.'
+    : `Your order #${updated.orderNumber} status is now "${input.orderStatus.replace(/_/g, ' ')}".${input.tracking?.carrier ? ` Carrier: ${input.tracking.carrier}.` : ''}`
 
   await notificationService
     .create({
       userId: buyerIdStr,
-      type: 'ORDER_STATUS_CHANGED' as any,
+      type: isShippedOrOut ? 'shipping' : ('ORDER_STATUS_CHANGED' as any),
+      audience: 'BUYER',
       title: notifTitle,
       message: notifMsg,
       link: `/orders/${updated._id}`,
-      data: { orderId: updated._id, orderStatus: input.orderStatus, tracking: input.tracking },
+      data: {
+        orderId: String(updated._id),
+        orderNumber: updated.orderNumber,
+        orderStatus: input.orderStatus,
+        tracking: input.tracking,
+      },
     })
     .catch(() => {})
 
@@ -697,6 +764,203 @@ export const updateOrderStatus = async (
     actorId: userId,
   })
   return updated
+}
+
+// ─── Confirm Delivery (Customer / Admin) ──────────────────────────────────────
+export const confirmDelivery = async (
+  orderId: string,
+  userId: string,
+  role: string,
+): Promise<{ order: IOrderDocument; alreadyConfirmed?: boolean; message: string }> => {
+  const order = await Order.findById(orderId)
+  if (!order) throw new AppError('Order not found', 404)
+
+  // Security check: Only the buyer of the order or an admin can confirm delivery receipt
+  const isBuyer = order.userId.toString() === userId
+  const isAdmin = role === ROLES.ADMIN
+  if (!isBuyer && !isAdmin) {
+    throw new AppError('You are not authorized to confirm delivery for this order', 403)
+  }
+
+  // Idempotency: if already confirmed, return idempotently without duplicate records or notifications
+  if (order.deliveryConfirmedAt) {
+    return {
+      order,
+      alreadyConfirmed: true,
+      message: 'Delivery receipt was already confirmed.',
+    }
+  }
+
+  // An order must be shipped, out for delivery, or delivered to be confirmed by the customer
+  const confirmableStatuses = [
+    ORDER_STATUS.SHIPPED,
+    ORDER_STATUS.OUT_FOR_DELIVERY,
+    ORDER_STATUS.DELIVERED,
+  ] as string[]
+  if (!confirmableStatuses.includes(order.orderStatus)) {
+    throw new AppError(
+      `Delivery receipt cannot be confirmed for an order with status "${order.orderStatus}". The order must be shipped first.`,
+      400,
+    )
+  }
+
+  const now = new Date()
+  order.orderStatus = ORDER_STATUS.DELIVERED
+  order.fulfillmentStatus = 'fulfilled'
+  order.deliveryConfirmedAt = now
+  order.deliveryConfirmedBy = new mongoose.Types.ObjectId(userId)
+  order.deliveryConfirmationSource = isAdmin ? 'admin' : 'customer'
+
+  const trackingEvent = {
+    status: ORDER_STATUS.DELIVERED,
+    description: 'Customer confirmed delivery receipt',
+    timestamp: now,
+  }
+
+  const historyEntry = {
+    status: 'delivery_confirmed',
+    actor: isAdmin ? 'admin' : 'customer',
+    reason: 'Customer confirmed receipt of the order',
+    timestamp: now,
+  }
+
+  if (!order.tracking) {
+    order.tracking = { events: [] }
+  }
+  order.tracking.events.push(trackingEvent)
+  order.history.push(historyEntry)
+
+  // Update seller allocations
+  if (order.sellerAllocations && order.sellerAllocations.length > 0) {
+    for (const alloc of order.sellerAllocations) {
+      alloc.fulfillmentStatus = 'delivered_confirmed'
+      alloc.deliveryConfirmedAt = now
+      if (!alloc.deliveredAt) alloc.deliveredAt = now
+    }
+  }
+
+  await order.save()
+  await invalidateOrderCaches(orderId, order.userId.toString(), order.orderNumber)
+
+  // 1. Identify all fulfilling sellers
+  const sellerIdSet = new Set<string>()
+  if (order.sellerAllocations && order.sellerAllocations.length > 0) {
+    for (const alloc of order.sellerAllocations) {
+      if (alloc.sellerId) sellerIdSet.add(alloc.sellerId.toString())
+    }
+  }
+  for (const item of order.items) {
+    if (item.sellerId) {
+      sellerIdSet.add(item.sellerId.toString())
+    }
+  }
+
+  // 2. Notify each seller with the mandated delivery confirmation notification
+  for (const sid of sellerIdSet) {
+    await notificationService
+      .create({
+        userId: sid,
+        type: 'order',
+        audience: 'SELLER',
+        title: 'Delivery Successfully Confirmed',
+        message:
+          'The buyer has confirmed that your order was successfully delivered to their doorstep. The shipping alert for this order has been cleared from your active seller dashboard. The customer-paid shipping fee is included in your payout calculation, subject to payment verification, applicable deductions, refunds, and settlement rules. You can review the order and payout breakdown in your seller dashboard.',
+        link: '/seller/orders',
+        data: {
+          orderId: String(order._id),
+          orderNumber: order.orderNumber,
+          deliveryConfirmedAt: now,
+          status: 'delivered_confirmed',
+        },
+      })
+      .catch((err) => {
+        logger.warn('Failed to send delivery confirmation notification to seller', {
+          err,
+          sellerId: sid,
+        })
+      })
+
+    emitToUser(sid, 'order:delivery_confirmed', {
+      orderId: order._id,
+      orderNumber: order.orderNumber,
+      deliveryConfirmedAt: now,
+    })
+    emitToUser(sid, 'order:updated', {
+      orderId: order._id,
+      orderStatus: order.orderStatus,
+      deliveryConfirmedAt: now,
+    })
+  }
+
+  // 3. Notify Cartival Mall Admin
+  try {
+    const adminUsers = await User.find({ role: ROLES.ADMIN }).select('_id').lean()
+    for (const admin of adminUsers) {
+      await notificationService
+        .create({
+          userId: admin._id.toString(),
+          type: 'order',
+          audience: 'ADMIN',
+          title: 'Buyer Confirmed Successful Delivery',
+          message: `The buyer has confirmed successful delivery for Order #${order.orderNumber}. The order status has been updated, and the seller has been notified. The associated shipping fee and seller payout records are available for review.`,
+          link: '/admin/orders',
+          data: {
+            orderId: String(order._id),
+            orderNumber: order.orderNumber,
+            deliveryConfirmedAt: now,
+          },
+        })
+        .catch(() => {})
+
+      emitToUser(admin._id.toString(), 'admin:order_delivery_confirmed', {
+        orderId: order._id,
+        orderNumber: order.orderNumber,
+        deliveryConfirmedAt: now,
+      })
+    }
+  } catch (adminNotifErr) {
+    logger.warn('Failed to notify admins of delivery confirmation', { adminNotifErr })
+  }
+
+  // 4. Real-time push to buyer
+  emitToUser(order.userId.toString(), 'order:delivery_confirmed', {
+    orderId: order._id,
+    orderNumber: order.orderNumber,
+    deliveryConfirmedAt: now,
+  })
+  emitToUser(order.userId.toString(), 'order:updated', {
+    orderId: order._id,
+    orderStatus: order.orderStatus,
+    deliveryConfirmedAt: now,
+  })
+
+  // 5. Publish to EventBus
+  await eventBus.publish({
+    eventType: 'order.delivery_confirmed',
+    aggregateId: orderId,
+    aggregateType: 'Order',
+    actorId: userId,
+    payload: {
+      orderId,
+      orderNumber: order.orderNumber,
+      deliveryConfirmedAt: now,
+      confirmedBy: userId,
+      source: isAdmin ? 'admin' : 'customer',
+    },
+  })
+
+  logger.info('Audit: Order delivery confirmed', {
+    orderId,
+    orderNumber: order.orderNumber,
+    actorId: userId,
+    role,
+  })
+
+  return {
+    order,
+    alreadyConfirmed: false,
+    message: 'Delivery receipt successfully confirmed.',
+  }
 }
 
 // ─── Request Return ───────────────────────────────────────────────────────────
@@ -860,12 +1124,69 @@ export const getSellerOrders = async (
     Order.countDocuments(filter),
   ])
 
-  // Filter order items in response to contain only items owned by this seller for data isolation
+  // Filter order items in response to contain only items owned by this seller for data isolation,
+  // and compute seller-specific financial breakdown including allocated customer-paid shipping fee
   const sellerOrders = (orders as unknown as IOrderDocument[]).map((ord) => {
     const sellerItems = ord.items.filter((item) =>
       productIds.some((pid) => pid.toString() === item.productId.toString()),
     )
-    return { ...ord, items: sellerItems } as IOrderDocument
+
+    const sellerOidStr = sellerId.toString()
+    const alloc = ord.sellerAllocations?.find((a) => a.sellerId?.toString() === sellerOidStr)
+
+    const sellerSubtotal = roundMoney(
+      sellerItems.reduce((sum, it) => Money.from(sum).add(it.lineTotal).toNumber(), 0),
+      ord.currency,
+    )
+
+    let sellerShipping: number
+    let sellerCommission: number
+    let sellerGross: number
+    let sellerNet: number
+    let sellerFulfillmentStatus = alloc?.fulfillmentStatus || ord.fulfillmentStatus || 'unfulfilled'
+
+    if (alloc) {
+      sellerShipping = alloc.shippingFee ?? 0
+      sellerCommission = alloc.commissionAmount
+      sellerGross = alloc.grossAmount
+      sellerNet = alloc.netAmount
+      if (alloc.fulfillmentStatus) sellerFulfillmentStatus = alloc.fulfillmentStatus
+    } else {
+      // Proportional fallback for legacy orders without stored allocations
+      const totalOrderProductSubtotal = ord.items.reduce(
+        (sum, it) => Money.from(sum).add(it.lineTotal).toNumber(),
+        0,
+      )
+      const ratio = totalOrderProductSubtotal > 0 ? sellerSubtotal / totalOrderProductSubtotal : 1
+      sellerShipping = roundMoney(
+        Money.from(ord.shippingFee || 0)
+          .multiply(ratio)
+          .toNumber(),
+        ord.currency,
+      )
+      const totalUnits = sellerItems.reduce((sum, it) => sum + (it.quantity || 1), 0)
+      sellerCommission = roundMoney(200 * totalUnits, ord.currency) // ₦200 per unit policy
+      sellerGross = Money.from(sellerSubtotal).add(sellerShipping).round(ord.currency)
+      sellerNet = Math.max(
+        0,
+        Money.from(sellerGross).subtract(sellerCommission).round(ord.currency),
+      )
+    }
+
+    return {
+      ...ord,
+      items: sellerItems,
+      sellerBreakdown: {
+        sellerProductSubtotal: sellerSubtotal,
+        sellerShippingFee: sellerShipping,
+        sellerCommission,
+        sellerGrossAmount: sellerGross,
+        sellerNetAmount: sellerNet,
+        sellerFulfillmentStatus,
+        carrier: alloc?.carrier || ord.tracking?.carrier,
+        trackingNumber: alloc?.trackingNumber || ord.tracking?.trackingNumber,
+      },
+    } as unknown as IOrderDocument
   })
 
   return { orders: sellerOrders, total }

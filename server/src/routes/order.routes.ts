@@ -55,6 +55,7 @@ router.patch(
   validate(updateOrderStatusSchema),
   orderController.updateOrderStatus,
 )
+router.post('/:id/confirm-delivery', orderController.confirmDelivery)
 router.post('/:id/return', validate(returnRequestSchema), orderController.requestReturn)
 router.put(
   '/:id/return/status',

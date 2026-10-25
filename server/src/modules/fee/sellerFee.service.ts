@@ -14,7 +14,7 @@ import { User } from '../user/user.model.js'
 import { SellerProfile } from '../seller/seller.model.js'
 import { SellerLedger } from '../seller/sellerPayout.model.js'
 import { Product } from '../product/product.model.js'
-import { createNotification } from '../notification/notification.model.js'
+import { Notification, createNotification } from '../notification/notification.model.js'
 import { notificationService } from '../notification/notification.service.js'
 import { SMSProvider } from '../notification/providers/smsProvider.js'
 import { sendSellerOrderNotificationEmail, type SellerOrderItemSummary } from '../../utils/email.js'
@@ -23,6 +23,7 @@ import { AppError } from '../../middlewares/error.middleware.js'
 import { logger } from '../../utils/logger.js'
 import { redis } from '../../database/redis.js'
 import type { IOrderDocument, IOrderItemDoc } from '../order/order.model.js'
+import { calculateSellerOrderAllocations } from '../order/orderShippingAllocation.js'
 
 const generateCommissionNumber = (): string => {
   const date = new Date()
@@ -381,10 +382,15 @@ export const recordOrderSellerEarnings = async (
     {
       sellerId: mongoose.Types.ObjectId
       items: IOrderItemDoc[]
-      gross: number
-      commission: number
     }
   >()
+
+  const itemsForAlloc: Array<{
+    productId: any
+    sellerId?: any
+    lineTotal: number
+    quantity: number
+  }> = []
 
   for (const item of order.items) {
     let sellerId = item.sellerId
@@ -399,35 +405,77 @@ export const recordOrderSellerEarnings = async (
       sellerMap.set(sellerKey, {
         sellerId: new mongoose.Types.ObjectId(sellerKey),
         items: [],
-        gross: 0,
-        commission: 0,
       })
     }
 
-    const entry = sellerMap.get(sellerKey)!
-    entry.items.push(item)
-
-    const itemCommissionRate = await getCartivaCommissionPerUnit(orderCurrency)
-    const itemCommission = roundMoney(
-      Money.from(itemCommissionRate).multiply(item.quantity).toNumber(),
-      orderCurrency,
-    )
-
-    entry.gross = Money.from(entry.gross).add(item.lineTotal).round(orderCurrency)
-    entry.commission = Money.from(entry.commission).add(itemCommission).round(orderCurrency)
+    sellerMap.get(sellerKey)!.items.push(item)
+    itemsForAlloc.push({
+      productId: item.productId,
+      sellerId,
+      lineTotal: item.lineTotal,
+      quantity: item.quantity,
+    })
 
     // Ensure individual item fee/commission record is saved
     await createSellerFeeForOrderItem(order, item, 'paystack', dbSession)
   }
 
-  // 2. For each seller, release net earnings idempotently
-  for (const [, sellerData] of sellerMap) {
-    const { sellerId, gross, commission } = sellerData
-    const sellerNet = Money.from(gross).subtract(commission).round(orderCurrency)
+  const effectiveShippingFee =
+    order.shippingFee && order.shippingFee > 0
+      ? order.shippingFee
+      : (order as any).pricing?.shippingFee && (order as any).pricing.shippingFee > 0
+        ? (order as any).pricing.shippingFee
+        : Math.max(
+            0,
+            Money.from(order.grandTotal || 0)
+              .subtract(order.subtotal || 0)
+              .subtract(order.taxAmount || 0)
+              .round(orderCurrency),
+          )
+  const commissionRate = await getCartivaCommissionPerUnit(orderCurrency)
+  const allocMap = calculateSellerOrderAllocations(
+    itemsForAlloc,
+    effectiveShippingFee,
+    orderCurrency,
+    commissionRate,
+  )
+
+  if (order.sellerAllocations && order.sellerAllocations.length > 0) {
+    for (const storedAlloc of order.sellerAllocations) {
+      if (storedAlloc.sellerId) {
+        allocMap.set(storedAlloc.sellerId.toString(), {
+          sellerId: storedAlloc.sellerId,
+          productSubtotal: storedAlloc.productSubtotal ?? 0,
+          shippingFee: storedAlloc.shippingFee ?? 0,
+          grossAmount: storedAlloc.grossAmount ?? 0,
+          commissionAmount: storedAlloc.commissionAmount ?? 0,
+          netAmount: storedAlloc.netAmount ?? 0,
+        })
+      }
+    }
+  }
+
+  // 2. For each seller, release net earnings idempotently (including allocated customer shipping fee)
+  for (const [sellerKey, sellerData] of sellerMap) {
+    const alloc = allocMap.get(sellerKey) || {
+      sellerId: sellerData.sellerId,
+      productSubtotal: 0,
+      shippingFee: 0,
+      grossAmount: 0,
+      commissionAmount: 0,
+      netAmount: 0,
+    }
+    const {
+      productSubtotal,
+      shippingFee,
+      grossAmount: gross,
+      commissionAmount: commission,
+      netAmount: sellerNet,
+    } = alloc
 
     // Idempotency: verify this order has not already released earnings for this seller
     const existingLedger = await SellerLedger.findOne({
-      sellerId,
+      sellerId: sellerData.sellerId,
       referenceType: 'order',
       referenceId: order.orderNumber,
       type: 'ORDER_SALE',
@@ -435,21 +483,23 @@ export const recordOrderSellerEarnings = async (
 
     if (!existingLedger) {
       // Find latest balance
-      const lastEntry = await SellerLedger.findOne({ sellerId }).sort({ createdAt: -1 })
+      const lastEntry = await SellerLedger.findOne({ sellerId: sellerData.sellerId }).sort({
+        createdAt: -1,
+      })
       const prevBalance = lastEntry?.balanceAfter ?? 0
       const newBalance = Money.from(prevBalance).add(sellerNet).round(orderCurrency)
 
       await SellerLedger.create(
         [
           {
-            sellerId,
+            sellerId: sellerData.sellerId,
             type: 'ORDER_SALE',
             amount: sellerNet,
             currency: orderCurrency,
             balanceAfter: newBalance,
             referenceType: 'order',
             referenceId: order.orderNumber,
-            description: `Order #${order.orderNumber} sale (Gross: ${orderCurrency} ${gross.toFixed(2)}, Commission: ${orderCurrency} ${commission.toFixed(2)}, Net: ${orderCurrency} ${sellerNet.toFixed(2)})`,
+            description: `Order #${order.orderNumber} sale (Products: ${orderCurrency} ${productSubtotal.toFixed(2)}, Shipping: ${orderCurrency} ${shippingFee.toFixed(2)}, Gross: ${orderCurrency} ${gross.toFixed(2)}, Commission: ${orderCurrency} ${commission.toFixed(2)}, Net: ${orderCurrency} ${sellerNet.toFixed(2)})`,
           },
         ],
         opts,
@@ -457,7 +507,7 @@ export const recordOrderSellerEarnings = async (
 
       // Increment seller profile earnings
       await SellerProfile.findOneAndUpdate(
-        { userId: sellerId },
+        { userId: sellerData.sellerId },
         {
           $inc: {
             totalSales: gross,
@@ -468,7 +518,7 @@ export const recordOrderSellerEarnings = async (
       )
 
       // 1. In-App Notification & Real-Time Socket.IO
-      const sellerIdStr = sellerId.toString()
+      const sellerIdStr = sellerData.sellerId.toString()
       const itemSummaries: SellerOrderItemSummary[] = sellerData.items.map((it) => ({
         title: it.title,
         quantity: it.quantity,
@@ -476,18 +526,20 @@ export const recordOrderSellerEarnings = async (
         lineTotal: it.lineTotal,
       }))
 
-      const itemTitles = sellerData.items.map((it) => `${it.quantity}x ${it.title}`).join(', ')
-
       await notificationService
         .create({
           userId: sellerIdStr,
           type: 'order',
-          title: 'New Paid Order Received!',
-          message: `Order #${order.orderNumber} confirmed. Purchased: ${itemTitles}. Net Earnings: ${orderCurrency} ${sellerNet.toFixed(2)}.`,
+          audience: 'SELLER',
+          title: 'New Order — Shipping Required',
+          message:
+            'You have received a new order on Cartival Mall. As an independent seller, you are responsible for preparing and shipping this product directly to the customer. The shipping fee paid by the customer for this order will be included in your payout calculation, subject to payment verification, applicable deductions, refunds, and settlement rules. Please arrange delivery and keep the order status updated. This alert will remain visible until the buyer confirms successful delivery.',
           link: '/seller/orders',
           data: {
             orderId: String(order._id),
             orderNumber: order.orderNumber,
+            productSubtotal,
+            shippingFee,
             gross,
             commission,
             netEarnings: sellerNet,
@@ -506,16 +558,18 @@ export const recordOrderSellerEarnings = async (
       emitToUser(sellerIdStr, 'order:new', {
         orderId: String(order._id),
         orderNumber: order.orderNumber,
+        productSubtotal,
+        shippingFee,
         netEarnings: sellerNet,
         currency: orderCurrency,
       })
 
       // 2. Fetch Seller Account for Transactional Email & SMS
       try {
-        const sellerUser = await User.findById(sellerId)
+        const sellerUser = await User.findById(sellerData.sellerId)
           .select('firstName lastName email phoneNumber')
           .lean()
-        const sellerProfile = await SellerProfile.findOne({ userId: sellerId })
+        const sellerProfile = await SellerProfile.findOne({ userId: sellerData.sellerId })
           .select('whatsappNumber')
           .lean()
 
@@ -526,21 +580,73 @@ export const recordOrderSellerEarnings = async (
 
         // Send Email Notification
         if (sellerEmail) {
-          await sendSellerOrderNotificationEmail(
-            sellerEmail,
-            sellerName,
-            order.orderNumber,
-            orderCurrency,
-            itemSummaries,
-            gross,
-            commission,
-            sellerNet,
-          ).catch((err) => {
+          try {
+            await sendSellerOrderNotificationEmail(
+              sellerEmail,
+              sellerName,
+              order.orderNumber,
+              orderCurrency,
+              itemSummaries,
+              gross,
+              commission,
+              sellerNet,
+              shippingFee,
+              order.createdAt || new Date(),
+            )
+
+            // Persist EMAIL channel notification audit in Notification collection
+            await Notification.create({
+              notificationId: `NOT-EML-${nanoid(10).toUpperCase()}`,
+              userId: sellerData.sellerId,
+              type: 'shipping',
+              channel: 'EMAIL',
+              audience: 'SELLER',
+              priority: 'HIGH',
+              status: 'SENT',
+              title: 'New Order Received — Shipping Required | Cartival Mall',
+              message: `Order #${order.orderNumber} shipping notification email successfully dispatched to ${sellerEmail}`,
+              sentAt: new Date(),
+              deliveredAt: new Date(),
+              data: {
+                orderNumber: order.orderNumber,
+                sellerEmail,
+                shippingFee,
+                sellerNet,
+                currency: orderCurrency,
+                items: itemSummaries,
+              },
+            }).catch((notifErr) => {
+              logger.warn('Failed to record email notification audit in database', {
+                error: notifErr,
+              })
+            })
+          } catch (err) {
             logger.warn('Failed to send seller order notification email', {
               error: err,
               sellerId: sellerIdStr,
+              sellerEmail,
             })
-          })
+
+            // Record FAILED status in Notification collection for audit & retry inspection
+            await Notification.create({
+              notificationId: `NOT-EML-${nanoid(10).toUpperCase()}`,
+              userId: sellerData.sellerId,
+              type: 'shipping',
+              channel: 'EMAIL',
+              audience: 'SELLER',
+              priority: 'HIGH',
+              status: 'FAILED',
+              title: 'New Order Received — Shipping Required | Cartival Mall',
+              message: `Order #${order.orderNumber} shipping notification email failed to deliver to ${sellerEmail}`,
+              failedAt: new Date(),
+              failureReason: (err as Error).message,
+              data: {
+                orderNumber: order.orderNumber,
+                sellerEmail,
+                shippingFee,
+              },
+            }).catch(() => {})
+          }
         }
 
         // Send SMS Notification
@@ -602,10 +708,15 @@ export const reverseOrderSellerEarnings = async (
     {
       sellerId: mongoose.Types.ObjectId
       items: IOrderItemDoc[]
-      gross: number
-      commission: number
     }
   >()
+
+  const itemsForAlloc: Array<{
+    productId: any
+    sellerId?: any
+    lineTotal: number
+    quantity: number
+  }> = []
 
   for (const item of order.items) {
     let sellerId = item.sellerId
@@ -620,59 +731,103 @@ export const reverseOrderSellerEarnings = async (
       sellerMap.set(sellerKey, {
         sellerId: new mongoose.Types.ObjectId(sellerKey),
         items: [],
-        gross: 0,
-        commission: 0,
       })
     }
 
-    const entry = sellerMap.get(sellerKey)!
-    entry.items.push(item)
+    sellerMap.get(sellerKey)!.items.push(item)
+    itemsForAlloc.push({
+      productId: item.productId,
+      sellerId,
+      lineTotal: item.lineTotal,
+      quantity: item.quantity,
+    })
+  }
 
-    const itemCommissionRate = await getCartivaCommissionPerUnit(orderCurrency)
-    const itemCommission = roundMoney(
-      Money.from(itemCommissionRate).multiply(item.quantity).toNumber(),
-      orderCurrency,
-    )
+  const effectiveShippingFee =
+    order.shippingFee && order.shippingFee > 0
+      ? order.shippingFee
+      : (order as any).pricing?.shippingFee && (order as any).pricing.shippingFee > 0
+        ? (order as any).pricing.shippingFee
+        : Math.max(
+            0,
+            Money.from(order.grandTotal || 0)
+              .subtract(order.subtotal || 0)
+              .subtract(order.taxAmount || 0)
+              .round(orderCurrency),
+          )
+  const commissionRate = await getCartivaCommissionPerUnit(orderCurrency)
+  const allocMap = calculateSellerOrderAllocations(
+    itemsForAlloc,
+    effectiveShippingFee,
+    orderCurrency,
+    commissionRate,
+  )
 
-    entry.gross = Money.from(entry.gross).add(item.lineTotal).round(orderCurrency)
-    entry.commission = Money.from(entry.commission).add(itemCommission).round(orderCurrency)
+  if (order.sellerAllocations && order.sellerAllocations.length > 0) {
+    for (const storedAlloc of order.sellerAllocations) {
+      if (storedAlloc.sellerId) {
+        allocMap.set(storedAlloc.sellerId.toString(), {
+          sellerId: storedAlloc.sellerId,
+          productSubtotal: storedAlloc.productSubtotal ?? 0,
+          shippingFee: storedAlloc.shippingFee ?? 0,
+          grossAmount: storedAlloc.grossAmount ?? 0,
+          commissionAmount: storedAlloc.commissionAmount ?? 0,
+          netAmount: storedAlloc.netAmount ?? 0,
+        })
+      }
+    }
   }
 
   // 2. For each seller, post compensating refund entry
-  for (const [, sellerData] of sellerMap) {
-    const { sellerId, gross, commission } = sellerData
-    const sellerNet = Money.from(gross).subtract(commission).round(orderCurrency)
+  for (const [sellerKey, sellerData] of sellerMap) {
+    const alloc = allocMap.get(sellerKey) || {
+      sellerId: sellerData.sellerId,
+      productSubtotal: 0,
+      shippingFee: 0,
+      grossAmount: 0,
+      commissionAmount: 0,
+      netAmount: 0,
+    }
+    const {
+      productSubtotal,
+      shippingFee,
+      grossAmount: gross,
+      commissionAmount: commission,
+      netAmount: sellerNet,
+    } = alloc
 
     const existingRefundLedger = await SellerLedger.findOne({
-      sellerId,
+      sellerId: sellerData.sellerId,
       referenceType: 'refund',
       referenceId: order.orderNumber,
       type: 'ORDER_REFUND',
     })
 
     if (!existingRefundLedger) {
-      const lastEntry = await SellerLedger.findOne({ sellerId }).sort({ createdAt: -1 })
+      const lastEntry = await SellerLedger.findOne({ sellerId: sellerData.sellerId }).sort({
+        createdAt: -1,
+      })
       const prevBalance = lastEntry?.balanceAfter ?? 0
       const newBalance = Money.from(prevBalance).subtract(sellerNet).round(orderCurrency)
 
       await SellerLedger.create(
         [
           {
-            sellerId,
+            sellerId: sellerData.sellerId,
             type: 'ORDER_REFUND',
             amount: -sellerNet,
             currency: orderCurrency,
             balanceAfter: newBalance,
             referenceType: 'refund',
             referenceId: order.orderNumber,
-            description: `Compensating refund for order #${order.orderNumber} (Gross: -${orderCurrency} ${gross.toFixed(2)}, Commission Reversal: +${orderCurrency} ${commission.toFixed(2)}, Net Reversal: -${orderCurrency} ${sellerNet.toFixed(2)})`,
+            description: `Compensating refund for order #${order.orderNumber} (Gross Reversal: -${orderCurrency} ${gross.toFixed(2)} [Products: -${productSubtotal.toFixed(2)}, Shipping: -${shippingFee.toFixed(2)}], Commission Reversal: +${orderCurrency} ${commission.toFixed(2)}, Net Reversal: -${orderCurrency} ${sellerNet.toFixed(2)})`,
           },
         ],
         opts,
       )
 
       await SellerProfile.findOneAndUpdate(
-        { userId: sellerId },
+        { userId: sellerData.sellerId },
         {
           $inc: {
             totalSales: -gross,
@@ -682,7 +837,7 @@ export const reverseOrderSellerEarnings = async (
         opts,
       )
 
-      const sellerIdStr = sellerId.toString()
+      const sellerIdStr = sellerData.sellerId.toString()
       const notif = await createNotification({
         userId: sellerIdStr,
         type: 'order',

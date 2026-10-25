@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from 'express'
 import * as dashboardService from './dashboard.service.js'
-import { sendSuccess } from '../../utils/response.js'
+import { sendSuccess, sendNoContent } from '../../utils/response.js'
 import { PAGINATION } from '../../../../src/shared/constants/index.js'
 import type {
   AddWishlistInput,
@@ -158,6 +158,32 @@ export const markAllRead = async (
   try {
     await dashboardService.markAllNotificationsRead(req.user!.userId)
     sendSuccess(res, null, 'All notifications marked as read')
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const deleteNotification = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    await dashboardService.deleteNotification(req.user!.userId, String(req.params['id']))
+    sendNoContent(res)
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const clearAllNotifications = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const deletedCount = await dashboardService.clearAllNotifications(req.user!.userId)
+    sendSuccess(res, { deletedCount }, 'All notifications cleared')
   } catch (err) {
     next(err)
   }

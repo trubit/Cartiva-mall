@@ -49,6 +49,7 @@ const NAV_OPERATIONS = [
   { to: '/admin/returns', end: false, Icon: FiRotateCcw, label: 'Returns' },
   { to: '/admin/vendors', end: false, Icon: FiBox, label: 'Vendors' },
   { to: '/admin/vendor-approvals', end: false, Icon: FiUserCheck, label: 'Vendor Approvals' },
+  { to: '/admin/withdrawals', end: false, Icon: FiDollarSign, label: 'Payouts & Withdrawals' },
   { to: '/admin/finance', end: false, Icon: FiDollarSign, label: 'Finance' },
   { to: '/admin/settings?tab=commission', end: false, Icon: FiPercent, label: 'Commission Policy' },
 ]

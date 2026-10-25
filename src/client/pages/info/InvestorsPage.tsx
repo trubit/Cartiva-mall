@@ -138,7 +138,7 @@ export const InvestorsPage: FC = () => {
             }}
           >
             Transparent financial performance, quarterly shareholder reports, regulatory SEC
-            filings, and corporate governance charters for Cartiva, Inc.
+            filings, and corporate governance charters for Cartival Mall, Inc.
           </p>
         </div>
 
@@ -371,7 +371,7 @@ export const InvestorsPage: FC = () => {
                   <button
                     onClick={() =>
                       setDocNotice(
-                        `Charter document [${gd.title}] requested. Corporate governance charters are archived at ir.cartiva.mall.`,
+                        `Charter document [${gd.title}] requested. Corporate governance charters are archived at ir.cartivalmall.com.`,
                       )
                     }
                     style={{
@@ -444,16 +444,16 @@ export const InvestorsPage: FC = () => {
                 }}
               >
                 <div>
-                  <strong>Email:</strong> ir@cartiva.com
+                  <strong>Email:</strong> ir@cartivalmall.com
                 </div>
                 <div style={{ marginTop: '4px' }}>
-                  <strong>Headquarters:</strong> Cartiva Global Holdings Inc., New York, NY
+                  <strong>Headquarters:</strong> Cartival Global Holdings Inc., New York, NY
                 </div>
               </div>
             </div>
 
             <a
-              href="mailto:ir@cartiva.com"
+              href="mailto:ir@cartivalmall.com"
               style={{
                 marginTop: '24px',
                 background: '#b45309',

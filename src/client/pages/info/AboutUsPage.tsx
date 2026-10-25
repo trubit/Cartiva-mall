@@ -49,7 +49,7 @@ export const AboutUsPage: FC = () => {
     {
       year: '2023',
       title: 'The Genesis',
-      desc: 'Cartiva was founded with a mission to eliminate vendor lock-in and create a fair, transparent e-commerce ecosystem.',
+      desc: 'Cartival Mall was founded with a mission to eliminate vendor lock-in and create a fair, transparent e-commerce ecosystem.',
     },
     {
       year: '2024',
@@ -108,7 +108,7 @@ export const AboutUsPage: FC = () => {
                   marginBottom: '20px',
                 }}
               >
-                <FaRocket /> The Cartiva Vision
+                <FaRocket /> The Cartival Mall Vision
               </div>
               <h1
                 style={{
@@ -130,10 +130,10 @@ export const AboutUsPage: FC = () => {
                   margin: '0 0 28px',
                 }}
               >
-                Cartiva is a modern multi-vendor commerce powerhouse. We connect forward-thinking
-                independent sellers and global brands with millions of passionate shoppers through
-                world-class e-commerce technology, transparent escrow protection, and frictionless
-                global fulfillment.
+                Cartival Mall is a modern multi-vendor commerce powerhouse. We connect
+                forward-thinking independent sellers and global brands with millions of passionate
+                shoppers through world-class e-commerce technology, transparent escrow protection,
+                and frictionless global fulfillment.
               </p>
               <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
                 <Link
@@ -149,7 +149,7 @@ export const AboutUsPage: FC = () => {
                     boxShadow: '0 10px 15px -3px rgba(37, 99, 235, 0.4)',
                   }}
                 >
-                  Start Selling on Cartiva
+                  Start Selling on Cartival Mall
                 </Link>
                 <Link
                   to="/products"
@@ -270,7 +270,7 @@ export const AboutUsPage: FC = () => {
               Built on Pillars of Integrity & Innovation
             </h2>
             <p style={{ fontSize: '16px', color: '#64748b', maxWidth: '640px', margin: '0 auto' }}>
-              Why millions of shoppers and tens of thousands of merchants choose Cartiva every
+              Why millions of shoppers and tens of thousands of merchants choose Cartival Mall every
               single day.
             </p>
           </div>
@@ -421,7 +421,7 @@ export const AboutUsPage: FC = () => {
               Empowering 50,000+ Independent Makers & Brands
             </h3>
             <p style={{ fontSize: '15px', color: '#475569', lineHeight: 1.7, margin: '0 0 16px' }}>
-              Behind every product listing on Cartiva is a real person — an artisan crafting
+              Behind every product listing on Cartival Mall is a real person — an artisan crafting
               handmade goods, a family-run manufacturer, or a fast-scaling tech hardware team.
             </p>
             <p style={{ fontSize: '15px', color: '#475569', lineHeight: 1.7, margin: '0 0 24px' }}>
@@ -461,7 +461,7 @@ export const AboutUsPage: FC = () => {
         >
           <div style={{ textAlign: 'center', marginBottom: '36px' }}>
             <h2 style={{ fontSize: '26px', fontWeight: 800, color: '#0f172a', margin: '0 0 8px' }}>
-              The Cartiva Journey
+              The Cartival Mall Journey
             </h2>
             <p style={{ fontSize: '15px', color: '#64748b', margin: 0 }}>
               From a revolutionary prototype to a globally validated multi-tenant commerce

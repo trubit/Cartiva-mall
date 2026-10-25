@@ -15,6 +15,7 @@ const KEYS = {
   reports: (period: string) => ['admin', 'reports', period] as const,
   auditLogs: (p: Record<string, string>) => ['admin', 'audit-logs', p] as const,
   commissionPolicy: ['admin', 'commission-policy'] as const,
+  withdrawals: (p: Record<string, string>) => ['admin', 'withdrawals', p] as const,
 }
 
 // ── Stats
@@ -218,6 +219,69 @@ export const useUpdateCommissionPolicy = () => {
     mutationFn: adminService.updateCommissionPolicy,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEYS.commissionPolicy })
+    },
+  })
+}
+
+// ── Withdrawals
+export const useAdminWithdrawals = (params: Record<string, string> = {}) =>
+  useQuery({
+    queryKey: KEYS.withdrawals(params),
+    queryFn: () => adminService.getAdminWithdrawals(params),
+    staleTime: 15_000,
+  })
+
+export const useFulfillManualWithdrawal = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: { manualReference: string; note?: string } }) =>
+      adminService.fulfillManualWithdrawal(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'withdrawals'] })
+      qc.invalidateQueries({ queryKey: KEYS.stats })
+      qc.invalidateQueries({ queryKey: ['admin', 'financial-breakdown'] })
+    },
+  })
+}
+
+export const useRejectWithdrawal = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      adminService.rejectWithdrawal(id, { reason }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'withdrawals'] })
+      qc.invalidateQueries({ queryKey: KEYS.stats })
+      qc.invalidateQueries({ queryKey: ['admin', 'financial-breakdown'] })
+    },
+  })
+}
+
+export const useReconcileStuckWithdrawals = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () => adminService.reconcileStuckWithdrawals(),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'withdrawals'] })
+      qc.invalidateQueries({ queryKey: KEYS.stats })
+      qc.invalidateQueries({ queryKey: ['admin', 'financial-breakdown'] })
+    },
+  })
+}
+
+export const usePayoutSettings = () =>
+  useQuery({
+    queryKey: ['admin', 'payout-settings'] as const,
+    queryFn: adminService.getPayoutSettings,
+    staleTime: 60_000,
+  })
+
+export const useUpdatePayoutSettings = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: adminService.updatePayoutSettings,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'payout-settings'] })
     },
   })
 }

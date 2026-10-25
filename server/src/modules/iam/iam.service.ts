@@ -1,7 +1,6 @@
 import crypto from 'crypto'
 import { Types } from 'mongoose'
 import speakeasy from 'speakeasy'
-import QRCode from 'qrcode'
 import { Permission } from './permission.model.js'
 import { Role } from './role.model.js'
 import { SecurityPolicy } from './securityPolicy.model.js'
@@ -648,6 +647,26 @@ export const revokeDevice = async (id: string) => {
 
 // ── MFA (TOTP) ────────────────────────────────────────────────────────────────
 
+// Pure SVG QR code data URL generation — avoids Canvas/terminal CJS deadlock on Windows
+const generateQrDataUrl = async (text: string): Promise<string> => {
+  try {
+    // @ts-expect-error dynamic submodule import without declaration
+    const qrCoreModule = await import('qrcode/lib/core/qrcode.js')
+    // @ts-expect-error dynamic submodule import without declaration
+    const svgModule = await import('qrcode/lib/renderer/svg.js')
+    const qrCore = qrCoreModule.default ?? qrCoreModule
+    const svgRenderer = svgModule.default ?? svgModule
+    const qr = qrCore.create(text)
+    let svgOutput = ''
+    svgRenderer.render(qr, {}, (_err: unknown, svg: string) => {
+      svgOutput = svg
+    })
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svgOutput)}`
+  } catch {
+    return ''
+  }
+}
+
 export const setupMfa = async (userId: string, userEmail: string) => {
   const secretObj = speakeasy.generateSecret({
     name: `TrusonShopp:${userEmail}`,
@@ -664,7 +683,7 @@ export const setupMfa = async (userId: string, userEmail: string) => {
     { upsert: true, returnDocument: 'after' },
   )
 
-  const qrCodeDataUrl = await QRCode.toDataURL(secretObj.otpauth_url ?? '')
+  const qrCodeDataUrl = await generateQrDataUrl(secretObj.otpauth_url ?? '')
 
   return {
     secret: secretObj.base32,

@@ -16,7 +16,7 @@ export default defineConfig({
     forks: {
       singleFork: true,
     },
-    isolate: false,
+    isolate: true,
     fileParallelism: false,
     testTimeout: 60000,
     hookTimeout: 60000,

@@ -76,7 +76,7 @@ export const PrivacyNoticePage: FC = () => {
               color: '#ffffff',
             }}
           >
-            Cartiva Privacy Notice
+            Cartival Privacy Notice
           </h1>
           <p
             style={{
@@ -306,7 +306,7 @@ export const PrivacyNoticePage: FC = () => {
                 style={{ color: '#334155', lineHeight: 1.7, margin: '0 0 12px', fontSize: '15px' }}
               >
                 We collect personal information that you provide directly to us when creating a
-                Cartiva account, placing an order, submitting vendor credentials, or contacting
+                Cartival account, placing an order, submitting vendor credentials, or contacting
                 customer support:
               </p>
               <ul
@@ -369,7 +369,7 @@ export const PrivacyNoticePage: FC = () => {
               <p
                 style={{ color: '#334155', lineHeight: 1.7, margin: '0 0 12px', fontSize: '15px' }}
               >
-                Cartiva uses your information strictly for legitimate commercial and operational
+                Cartival uses your information strictly for legitimate commercial and operational
                 purposes:
               </p>
               <ul
@@ -432,7 +432,7 @@ export const PrivacyNoticePage: FC = () => {
               <p
                 style={{ color: '#334155', lineHeight: 1.7, margin: '0 0 12px', fontSize: '15px' }}
               >
-                Cartiva complies with <strong>PCI-DSS Level 1</strong> standards. All credit card
+                Cartival complies with <strong>PCI-DSS Level 1</strong> standards. All credit card
                 transactions are tokenized end-to-end via certified gateway partners (Stripe,
                 Paystack).
               </p>
@@ -447,7 +447,7 @@ export const PrivacyNoticePage: FC = () => {
                   color: '#166534',
                 }}
               >
-                <strong>Zero Plaintext Storage:</strong> Cartiva servers never receive, log, or
+                <strong>Zero Plaintext Storage:</strong> Cartival servers never receive, log, or
                 store raw 16-digit card numbers or CVV security codes.
               </div>
             </div>
@@ -534,7 +534,7 @@ export const PrivacyNoticePage: FC = () => {
               <p
                 style={{ color: '#334155', lineHeight: 1.7, margin: '0 0 12px', fontSize: '15px' }}
               >
-                Regardless of where you reside, Cartiva provides all registered users with direct
+                Regardless of where you reside, Cartival provides all registered users with direct
                 self-service privacy tools:
               </p>
               <ul

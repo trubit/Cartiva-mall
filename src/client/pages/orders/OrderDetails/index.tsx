@@ -12,8 +12,10 @@ import {
   FiClock,
   FiFileText,
   FiChevronRight,
+  FiCheckCircle,
+  FiTruck,
 } from 'react-icons/fi'
-import { useOrder, useCancelOrder } from '../../../hooks/useOrders.js'
+import { useOrder, useCancelOrder, useConfirmDelivery } from '../../../hooks/useOrders.js'
 import {
   OrderStatusBadge,
   PaymentStatusBadge,
@@ -93,9 +95,16 @@ export default function OrderDetails() {
   const navigate = useNavigate()
   const [showReturn, setShowReturn] = useState(false)
   const [showCancelModal, setShowCancelModal] = useState(false)
+  const [showConfirmDeliveryModal, setShowConfirmDeliveryModal] = useState(false)
+  const [deliverySuccessMessage, setDeliverySuccessMessage] = useState<string | null>(null)
 
   const { data: order, isLoading, isError } = useOrder(id ?? '')
   const { mutate: cancelOrder, isPending: cancelling, error: cancelError } = useCancelOrder()
+  const {
+    mutate: confirmDelivery,
+    isPending: confirmingDelivery,
+    error: confirmDeliveryError,
+  } = useConfirmDelivery()
   const { formatPrice } = useCurrency()
 
   if (isLoading) return <OrderDetailSkeleton />
@@ -127,9 +136,23 @@ export default function OrderDetails() {
     (RETURNABLE_STATUSES as readonly string[]).includes(order.orderStatus) &&
     isWithinReturnWindow(order.createdAt) &&
     !order.returnRequest
+  const canConfirmDelivery =
+    !order.deliveryConfirmedAt &&
+    ['shipped', 'outForDelivery', 'delivered'].includes(order.orderStatus)
 
   const handleCancelClick = () => {
     setShowCancelModal(true)
+  }
+
+  const handleConfirmDelivery = () => {
+    confirmDelivery(order._id, {
+      onSuccess: () => {
+        setDeliverySuccessMessage(
+          'Delivery confirmed successfully. Thank you for shopping with Cartival Mall. The seller and Cartival Mall have been notified that your order has arrived.',
+        )
+        setShowConfirmDeliveryModal(false)
+      },
+    })
   }
 
   const handleConfirmCancel = () => {
@@ -175,6 +198,33 @@ export default function OrderDetails() {
 
             {/* Actions */}
             <div className="od-hero__actions">
+              {order.deliveryConfirmedAt && (
+                <div
+                  className="d-inline-flex align-items-center gap-1 px-3 py-2 rounded border bg-success-subtle text-success fw-semibold"
+                  style={{ fontSize: '0.84rem' }}
+                >
+                  <FiCheckCircle size={14} />
+                  <span>Delivery Confirmed on {formatDate(order.deliveryConfirmedAt)}</span>
+                </div>
+              )}
+              {canConfirmDelivery && (
+                <button
+                  className="od-btn od-btn--primary"
+                  onClick={() => setShowConfirmDeliveryModal(true)}
+                  disabled={confirmingDelivery}
+                  style={{
+                    background: '#16a34a',
+                    borderColor: '#16a34a',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    fontWeight: 600,
+                  }}
+                >
+                  <FiCheckCircle size={14} />
+                  <span>Successfully Delivered to My Doorstep</span>
+                </button>
+              )}
               <Link to={`/orders/${order._id}/track`} className="od-btn od-btn--ghost">
                 <FiNavigation size={13} /> Track Order
               </Link>
@@ -199,13 +249,16 @@ export default function OrderDetails() {
             </div>
           </div>
 
-          {/* Cancel error */}
-          {cancelError && (
-            <div className="od-alert od-alert--error">
+          {/* Action errors */}
+          {(cancelError || confirmDeliveryError) && (
+            <div className="od-alert od-alert--error mt-2">
               {(cancelError as { response?: { data?: { message?: string } } })?.response?.data
                 ?.message ??
                 (cancelError as Error)?.message ??
-                'Failed to cancel order'}
+                (confirmDeliveryError as { response?: { data?: { message?: string } } })?.response
+                  ?.data?.message ??
+                (confirmDeliveryError as Error)?.message ??
+                'Action failed'}
             </div>
           )}
         </div>
@@ -213,6 +266,79 @@ export default function OrderDetails() {
 
       {/* ══════════ BODY ══════════ */}
       <div className="container od-body">
+        {/* Buyer Delivery Success Message */}
+        {deliverySuccessMessage && (
+          <div
+            className="alert alert-success d-flex align-items-center gap-3 mb-4 p-3 rounded-3 shadow-sm"
+            style={{ background: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0' }}
+          >
+            <FiCheckCircle size={22} className="text-success flex-shrink-0" />
+            <div className="fw-semibold">{deliverySuccessMessage}</div>
+          </div>
+        )}
+
+        {/* Mandatory Buyer Delivery Alert when Order is Shipped */}
+        {canConfirmDelivery && (
+          <div
+            className="card mb-4 border-0 shadow-sm rounded-3 overflow-hidden"
+            style={{ background: '#f0fdf4', border: '1px solid #bbf7d0' }}
+          >
+            <div className="card-body p-4">
+              <div className="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
+                <div className="d-flex align-items-start gap-3">
+                  <div
+                    className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                    style={{ width: 44, height: 44, background: '#dcfce7', color: '#16a34a' }}
+                  >
+                    <FiTruck size={22} />
+                  </div>
+                  <div>
+                    <h5 className="fw-bold mb-1" style={{ color: '#14532d' }}>
+                      Has Your Order Arrived?
+                    </h5>
+                    <p className="mb-0 text-muted" style={{ fontSize: '0.92rem', maxWidth: 720 }}>
+                      Your order has been marked as shipped by the seller. Please confirm delivery
+                      only after the product has physically arrived at your doorstep. Once you
+                      confirm successful delivery, the seller and Cartival Mall will be notified,
+                      and your order status will be updated.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  className="btn btn-success fw-bold px-4 py-2 text-nowrap d-flex align-items-center gap-2 shadow-sm"
+                  onClick={() => setShowConfirmDeliveryModal(true)}
+                  disabled={confirmingDelivery}
+                  style={{ background: '#16a34a', borderColor: '#16a34a', borderRadius: 8 }}
+                >
+                  <FiCheckCircle size={16} />
+                  <span>Successfully Delivered to My Doorstep</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Verified Delivery Status when already confirmed */}
+        {order.deliveryConfirmedAt && (
+          <div
+            className="card mb-4 border-0 shadow-sm rounded-3 overflow-hidden"
+            style={{ background: '#f8fafc', border: '1px solid #e2e8f0' }}
+          >
+            <div className="card-body p-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+              <div className="d-flex align-items-center gap-2 text-success fw-semibold">
+                <FiCheckCircle size={18} />
+                <span>
+                  Delivery Confirmed — Received at Your Doorstep on{' '}
+                  {formatDate(order.deliveryConfirmedAt)}
+                </span>
+              </div>
+              <span className="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill">
+                Doorstep Receipt Verified
+              </span>
+            </div>
+          </div>
+        )}
+
         <div className="od-grid">
           {/* ── Left column ─────────────────────────────────── */}
           <div className="od-col-main">
@@ -420,6 +546,21 @@ export default function OrderDetails() {
         onConfirm={handleConfirmCancel}
         onClose={() => {
           if (!cancelling) setShowCancelModal(false)
+        }}
+      />
+
+      <ConfirmDialog
+        open={showConfirmDeliveryModal}
+        title="Confirm Successful Delivery"
+        message="Have you physically received this product at your doorstep? Please confirm only if the order has arrived."
+        confirmText="Yes, Confirm Delivery"
+        cancelText="No, Not Yet"
+        variant="primary"
+        isLoading={confirmingDelivery}
+        loadingText="Confirming Delivery…"
+        onConfirm={handleConfirmDelivery}
+        onClose={() => {
+          if (!confirmingDelivery) setShowConfirmDeliveryModal(false)
         }}
       />
     </div>

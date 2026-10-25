@@ -19,7 +19,8 @@
     "typecheck": "tsc -p tsconfig.app.json --noEmit",
     "typecheck:server": "tsc -p tsconfig.server.json --noEmit",
     "typecheck:all": "npm run typecheck && npm run typecheck:server",
-    "test": "vitest run --config vitest.config.ts",
+    "test": "npm run test:client && npm run test:server",
+    "test:client": "vitest run --config vitest.config.ts",
     "test:watch": "vitest --config vitest.config.ts",
     "test:ui": "vitest --ui --config vitest.config.ts",
     "test:coverage": "vitest run --coverage --config vitest.config.ts",
@@ -30,7 +31,7 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
-    "test:all": "npm run test && npm run test:server",
+    "test:all": "npm run test",
     "sonar": "sonar-scanner-npm"
   },
   "dependencies": {

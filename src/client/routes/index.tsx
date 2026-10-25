@@ -1,5 +1,6 @@
-import { lazy, Suspense } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Suspense } from 'react'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { lazyWithRetry as lazy } from '../utils/lazyWithRetry.js'
 import { useAuthStore } from '../store/authStore.js'
 import { useSellerKycStatus } from '../hooks/useSellerKyc.js'
 import MainLayout from '../layouts/MainLayout.js'
@@ -106,6 +107,7 @@ const AdminVendors = lazy(() => import('../pages/admin/AdminVendors/index.js'))
 const AdminVendorApproval = lazy(() => import('../pages/admin/AdminVendorApproval/index.js'))
 const AdminSearchAnalytics = lazy(() => import('../pages/admin/AdminSearchAnalytics/index.js'))
 const AdminNotifications = lazy(() => import('../pages/admin/AdminNotifications/index.js'))
+const AdminWithdrawals = lazy(() => import('../pages/admin/AdminWithdrawals/index.js'))
 
 // Phase 17-21 pages
 const ShipmentTracking = lazy(() => import('../pages/dashboard/ShipmentTracking/index.js'))
@@ -157,7 +159,12 @@ const SuspenseWrap = ({ children }: { children: React.ReactNode }) => (
 
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />
+  const location = useLocation()
+  return isAuthenticated ? (
+    <>{children}</>
+  ) : (
+    <Navigate to="/login" state={{ from: location }} replace />
+  )
 }
 
 const SellerRoute = ({ children }: { children: React.ReactNode }) => {
@@ -433,6 +440,8 @@ export default function AppRouter() {
             <Route path="returns" element={<AdminReturns />} />
             <Route path="vendors" element={<AdminVendors />} />
             <Route path="vendor-approvals" element={<AdminVendorApproval />} />
+            <Route path="withdrawals" element={<AdminWithdrawals />} />
+            <Route path="payouts" element={<AdminWithdrawals />} />
             <Route path="finance" element={<FinanceDashboard />} />
             <Route path="analytics-bi" element={<AnalyticsDashboard />} />
             <Route path="forecasting" element={<ForecastDashboard />} />

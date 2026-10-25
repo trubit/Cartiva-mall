@@ -77,7 +77,7 @@ export const AdvertisePage: FC = () => {
               marginBottom: '20px',
             }}
           >
-            <FaAd /> Cartiva Advertising & Sponsored Solutions
+            <FaAd /> Cartival Mall Advertising & Sponsored Solutions
           </div>
           <h1
             style={{
@@ -143,8 +143,8 @@ export const AdvertisePage: FC = () => {
               Tailored Advertising Formats for Every Goal
             </h2>
             <p style={{ fontSize: '15px', color: '#64748b', margin: 0 }}>
-              From individual product promotion to comprehensive brand awareness across the Cartiva
-              marketplace.
+              From individual product promotion to comprehensive brand awareness across the Cartival
+              Mall marketplace.
             </p>
           </div>
 

@@ -5,6 +5,7 @@ import {
   type NotificationDocType,
   type NotificationChannel,
   type NotificationPriority,
+  type NotificationAudience,
 } from './notification.model.js'
 import { NotificationPreference, DEFAULT_PREFERENCES } from './notificationPreference.model.js'
 import { DeviceToken, type DevicePlatform } from './deviceToken.model.js'
@@ -22,6 +23,7 @@ interface CreateInput {
   message: string
   channel?: NotificationChannel
   priority?: NotificationPriority
+  audience?: NotificationAudience
   link?: string
   data?: Record<string, unknown>
 }
@@ -45,6 +47,7 @@ export const notificationService = {
       type: input.type,
       channel: input.channel ?? 'IN_APP',
       priority: input.priority ?? 'NORMAL',
+      audience: input.audience ?? 'BUYER',
       status: 'DELIVERED',
       title: input.title,
       message: input.message,
@@ -54,13 +57,14 @@ export const notificationService = {
     })
 
     await invalidateUserNotifCache(String(input.userId))
-    const unreadCount = await this.getUnreadCount(String(input.userId))
+    const unreadCount = await this.getUnreadCount(String(input.userId), input.audience)
 
     // Realtime Socket delivery
     emitToUser(String(input.userId), 'notification:new', {
       _id: String(notif._id),
       notificationId: notif.notificationId,
       type: notif.type,
+      audience: notif.audience,
       title: notif.title,
       message: notif.message,
       link: notif.link,
@@ -74,9 +78,10 @@ export const notificationService = {
   },
 
   // ─── List User Notifications ────────────────────────────────────────────────
-  async list(userId: string, page = 1, limit = 20) {
+  async list(userId: string, page = 1, limit = 20, audience?: NotificationAudience | 'ALL') {
     if (!mongoose.Types.ObjectId.isValid(userId)) throw new AppError('Invalid user ID', 400)
-    const cacheKey = `notif:list:${userId}:${page}:${limit}`
+    const audTag = audience || 'BUYER'
+    const cacheKey = `notif:list:${userId}:${page}:${limit}:${audTag}`
 
     try {
       const cached = await redis.get(cacheKey)
@@ -86,14 +91,18 @@ export const notificationService = {
     }
 
     const skip = (page - 1) * limit
+    const filter: Record<string, unknown> = { userId: new mongoose.Types.ObjectId(userId) }
+    if (audience && audience !== 'ALL') {
+      filter.audience = audience
+    } else if (!audience) {
+      // By default in customer/buyer context, exclude seller-responsibility operational notifications
+      filter.audience = { $ne: 'SELLER' }
+    }
+
     const [items, total, unread] = await Promise.all([
-      Notification.find({ userId: new mongoose.Types.ObjectId(userId) })
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      Notification.countDocuments({ userId: new mongoose.Types.ObjectId(userId) }),
-      Notification.countDocuments({ userId: new mongoose.Types.ObjectId(userId), read: false }),
+      Notification.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+      Notification.countDocuments(filter),
+      Notification.countDocuments({ ...filter, read: false }),
     ])
     const result = { items, total, unread, page, pages: Math.ceil(total / limit) }
 
@@ -106,9 +115,10 @@ export const notificationService = {
     return result
   },
 
-  async getUnreadCount(userId: string): Promise<number> {
+  async getUnreadCount(userId: string, audience?: NotificationAudience | 'ALL'): Promise<number> {
     if (!mongoose.Types.ObjectId.isValid(userId)) return 0
-    const cacheKey = `notif:unread:${userId}`
+    const audTag = audience || 'BUYER'
+    const cacheKey = `notif:unread:${userId}:${audTag}`
 
     try {
       const cached = await redis.get(cacheKey)
@@ -117,10 +127,19 @@ export const notificationService = {
       // Redis fail-safe
     }
 
-    const count = await Notification.countDocuments({
+    const filter: Record<string, unknown> = {
       userId: new mongoose.Types.ObjectId(userId),
       read: false,
-    })
+    }
+    if (audience && audience !== 'ALL') {
+      filter.audience = audience
+    } else if (!audience) {
+      // Exclude seller alerts from buyer unread count
+      filter.audience = 'BUYER'
+      filter.link = { $not: /^\/seller/i }
+    }
+
+    const count = await Notification.countDocuments(filter)
 
     try {
       await redis.setex(cacheKey, 10, String(count))
@@ -154,7 +173,7 @@ export const notificationService = {
   async markAllRead(userId: string) {
     if (!mongoose.Types.ObjectId.isValid(userId)) throw new AppError('Invalid user ID', 400)
     const result = await Notification.updateMany(
-      { userId: new mongoose.Types.ObjectId(userId), read: false },
+      { userId: new mongoose.Types.ObjectId(userId), read: false, audience: 'BUYER' },
       { read: true },
     )
     await invalidateUserNotifCache(userId)
@@ -168,7 +187,14 @@ export const notificationService = {
       ? { _id: new mongoose.Types.ObjectId(id), userId: new mongoose.Types.ObjectId(userId) }
       : { notificationId: id, userId: new mongoose.Types.ObjectId(userId) }
 
-    return Notification.findOneAndDelete(filter as object)
+    const deleted = await Notification.findOneAndDelete(filter as object)
+    if (!deleted) throw new AppError('Notification not found or access denied', 404)
+
+    await invalidateUserNotifCache(userId)
+    const unreadCount = await this.getUnreadCount(userId)
+    emitToUser(userId, 'notification:unread_count', { unreadCount })
+
+    return deleted
   },
 
   // ─── Preferences ────────────────────────────────────────────────────────────

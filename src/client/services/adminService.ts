@@ -228,11 +228,59 @@ export const adminService = {
   updateOrderStatus: (id: string, orderStatus: OrderStatus): Promise<IOrder> =>
     api.patch(`/admin/orders/${id}/status`, { orderStatus }).then((r) => r.data.data),
 
-  // ── Payments
+  // ── Payments & Financial Breakdown
   getPayments: (params?: Record<string, string>): Promise<PagedResponse<AdminPayment>> =>
     api
       .get('/admin/payments', { params })
       .then((r) => ({ data: r.data.data, pagination: r.data.pagination })),
+
+  getFinancialBreakdown: (): Promise<{
+    success: boolean
+    data: any
+    message: string
+  }> => api.get('/admin/financial-breakdown').then((r) => r.data),
+
+  getAdminWithdrawals: (params?: Record<string, string>): Promise<PagedResponse<any>> =>
+    api
+      .get('/admin/withdrawals', { params })
+      .then((r) => ({ data: r.data.data, pagination: r.data.pagination })),
+
+  fulfillManualWithdrawal: (
+    id: string,
+    data: { manualReference: string; note?: string },
+  ): Promise<{ success: boolean; data: any; message: string }> =>
+    api.post(`/admin/withdrawals/${id}/fulfill-manual`, data).then((r) => r.data),
+
+  rejectWithdrawal: (
+    id: string,
+    data: { reason: string },
+  ): Promise<{ success: boolean; data: any; message: string }> =>
+    api.post(`/admin/withdrawals/${id}/reject`, data).then((r) => r.data),
+
+  reconcileStuckWithdrawals: (): Promise<{
+    success: boolean
+    data: { reconciledCount: number; withdrawalNumbers: string[] }
+    message: string
+  }> => api.post('/admin/withdrawals/reconcile-stuck').then((r) => r.data),
+
+  getPayoutSettings: (): Promise<{
+    success: boolean
+    data: {
+      notificationEmails: string[]
+      notifyOnWithdrawalRequest: boolean
+      updatedAt?: string
+    }
+    message: string
+  }> => api.get('/admin/payout-settings').then((r) => r.data),
+
+  updatePayoutSettings: (data: {
+    notificationEmails: string[]
+    notifyOnWithdrawalRequest?: boolean
+  }): Promise<{
+    success: boolean
+    data: any
+    message: string
+  }> => api.put('/admin/payout-settings', data).then((r) => r.data),
 
   // ── Analytics
   getAnalytics: (days = 30): Promise<{ success: boolean; data: PlatformAnalytics }> =>

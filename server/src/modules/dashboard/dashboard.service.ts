@@ -69,12 +69,17 @@ export const getDashboardSummary = async (userId: string) => {
       },
     ]),
     Wishlist.findOne({ userId }).lean(),
-    Notification.countDocuments({ userId, read: false }),
+    Notification.countDocuments({
+      userId,
+      read: false,
+      audience: 'BUYER',
+      link: { $not: /^\/seller/i },
+    }),
     Order.find({ userId })
       .sort({ createdAt: -1 })
       .limit(5)
       .select(
-        'orderNumber orderStatus paymentStatus grandTotal currency originalCurrency originalAmount createdAt items',
+        'orderNumber orderStatus paymentStatus grandTotal currency originalCurrency originalAmount createdAt items deliveryConfirmedAt tracking',
       )
       .lean(),
   ])
@@ -177,10 +182,15 @@ export const getNotifications = async (
 ) => {
   const skip = (page - 1) * limit
   const uid = new mongoose.Types.ObjectId(userId)
+  const buyerMatch = {
+    userId: uid,
+    audience: 'BUYER',
+    link: { $not: /^\/seller/i },
+  }
 
   // Single aggregation replaces three separate queries (find + 2× countDocuments).
   const [result] = await Notification.aggregate([
-    { $match: { userId: uid } },
+    { $match: buyerMatch },
     {
       $facet: {
         notifications: [{ $sort: { createdAt: -1 } }, { $skip: skip }, { $limit: limit }],
@@ -198,8 +208,12 @@ export const getNotifications = async (
 }
 
 export const markNotificationRead = async (userId: string, notificationId: string) => {
+  if (!mongoose.Types.ObjectId.isValid(notificationId)) {
+    throw new AppError('Invalid notification ID', 400)
+  }
+  const uid = new mongoose.Types.ObjectId(userId)
   const notification = await Notification.findOneAndUpdate(
-    { _id: notificationId, userId },
+    { _id: new mongoose.Types.ObjectId(notificationId), userId: uid },
     { read: true },
     { returnDocument: 'after' },
   )
@@ -208,11 +222,44 @@ export const markNotificationRead = async (userId: string, notificationId: strin
 }
 
 export const markAllNotificationsRead = async (userId: string): Promise<void> => {
-  await Notification.updateMany({ userId, read: false }, { read: true })
+  const uid = new mongoose.Types.ObjectId(userId)
+  await Notification.updateMany(
+    { userId: uid, read: false, audience: 'BUYER', link: { $not: /^\/seller/i } },
+    { $set: { read: true } },
+  )
 }
 
-export const getUnreadNotificationCount = async (userId: string): Promise<number> =>
-  Notification.countDocuments({ userId, read: false })
+export const getUnreadNotificationCount = async (userId: string): Promise<number> => {
+  const uid = new mongoose.Types.ObjectId(userId)
+  return Notification.countDocuments({
+    userId: uid,
+    read: false,
+    audience: 'BUYER',
+    link: { $not: /^\/seller/i },
+  })
+}
+
+export const deleteNotification = async (userId: string, notificationId: string): Promise<void> => {
+  if (!mongoose.Types.ObjectId.isValid(notificationId)) {
+    throw new AppError('Invalid notification ID', 400)
+  }
+  const uid = new mongoose.Types.ObjectId(userId)
+  const notification = await Notification.findOneAndDelete({
+    _id: new mongoose.Types.ObjectId(notificationId),
+    userId: uid,
+  })
+  if (!notification) throw new AppError('Notification not found', 404)
+}
+
+export const clearAllNotifications = async (userId: string): Promise<number> => {
+  const uid = new mongoose.Types.ObjectId(userId)
+  const result = await Notification.deleteMany({
+    userId: uid,
+    audience: 'BUYER',
+    link: { $not: /^\/seller/i },
+  })
+  return result.deletedCount
+}
 
 // ─── Payment History ──────────────────────────────────────────────────────────
 export const getPaymentHistory = async (

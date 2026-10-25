@@ -37,8 +37,8 @@ export const HelpPage: FC = () => {
       bg: '#ecfdf5',
     },
     {
-      title: 'Payment & Wallet',
-      desc: 'Manage credit cards, reload Cartiva Balance, and redeem gift cards.',
+      title: 'Payment & Security',
+      desc: 'Payment methods, bank transfers, and buyer escrow protection.',
       icon: FaCreditCard,
       to: '/payment',
       color: '#d97706',
@@ -68,24 +68,24 @@ export const HelpPage: FC = () => {
       a: 'Navigate to Your Orders in the top navbar or footer. Click "Track Package" next to any active order to see real-time carrier milestones, live dispatch location, and estimated arrival window.',
     },
     {
-      q: 'What is the Cartiva 30-Day Money-Back Guarantee & Return Policy?',
-      a: 'All eligible items purchased from verified Cartiva merchants can be returned within 30 days of delivery. Visit your Returns Dashboard to generate a prepaid USPS/FedEx return label. Once the item is scanned at the return facility, your refund is automatically credited to your original payment method or instant Wallet balance.',
+      q: 'What is the Cartival Mall 30-Day Money-Back Guarantee & Return Policy?',
+      a: 'All eligible items purchased from verified Cartival Mall merchants can be returned within 30 days of delivery. Visit your Returns Dashboard to generate a prepaid return label. Once the item is scanned at the return facility, your refund is automatically credited to your original payment method.',
     },
     {
-      q: 'How does atomic inventory and buyer protection work on Cartiva?',
-      a: 'Cartiva operates an automated escrow protection layer. When you place an order, stock is atomically reserved to prevent overselling, and your funds are held safely until the seller dispatches the package. If an order fails to arrive or is not as described, you receive an immediate 100% refund.',
+      q: 'How does atomic inventory and buyer protection work on Cartival Mall?',
+      a: 'Cartival Mall operates an automated escrow protection layer. When you place an order, stock is atomically reserved to prevent overselling, and your funds are held safely until the seller dispatches the package. If an order fails to arrive or is not as described, you receive an immediate 100% refund.',
     },
     {
-      q: 'How do I reload my Cartiva Balance or redeem a Gift Card?',
-      a: 'Visit the "Reload Balance" or "Gift Cards" pages in the footer. You can choose preset amounts ($25, $50, $100, $200) or enter a custom amount. For gift cards, enter your 16-character claim code to instantly apply funds to your account.',
+      q: 'How does buyer escrow protection work during checkout?',
+      a: 'When you place an order on Cartival Mall, your payment is held safely in escrow. Funds are released to the independent merchant only after the order is confirmed delivered and inspected.',
     },
     {
-      q: 'How do I become a verified seller on Cartiva?',
-      a: 'Click "Sell on Cartiva" in the footer or visit the Vendor Registration page. Provide your business registration and identity documents. Once verified, you gain instant access to the merchant storefront builder, real-time inventory management, and automated weekly payouts.',
+      q: 'How do I become a verified seller on Cartival Mall?',
+      a: 'Click "Sell on Cartival Mall" in the footer or visit the Seller Onboarding page. Provide your business registration and identity documents. Once verified, you gain instant access to the merchant storefront builder, real-time inventory management, and automated payouts.',
     },
     {
-      q: 'What payment methods does Cartiva accept?',
-      a: 'Cartiva accepts all major credit and debit cards (Visa, Mastercard, American Express, Discover), Cartiva Balance, eGift Cards, and regional payment gateways (Stripe, Paystack) with PCI-DSS Level 1 bank-grade tokenization.',
+      q: 'What payment methods does Cartival Mall accept?',
+      a: 'Cartival Mall accepts all major debit and credit cards (Mastercard, Visa, Verve), direct bank transfers, and regional payment gateways (Paystack, Stripe) with PCI-DSS Level 1 bank-grade tokenization.',
     },
   ]
 
@@ -125,7 +125,7 @@ export const HelpPage: FC = () => {
               marginBottom: '20px',
             }}
           >
-            <FaQuestionCircle /> Cartiva 24/7 Help & Support Center
+            <FaQuestionCircle /> Cartival Mall 24/7 Help & Support Center
           </div>
           <h1
             style={{
@@ -362,10 +362,10 @@ export const HelpPage: FC = () => {
                 Email Customer Care
               </h3>
               <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#64748b' }}>
-                support@cartiva.com • Average response under 15 mins
+                support@cartivalmall.com • Average response under 15 mins
               </p>
               <a
-                href="mailto:support@cartiva.com"
+                href="mailto:support@cartivalmall.com"
                 style={{
                   color: '#2563eb',
                   fontWeight: 700,

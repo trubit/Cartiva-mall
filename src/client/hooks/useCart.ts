@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../store/authStore.js'
 import { useCartStore } from '../store/cartStore.js'
@@ -123,6 +124,8 @@ export const useCart = () => {
     addGuestItem,
     removeGuestItem,
     updateGuestQty,
+    removeServerItem,
+    updateServerQty,
     clearGuestCart,
     guestTotals,
   } = useCartStore()
@@ -132,9 +135,25 @@ export const useCart = () => {
   const updateMutation = useUpdateCartItemMutation()
   const removeMutation = useRemoveFromCartMutation()
   const clearMutation = useClearCartMutation()
+  const syncMutation = useSyncCartMutation()
+
+  // ── Auto-sync guest items upon reconnection ─────────────
+  useEffect(() => {
+    const handleOnline = () => {
+      if (isAuthenticated && guestItems.length > 0 && !syncMutation.isPending) {
+        const payload = guestItems.map((g) => ({
+          productId: g.product._id,
+          quantity: g.quantity,
+        }))
+        syncMutation.mutate({ items: payload })
+      }
+    }
+    window.addEventListener('online', handleOnline)
+    return () => window.removeEventListener('online', handleOnline)
+  }, [isAuthenticated, guestItems, syncMutation])
 
   // ── Unified display items ──────────────────────────────
-  const displayItems: ICartDisplayItem[] =
+  const serverDisplayItems: ICartDisplayItem[] =
     isAuthenticated && serverCart
       ? serverCart.items
           .filter((i) => typeof i.productId === 'object')
@@ -151,26 +170,36 @@ export const useCart = () => {
               selectedColor: i.selectedColor,
             }
           })
-      : guestItems.map((i) => {
-          const effectivePrice =
-            i.product.discountPrice && i.product.discountPrice < i.product.price
-              ? i.product.discountPrice
-              : i.product.price
-          return {
-            productId: i.product._id,
-            product: i.product,
-            quantity: i.quantity,
-            itemPrice: effectivePrice,
-            lineTotal: Math.round(effectivePrice * i.quantity * 100) / 100,
-            selectedVariant: i.selectedVariant,
-            selectedSize: i.selectedSize,
-            selectedColor: i.selectedColor,
-          }
-        })
+      : []
+
+  const guestDisplayItems: ICartDisplayItem[] = guestItems.map((i) => {
+    const effectivePrice =
+      i.product.discountPrice && i.product.discountPrice < i.product.price
+        ? i.product.discountPrice
+        : i.product.price
+    return {
+      productId: i.product._id,
+      product: i.product,
+      quantity: i.quantity,
+      itemPrice: effectivePrice,
+      lineTotal: Math.round(effectivePrice * i.quantity * 100) / 100,
+      selectedVariant: i.selectedVariant,
+      selectedSize: i.selectedSize,
+      selectedColor: i.selectedColor,
+    }
+  })
+
+  // If authenticated, display both server items and any offline-added items
+  const displayItems: ICartDisplayItem[] =
+    isAuthenticated && serverCart
+      ? [...serverDisplayItems, ...guestDisplayItems]
+      : guestDisplayItems
 
   // ── Unified totals ─────────────────────────────────────
   const totals: ICartTotals =
-    isAuthenticated && serverCart ? serverTotals(serverCart) : guestTotals()
+    isAuthenticated && serverCart && guestItems.length === 0
+      ? serverTotals(serverCart)
+      : guestTotals()
 
   // ── Unified add to cart ────────────────────────────────
   const addToCart = (
@@ -178,7 +207,8 @@ export const useCart = () => {
     quantity = 1,
     opts?: { selectedVariant?: string; selectedSize?: string; selectedColor?: string },
   ) => {
-    if (isAuthenticated) {
+    const isOffline = typeof navigator !== 'undefined' && !navigator.onLine
+    if (isAuthenticated && !isOffline) {
       addMutation.mutate({ productId: product._id, quantity, ...opts })
     } else {
       addGuestItem(product, quantity, opts)
@@ -186,23 +216,32 @@ export const useCart = () => {
   }
 
   const removeFromCart = (productId: string) => {
-    if (isAuthenticated) {
+    const isOffline = typeof navigator !== 'undefined' && !navigator.onLine
+    if (isAuthenticated && !isOffline) {
       removeMutation.mutate(productId)
     } else {
       removeGuestItem(productId)
+      if (isAuthenticated) {
+        removeServerItem(productId)
+      }
     }
   }
 
   const updateQuantity = (productId: string, qty: number) => {
-    if (isAuthenticated) {
+    const isOffline = typeof navigator !== 'undefined' && !navigator.onLine
+    if (isAuthenticated && !isOffline) {
       updateMutation.mutate({ productId, qty })
     } else {
       updateGuestQty(productId, qty)
+      if (isAuthenticated) {
+        updateServerQty(productId, qty)
+      }
     }
   }
 
   const clearCart = () => {
-    if (isAuthenticated) {
+    const isOffline = typeof navigator !== 'undefined' && !navigator.onLine
+    if (isAuthenticated && !isOffline) {
       clearMutation.mutate()
     } else {
       clearGuestCart()
@@ -213,7 +252,8 @@ export const useCart = () => {
     addMutation.isPending ||
     updateMutation.isPending ||
     removeMutation.isPending ||
-    clearMutation.isPending
+    clearMutation.isPending ||
+    syncMutation.isPending
 
   return {
     items: displayItems,

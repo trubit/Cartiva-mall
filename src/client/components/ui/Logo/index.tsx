@@ -155,20 +155,20 @@ export default function Logo({
         flexShrink: 0,
         ...style,
       }}
-      aria-label="Cartiva"
+      aria-label="Cartival Mall"
       role="img"
     >
       <CartivaMarkSvg size={s} c={c} />
 
       {!iconOnly && (
         <span style={{ display: 'flex', flexDirection: 'column' }}>
-          {/* Wordmark: "Cart" thin + "iva" bold — two weights, one word */}
+          {/* Wordmark: "Cart" light + "ival" bold — two weights, one word */}
           <span style={{ display: 'flex', alignItems: 'baseline', lineHeight: 1 }}>
             <span
               style={{
                 fontSize: s.wm,
-                fontWeight: 300,
-                letterSpacing: '0.04em',
+                fontWeight: 400,
+                letterSpacing: '0.02em',
                 color: c.cart,
                 fontFamily: WM_FONT,
                 lineHeight: 1,
@@ -180,22 +180,22 @@ export default function Logo({
               style={{
                 fontSize: s.wm,
                 fontWeight: 800,
-                letterSpacing: '0.01em',
+                letterSpacing: '-0.01em',
                 color: c.bold,
                 fontFamily: WM_FONT,
                 lineHeight: 1,
               }}
             >
-              iva
+              ival
             </span>
           </span>
 
-          {/* Sub-label */}
+          {/* Sub-label: MALL */}
           <span
             style={{
               fontSize: s.sub,
-              fontWeight: 600,
-              letterSpacing: '0.40em',
+              fontWeight: 700,
+              letterSpacing: '0.42em',
               textTransform: 'uppercase',
               color: c.sub,
               fontFamily: WM_FONT,
@@ -203,7 +203,7 @@ export default function Logo({
               marginTop: s.subMt,
             }}
           >
-            Marketplace
+            MALL
           </span>
         </span>
       )}

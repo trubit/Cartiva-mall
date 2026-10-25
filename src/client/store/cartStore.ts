@@ -25,6 +25,8 @@ interface CartStore {
 
   // ── Actions: server ───────────────────────────────────
   setServerCart: (cart: IServerCart) => void
+  updateServerQty: (productId: string, qty: number) => void
+  removeServerItem: (productId: string) => void
   clearServerCart: () => void
 
   // ── Computed ──────────────────────────────────────────
@@ -124,6 +126,60 @@ export const useCartStore = create<CartStore>()(
 
       // ── Server actions ─────────────────────────────────
       setServerCart: (cart) => set({ serverCart: cart }),
+      updateServerQty: (productId, qty) =>
+        set((state) => {
+          if (!state.serverCart) return {}
+          const newItems =
+            qty <= 0
+              ? state.serverCart.items.filter((i) => {
+                  const pid =
+                    typeof i.productId === 'object' ? (i.productId as any)._id : i.productId
+                  return pid !== productId
+                })
+              : state.serverCart.items.map((i) => {
+                  const pid =
+                    typeof i.productId === 'object' ? (i.productId as any)._id : i.productId
+                  return pid === productId ? { ...i, quantity: qty } : i
+                })
+          const newCartTotal = newItems.reduce((sum, i) => sum + i.itemPrice * i.quantity, 0)
+          return {
+            serverCart: {
+              ...state.serverCart,
+              items: newItems,
+              cartTotal: newCartTotal,
+              grandTotal: Math.max(
+                0,
+                newCartTotal -
+                  state.serverCart.discountAmount +
+                  state.serverCart.shippingCost +
+                  state.serverCart.taxAmount,
+              ),
+            },
+          }
+        }),
+      removeServerItem: (productId) =>
+        set((state) => {
+          if (!state.serverCart) return {}
+          const newItems = state.serverCart.items.filter((i) => {
+            const pid = typeof i.productId === 'object' ? (i.productId as any)._id : i.productId
+            return pid !== productId
+          })
+          const newCartTotal = newItems.reduce((sum, i) => sum + i.itemPrice * i.quantity, 0)
+          return {
+            serverCart: {
+              ...state.serverCart,
+              items: newItems,
+              cartTotal: newCartTotal,
+              grandTotal: Math.max(
+                0,
+                newCartTotal -
+                  state.serverCart.discountAmount +
+                  state.serverCart.shippingCost +
+                  state.serverCart.taxAmount,
+              ),
+            },
+          }
+        }),
       clearServerCart: () => set({ serverCart: null }),
 
       // ── Computed ───────────────────────────────────────

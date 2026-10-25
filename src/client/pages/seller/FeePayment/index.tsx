@@ -42,10 +42,10 @@ export default function FeePaymentPage() {
     <div style={{ maxWidth: 1050, margin: '0 auto', padding: '24px 16px' }}>
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: '1.75rem', fontWeight: 700, marginBottom: 8, color: '#f8fafc' }}>
-          Sales & Cartiva Commissions
+          Sales & Cartival Commissions
         </h1>
         <p style={{ color: '#94a3b8', fontSize: '0.95rem' }}>
-          Cartiva marketplace commission is automatically deducted from confirmed product sales
+          Cartival marketplace commission is automatically deducted from confirmed product sales
           (₦200 NGN / $0.15 USD per unit). Your net earnings are immediately eligible for payout.
         </p>
       </div>
@@ -121,7 +121,7 @@ export default function FeePaymentPage() {
               marginBottom: 8,
             }}
           >
-            <FiDollarSign /> Cartiva Commission
+            <FiDollarSign /> Cartival Commission
           </div>
           <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#38bdf8' }}>
             {formatMoney(summary?.totalCommission ?? 0, 'NGN')}

@@ -443,7 +443,7 @@ export default function VendorOnboarding() {
                 KYC Verification Approved!
               </h3>
               <p style={{ margin: 0, fontSize: '0.8rem', color: '#047857' }}>
-                You are verified to sell on Cartiva. Please complete your store profile.
+                You are verified to sell on Cartival Mall. Please complete your store profile.
               </p>
             </div>
           </div>
@@ -452,7 +452,7 @@ export default function VendorOnboarding() {
             Create Your Store
           </h2>
           <p style={{ fontSize: '0.85rem', color: '#6b7280', margin: '0 0 1.5rem' }}>
-            This information will be displayed to customers on Cartiva Marketplace.
+            This information will be displayed to customers on Cartival Mall.
           </p>
 
           {error && (
@@ -647,7 +647,7 @@ export default function VendorOnboarding() {
           </h1>
           <p style={{ color: '#4b5563', fontSize: '0.95rem', lineHeight: 1.6, margin: '0 0 2rem' }}>
             Your store <strong>{kycStatusData?.storeName}</strong> is fully active and certified to
-            sell products on Cartiva.
+            sell products on Cartival Mall.
           </p>
           <Link
             to="/seller"

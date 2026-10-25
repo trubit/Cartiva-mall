@@ -8,9 +8,10 @@ import { getImageUrl } from '../../../utils/image.js'
 interface OrderReviewProps {
   onPlaceOrder: () => void
   isSubmitting?: boolean
+  disabled?: boolean
 }
 
-export default function OrderReview({ onPlaceOrder, isSubmitting }: OrderReviewProps) {
+export default function OrderReview({ onPlaceOrder, isSubmitting, disabled }: OrderReviewProps) {
   const { session, shippingOptions, setStep } = useCheckoutStore()
   const { formatPrice } = useCurrency()
 
@@ -88,11 +89,13 @@ export default function OrderReview({ onPlaceOrder, isSubmitting }: OrderReviewP
       <button
         className="btn btn-primary btn-lg order-review__place-btn"
         onClick={onPlaceOrder}
-        disabled={isSubmitting}
+        disabled={isSubmitting || disabled}
       >
         {isSubmitting
           ? 'Placing Order…'
-          : `Place Order · ${formatPrice(session.pricing.grandTotal)}`}
+          : disabled
+            ? 'Connection Required to Place Order'
+            : `Place Order · ${formatPrice(session.pricing.grandTotal)}`}
       </button>
 
       <p className="order-review__terms">

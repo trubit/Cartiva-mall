@@ -13,6 +13,7 @@ export type NotificationDocType =
 
 export type NotificationChannel = 'IN_APP' | 'EMAIL' | 'PUSH' | 'SMS'
 export type NotificationPriority = 'LOW' | 'NORMAL' | 'HIGH' | 'CRITICAL'
+export type NotificationAudience = 'BUYER' | 'SELLER' | 'ADMIN'
 export type NotificationDeliveryStatus =
   | 'PENDING'
   | 'PROCESSING'
@@ -28,6 +29,7 @@ export interface INotificationDocument extends Document {
   type: NotificationDocType
   channel: NotificationChannel
   priority: NotificationPriority
+  audience: NotificationAudience
   status: NotificationDeliveryStatus
   title: string
   message: string
@@ -73,6 +75,12 @@ const notificationSchema = new mongoose.Schema<INotificationDocument>(
       enum: ['LOW', 'NORMAL', 'HIGH', 'CRITICAL'],
       default: 'NORMAL',
     },
+    audience: {
+      type: String,
+      enum: ['BUYER', 'SELLER', 'ADMIN'],
+      default: 'BUYER',
+      index: true,
+    },
     status: {
       type: String,
       enum: ['PENDING', 'PROCESSING', 'SENT', 'DELIVERED', 'FAILED', 'CANCELLED', 'EXPIRED'],
@@ -102,6 +110,7 @@ const notificationSchema = new mongoose.Schema<INotificationDocument>(
 )
 
 notificationSchema.index({ userId: 1, createdAt: -1 })
+notificationSchema.index({ userId: 1, audience: 1, createdAt: -1 })
 notificationSchema.index({ userId: 1, read: 1 })
 notificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 90 * 24 * 60 * 60 })
 

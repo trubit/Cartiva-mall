@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from 'express'
+import mongoose from 'mongoose'
 import * as adminService from './admin.service.js'
 import { sendSuccess } from '../../utils/response.js'
 import { AppError } from '../../middlewares/error.middleware.js'
@@ -297,6 +298,142 @@ export const getAuditLogs = async (
       limit: Math.min(100, Math.max(1, parseInt(limit, 10) || 20)),
     })
     sendSuccess(res, result.logs, 'Audit logs', 200, paginationMeta(result))
+  } catch (err) {
+    next(err)
+  }
+}
+
+// ─── Financial Breakdown & Reconciliation ────────────────────────────────────
+export const getFinancialBreakdown = async (
+  _req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const data = await adminService.getFinancialBreakdown()
+    sendSuccess(res, data, 'Marketplace financial breakdown')
+  } catch (err) {
+    next(err)
+  }
+}
+
+// ─── Seller Withdrawals ───────────────────────────────────────────────────────
+export const listWithdrawals = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const { status, sellerId, page = '1', limit = '20' } = req.query as Record<string, string>
+    const result = await adminService.listAdminWithdrawals({
+      status,
+      sellerId,
+      page: Math.max(1, parseInt(page, 10) || 1),
+      limit: Math.min(100, Math.max(1, parseInt(limit, 10) || 20)),
+    })
+    sendSuccess(res, result.withdrawals, 'Seller withdrawals', 200, paginationMeta(result))
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const fulfillManualWithdrawal = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const adminId = (req as any).user?.userId || (req as any).user?._id || (req as any).user?.id
+    if (!adminId || !mongoose.isValidObjectId(adminId)) {
+      return next(new AppError('Invalid or missing admin ID', 400))
+    }
+    const { id } = req.params
+    const { manualReference, note } = req.body
+    const withdrawal = await adminService.fulfillManualWithdrawal({
+      adminId: String(adminId),
+      withdrawalId: String(id),
+      manualReference,
+      note,
+    })
+    sendSuccess(res, withdrawal, 'Withdrawal marked as fulfilled via manual bank payout', 200)
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const rejectWithdrawal = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const adminId = (req as any).user?.userId || (req as any).user?._id || (req as any).user?.id
+    if (!adminId || !mongoose.isValidObjectId(adminId)) {
+      return next(new AppError('Invalid or missing admin ID', 400))
+    }
+    const { id } = req.params
+    const { reason } = req.body
+    const withdrawal = await adminService.rejectWithdrawal({
+      adminId: String(adminId),
+      withdrawalId: String(id),
+      reason,
+    })
+    sendSuccess(res, withdrawal, 'Withdrawal rejected and funds restored to seller balance', 200)
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const reconcileStuckWithdrawals = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const adminId = (req as any).user?.userId || (req as any).user?._id || (req as any).user?.id
+    const result = await adminService.reconcileStuckWithdrawals(
+      adminId && mongoose.isValidObjectId(adminId) ? String(adminId) : undefined,
+    )
+    sendSuccess(res, result, `Reconciled ${result.reconciledCount} stuck withdrawal(s)`, 200)
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const getPayoutSettings = async (
+  _req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const settings = await adminService.getPayoutSettings()
+    sendSuccess(res, settings, 'Payout settings retrieved successfully')
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const updatePayoutSettings = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const adminId = (req as any).user?.userId || (req as any).user?._id || (req as any).user?.id
+    if (!adminId || !mongoose.isValidObjectId(adminId)) {
+      return next(new AppError('Invalid or missing admin ID', 400))
+    }
+    const { notificationEmails, notifyOnWithdrawalRequest } = req.body
+    const settings = await adminService.updatePayoutSettings({
+      adminId: String(adminId),
+      notificationEmails: Array.isArray(notificationEmails)
+        ? notificationEmails
+        : typeof notificationEmails === 'string'
+          ? notificationEmails.split(',').map((e: string) => e.trim())
+          : [],
+      notifyOnWithdrawalRequest,
+    })
+    sendSuccess(res, settings, 'Payout notification settings updated successfully')
   } catch (err) {
     next(err)
   }

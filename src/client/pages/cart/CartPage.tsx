@@ -1,5 +1,12 @@
 import { useState } from 'react'
-import { FiRefreshCw, FiAlertCircle, FiBookmark, FiShoppingCart, FiTrash2 } from 'react-icons/fi'
+import {
+  FiRefreshCw,
+  FiAlertCircle,
+  FiBookmark,
+  FiShoppingCart,
+  FiTrash2,
+  FiWifiOff,
+} from 'react-icons/fi'
 import { useCart } from '../../hooks/useCart.js'
 import { useAuthStore } from '../../store/authStore.js'
 import { useCurrency } from '../../hooks/useCurrency.js'
@@ -242,6 +249,31 @@ export default function CartPage() {
             )}
           </div>
         </div>
+
+        {typeof navigator !== 'undefined' && !navigator.onLine && (
+          <div
+            role="status"
+            style={{
+              background: 'rgba(232, 160, 32, 0.12)',
+              border: '1px solid rgba(232, 160, 32, 0.4)',
+              borderRadius: '10px',
+              padding: '10px 16px',
+              marginBottom: '1.5rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              color: '#E8A020',
+              fontSize: '0.875rem',
+              fontWeight: 600,
+            }}
+          >
+            <FiWifiOff size={18} aria-hidden="true" />
+            <span>
+              You're offline. You can review and manage your saved cart items. Connecting to the
+              internet is required to proceed to checkout and process payment.
+            </span>
+          </div>
+        )}
 
         {items.length === 0 ? (
           <EmptyCart />

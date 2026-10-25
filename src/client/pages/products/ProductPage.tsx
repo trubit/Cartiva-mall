@@ -10,6 +10,7 @@ import {
   FiMessageCircle,
   FiChevronDown,
   FiChevronUp,
+  FiWifiOff,
 } from 'react-icons/fi'
 import {
   useProduct,
@@ -720,12 +721,29 @@ export default function ProductPage() {
   }
 
   if (isError || !product) {
+    const isOffline = typeof navigator !== 'undefined' && !navigator.onLine
     return (
       <div className="container section" style={{ textAlign: 'center', padding: '5rem 2rem' }}>
-        <div style={{ fontSize: '3rem' }}>😕</div>
-        <h2>Product not found</h2>
-        <Link to="/products" style={{ color: 'var(--color-brand-accent)' }}>
-          ← Browse products
+        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>{isOffline ? '📡' : '😕'}</div>
+        <h2>{isOffline ? 'Product Not Available Offline' : 'Product not found'}</h2>
+        <p
+          style={{
+            color: 'var(--color-neutral-500)',
+            maxWidth: 460,
+            margin: '0.75rem auto 1.5rem',
+            lineHeight: 1.5,
+          }}
+        >
+          {isOffline
+            ? 'This product was not previously cached on your device. An internet connection is required to retrieve it.'
+            : 'The product you are looking for does not exist or may have been removed.'}
+        </p>
+        <Link
+          to="/products"
+          className="btn btn-outline"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+        >
+          ← Browse available products
         </Link>
       </div>
     )
@@ -734,9 +752,35 @@ export default function ProductPage() {
   const inStock = product.stockQuantity > 0
   const lowStock = inStock && product.stockQuantity <= 5
   const safeQty = Math.min(qty, product.stockQuantity)
+  const isOffline = typeof navigator !== 'undefined' && !navigator.onLine
 
   return (
     <div className="container section">
+      {isOffline && (
+        <div
+          role="status"
+          style={{
+            background: 'rgba(232, 160, 32, 0.12)',
+            border: '1px solid rgba(232, 160, 32, 0.4)',
+            borderRadius: '10px',
+            padding: '10px 16px',
+            marginBottom: '1.25rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            color: '#E8A020',
+            fontSize: '0.875rem',
+            fontWeight: 600,
+          }}
+        >
+          <FiWifiOff size={18} aria-hidden="true" />
+          <span>
+            Viewing saved offline product details. Real-time prices, stock levels, and checkout
+            require an internet connection.
+          </span>
+        </div>
+      )}
+
       <nav
         style={{
           marginBottom: '1.5rem',

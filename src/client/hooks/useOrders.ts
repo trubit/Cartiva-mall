@@ -14,6 +14,8 @@ export const useMyOrders = (params?: { status?: string; page?: number; limit?: n
     staleTime: 30_000,
   })
 
+export const useOrders = useMyOrders
+
 const isValidObjectId = (id?: string): boolean =>
   Boolean(id) && id !== ':id' && /^[0-9a-fA-F]{24}$/.test(id!)
 
@@ -124,3 +126,18 @@ export const useSellerOrders = (params?: { status?: string; page?: number; limit
     queryFn: () => orderService.getSellerOrders(params),
     staleTime: 30_000,
   })
+
+// ─── Confirm delivery (customer / admin) ──────────────────────────────────────
+export const useConfirmDelivery = () => {
+  const qc = useQueryClient()
+  const updateOrderInList = useOrderStore((s) => s.updateOrderInList)
+
+  return useMutation({
+    mutationFn: (orderId: string) => orderService.confirmDelivery(orderId),
+    onSuccess: (updated) => {
+      updateOrderInList(updated)
+      qc.invalidateQueries({ queryKey: ORDER_KEY })
+      qc.invalidateQueries({ queryKey: SELLER_ORDER_KEY })
+    },
+  })
+}

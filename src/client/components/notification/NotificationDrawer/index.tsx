@@ -92,6 +92,28 @@ function NotifItem({
         <span style={{ fontSize: 11, color: '#9ca3af', marginTop: 4, display: 'block' }}>
           {timeAgo(n.createdAt)}
         </span>
+        {(n.title === 'Has Your Order Arrived?' || n.type === 'shipping') && n.link && (
+          <div style={{ marginTop: 8 }}>
+            <Link
+              to={n.link}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                padding: '4px 10px',
+                background: '#16a34a',
+                color: '#ffffff',
+                borderRadius: 6,
+                fontSize: 11,
+                fontWeight: 600,
+                textDecoration: 'none',
+              }}
+            >
+              <FiCheckCircle size={12} />
+              Confirm Doorstep Delivery
+            </Link>
+          </div>
+        )}
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0 }}>
@@ -135,9 +157,11 @@ export default function NotificationDrawer({ open, onClose }: Props) {
     enabled: open,
   })
   const rawData = listQuery.data
-  const items: INotification[] = Array.isArray(rawData)
-    ? rawData
-    : ((rawData as any)?.items ?? (rawData as any)?.notifications ?? [])
+  const items: INotification[] = (
+    Array.isArray(rawData)
+      ? rawData
+      : ((rawData as any)?.items ?? (rawData as any)?.notifications ?? [])
+  ).filter((n: INotification) => n.audience !== 'SELLER' && !n.link?.startsWith('/seller'))
 
   useEffect(() => {
     if (!open) return

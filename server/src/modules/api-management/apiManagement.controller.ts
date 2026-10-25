@@ -96,7 +96,7 @@ export const updateApplication = async (req: Request, res: Response): Promise<vo
     const app = await DeveloperApplication.findOneAndUpdate(
       { _id: id, ownerId: userId },
       req.body,
-      { new: true },
+      { returnDocument: 'after' },
     )
     if (!app) {
       res.status(404).json({ success: false, message: 'Application not found' })
@@ -115,7 +115,7 @@ export const deleteApplication = async (req: Request, res: Response): Promise<vo
     const app = await DeveloperApplication.findOneAndUpdate(
       { _id: id, ownerId: userId },
       { status: 'archived' },
-      { new: true },
+      { returnDocument: 'after' },
     )
     if (!app) {
       res.status(404).json({ success: false, message: 'Application not found' })
@@ -261,7 +261,7 @@ export const updateWebhookHandler = async (req: Request, res: Response): Promise
     const userId = (req as any).user.id
     const id = getParam(req.params.id)
     const sub = await WebhookSubscription.findOneAndUpdate({ _id: id, userId }, req.body, {
-      new: true,
+      returnDocument: 'after',
     })
     if (!sub) {
       res.status(404).json({ success: false, message: 'Webhook subscription not found' })

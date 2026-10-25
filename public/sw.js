@@ -9,7 +9,7 @@
    - Absolute bypass for mutating requests (POST/PUT/PATCH/DELETE) and sensitive APIs.
    ========================================================================== */
 
-const CACHE_VERSION = 'cartiva-v1.0.0';
+const CACHE_VERSION = 'cartiva-v1.1.0';
 const STATIC_CACHE = `cartiva-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE = `cartiva-dynamic-${CACHE_VERSION}`;
 
@@ -86,10 +86,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 1b. Never intercept local development requests or Vite HMR modules
+  // 1b. Never intercept local development Vite HMR modules
   if (
-    url.hostname === 'localhost' ||
-    url.hostname === '127.0.0.1' ||
     url.pathname.includes('/@') ||
     url.pathname.startsWith('/src/') ||
     url.pathname.endsWith('.tsx') ||
@@ -126,7 +124,7 @@ self.addEventListener('fetch', (event) => {
     }
   }
 
-  // 4. HTML Navigation requests (Page loads, routing) -> Network-first with offline fallback
+  // 4. HTML Navigation requests (Page loads, routing) -> Network-first with SPA shell offline fallback
   if (req.mode === 'navigate') {
     event.respondWith(
       fetch(req)
@@ -138,10 +136,21 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(async () => {
+          // If the requested route is cached specifically, return it
           const cached = await caches.match(req);
           if (cached) return cached;
+          // For single-page applications, return the cached index.html so React Router mounts offline
+          const appShell = (await caches.match('/index.html')) || (await caches.match('/'));
+          if (appShell) return appShell;
+          // Fall back to dedicated offline notice page if shell is somehow missing
           const offlineFallback = await caches.match('/offline.html');
-          return offlineFallback || new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain' } });
+          return (
+            offlineFallback ||
+            new Response('Offline — Please reconnect to Cartival Mall', {
+              status: 503,
+              headers: { 'Content-Type': 'text/plain' },
+            })
+          );
         })
     );
     return;

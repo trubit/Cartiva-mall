@@ -12,6 +12,9 @@ import {
   FiList,
   FiFileText,
   FiArrowUpRight,
+  FiCalendar,
+  FiX,
+  FiShield,
 } from 'react-icons/fi'
 import {
   useSellerEarnings,
@@ -31,6 +34,12 @@ import type {
   ISellerWithdrawal,
   ISellerLedgerEntry,
 } from '../../../../shared/types/seller.types.js'
+import {
+  calculateExpectedCompletionDate,
+  formatDate,
+  getWithdrawalTimelineStatus,
+  formatFriendlyTimelineEntry,
+} from '../../../../shared/helpers/index.js'
 
 export default function SellerPayouts() {
   const { data, isLoading, isError } = useSellerEarnings()
@@ -44,6 +53,7 @@ export default function SellerPayouts() {
   const [activeTab, setActiveTab] = useState<'withdrawals' | 'ledger' | 'accounts'>('withdrawals')
   const [actionError, setActionError] = useState<string | null>(null)
   const [accountToDelete, setAccountToDelete] = useState<{ id: string; name: string } | null>(null)
+  const [selectedDetailsWd, setSelectedDetailsWd] = useState<ISellerWithdrawal | null>(null)
 
   const { formatPrice } = useCurrency()
   const currency = data?.currency || 'NGN'
@@ -74,6 +84,22 @@ export default function SellerPayouts() {
             <FiCheckCircle size={12} /> Completed
           </span>
         )
+      case 'pending_approval':
+        return (
+          <span
+            className="sl-badge"
+            style={{
+              background: '#fef3c7',
+              color: '#92400e',
+              border: '1px solid #fde68a',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            <FiClock size={12} /> Pending Approval
+          </span>
+        )
       case 'processing':
         return (
           <span className="sl-badge sl-badge--processing">
@@ -84,6 +110,22 @@ export default function SellerPayouts() {
         return (
           <span className="sl-badge sl-badge--pending">
             <FiClock size={12} /> Pending
+          </span>
+        )
+      case 'rejected':
+        return (
+          <span
+            className="sl-badge sl-badge--failed"
+            style={{
+              background: '#fee2e2',
+              color: '#991b1b',
+              border: '1px solid #fecaca',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+            }}
+          >
+            <FiAlertCircle size={12} /> Rejected
           </span>
         )
       case 'failed':
@@ -269,6 +311,27 @@ export default function SellerPayouts() {
         {/* TAB 1: WITHDRAWALS TABLE */}
         {activeTab === 'withdrawals' && (
           <div>
+            {/* 4-Working-Day Policy Information Banner */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '12px 16px',
+                background: 'rgba(2, 132, 199, 0.08)',
+                borderBottom: '1px solid rgba(2, 132, 199, 0.2)',
+                color: 'var(--color-brand-text, #0369a1)',
+                fontSize: '0.85rem',
+              }}
+            >
+              <FiClock style={{ flexShrink: 0, color: '#0284c7' }} />
+              <span>
+                <strong>Withdrawal Processing Policy:</strong> Withdrawals take up to 7 working days
+                to complete. Working days exclude weekends and applicable public holidays. You can
+                track real-time status and audit updates below.
+              </span>
+            </div>
+
             {loadingWithdrawals ? (
               <div
                 style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-neutral-400)' }}
@@ -282,44 +345,91 @@ export default function SellerPayouts() {
                     <tr>
                       <th>Withdrawal ID</th>
                       <th>Requested Date</th>
+                      <th>Expected Completion</th>
                       <th>Destination Bank</th>
                       <th>Account Holder</th>
                       <th>Amount</th>
                       <th>Status</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {withdrawalsData.data.map((wd: ISellerWithdrawal) => (
-                      <tr key={wd._id}>
-                        <td>
-                          <span style={{ fontWeight: 700, fontFamily: 'monospace' }}>
-                            {wd.withdrawalNumber}
-                          </span>
-                        </td>
-                        <td className="so-date">
-                          {new Date(wd.requestedAt || wd.createdAt).toLocaleDateString(undefined, {
-                            year: 'numeric',
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </td>
-                        <td>
-                          <strong>{wd.payoutAccount?.bankName || 'Bank Account'}</strong>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--color-neutral-500)' }}>
-                            •••• {wd.payoutAccount?.accountNumber?.slice(-4) || '****'}
-                          </div>
-                        </td>
-                        <td>{wd.payoutAccount?.accountName || '—'}</td>
-                        <td>
-                          <strong style={{ color: '#007185' }}>
-                            {formatPrice(wd.netAmount || wd.amount, wd.currency || currency)}
-                          </strong>
-                        </td>
-                        <td>{getStatusBadge(wd.status)}</td>
-                      </tr>
-                    ))}
+                    {withdrawalsData.data.map((wd: ISellerWithdrawal) => {
+                      const timeline = getWithdrawalTimelineStatus(
+                        wd.status,
+                        wd.requestedAt || wd.createdAt,
+                        wd.expectedCompletionDate,
+                      )
+
+                      return (
+                        <tr key={wd._id}>
+                          <td>
+                            <span style={{ fontWeight: 700, fontFamily: 'monospace' }}>
+                              {wd.withdrawalNumber}
+                            </span>
+                          </td>
+                          <td className="so-date">
+                            {formatDate(wd.requestedAt || wd.createdAt, {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </td>
+                          <td>
+                            <div
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 5,
+                                fontSize: '0.84rem',
+                              }}
+                            >
+                              <FiCalendar size={13} style={{ color: '#0284c7' }} />
+                              <span style={{ fontWeight: 600 }}>
+                                {timeline.formattedExpectedDate}
+                              </span>
+                            </div>
+                            {timeline.isOverdue && (
+                              <div
+                                style={{
+                                  fontSize: '0.72rem',
+                                  color: '#dc2626',
+                                  fontWeight: 700,
+                                  marginTop: 2,
+                                }}
+                              >
+                                Overdue Target
+                              </div>
+                            )}
+                          </td>
+                          <td>
+                            <strong>{wd.payoutAccount?.bankName || 'Bank Account'}</strong>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--color-neutral-500)' }}>
+                              •••• {wd.payoutAccount?.accountNumber?.slice(-4) || '****'}
+                            </div>
+                          </td>
+                          <td>{wd.payoutAccount?.accountName || '—'}</td>
+                          <td>
+                            <strong style={{ color: '#007185' }}>
+                              {formatPrice(wd.netAmount || wd.amount, wd.currency || currency)}
+                            </strong>
+                          </td>
+                          <td>{getStatusBadge(wd.status)}</td>
+                          <td>
+                            <button
+                              type="button"
+                              className="sl-btn sl-btn--secondary sl-btn--sm"
+                              onClick={() => setSelectedDetailsWd(wd)}
+                              style={{ padding: '4px 10px', fontSize: '0.78rem' }}
+                            >
+                              <FiFileText size={12} style={{ marginRight: 4 }} /> Details
+                            </button>
+                          </td>
+                        </tr>
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -561,6 +671,349 @@ export default function SellerPayouts() {
         onConfirm={confirmDeleteAccount}
         onClose={() => setAccountToDelete(null)}
       />
+
+      {/* Seller Withdrawal Details Modal */}
+      {selectedDetailsWd && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.65)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '1rem',
+          }}
+          onClick={() => setSelectedDetailsWd(null)}
+        >
+          <div
+            style={{
+              background: 'var(--color-white, #1c2128)',
+              borderRadius: 12,
+              maxWidth: 560,
+              width: '100%',
+              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)',
+              border: '1px solid var(--color-neutral-200, #30363d)',
+              color: 'var(--color-brand-text, #e6edf3)',
+              overflow: 'hidden',
+              maxHeight: '90vh',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div
+              style={{
+                padding: '1.25rem 1.5rem',
+                borderBottom: '1px solid var(--color-neutral-200, #30363d)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: '1.1rem',
+                  fontWeight: 700,
+                  color: 'var(--color-brand-text, #e6edf3)',
+                }}
+              >
+                Withdrawal Details ({selectedDetailsWd.withdrawalNumber})
+              </h3>
+              <button
+                onClick={() => setSelectedDetailsWd(null)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--color-neutral-500, #8b949e)',
+                  padding: 4,
+                }}
+                aria-label="Close"
+              >
+                <FiX size={20} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div style={{ padding: '1.5rem', overflowY: 'auto' }}>
+              {/* Policy note */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 8,
+                  padding: '10px 12px',
+                  background: 'rgba(2, 132, 199, 0.08)',
+                  border: '1px solid rgba(2, 132, 199, 0.25)',
+                  borderRadius: 8,
+                  fontSize: '0.82rem',
+                  color: 'var(--color-brand-text, #38bdf8)',
+                  marginBottom: '1.25rem',
+                }}
+              >
+                <FiClock style={{ flexShrink: 0, marginTop: 2 }} />
+                <span>
+                  Withdrawals take up to 7 working days to complete. Working days exclude weekends
+                  and applicable public holidays.
+                </span>
+              </div>
+
+              {/* Status and Expected Date Grid */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 1fr',
+                  gap: '1rem',
+                  background: 'var(--color-neutral-50, #161b22)',
+                  border: '1px solid var(--color-neutral-200, #30363d)',
+                  borderRadius: 8,
+                  padding: '1rem',
+                  marginBottom: '1.25rem',
+                }}
+              >
+                <div>
+                  <div
+                    style={{
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      color: 'var(--color-neutral-500, #8b949e)',
+                      marginBottom: 6,
+                    }}
+                  >
+                    CURRENT STATUS
+                  </div>
+                  <div>{getStatusBadge(selectedDetailsWd.status)}</div>
+                </div>
+                <div>
+                  <div
+                    style={{
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      color: 'var(--color-neutral-500, #8b949e)',
+                      marginBottom: 6,
+                    }}
+                  >
+                    EXPECTED COMPLETION
+                  </div>
+                  <strong
+                    style={{
+                      color: '#38bdf8',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                    }}
+                  >
+                    <FiCalendar size={13} />{' '}
+                    {formatDate(
+                      selectedDetailsWd.expectedCompletionDate ||
+                        calculateExpectedCompletionDate(
+                          new Date(selectedDetailsWd.requestedAt || selectedDetailsWd.createdAt),
+                        ),
+                    )}
+                  </strong>
+                </div>
+              </div>
+
+              {/* Amount and Bank details */}
+              <div
+                style={{
+                  background: 'var(--color-neutral-50, #161b22)',
+                  border: '1px solid var(--color-neutral-200, #30363d)',
+                  borderRadius: 8,
+                  padding: '1rem',
+                  marginBottom: '1.25rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 8,
+                  fontSize: '0.86rem',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--color-neutral-500, #8b949e)' }}>
+                    Net Payout Amount:
+                  </span>
+                  <strong style={{ color: '#22c55e', fontSize: '1rem' }}>
+                    {formatPrice(
+                      selectedDetailsWd.netAmount || selectedDetailsWd.amount,
+                      selectedDetailsWd.currency || currency,
+                    )}
+                  </strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--color-neutral-500, #8b949e)' }}>
+                    Requested Date:
+                  </span>
+                  <span>
+                    {formatDate(selectedDetailsWd.requestedAt || selectedDetailsWd.createdAt)}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--color-neutral-500, #8b949e)' }}>
+                    Destination Bank:
+                  </span>
+                  <strong style={{ color: 'var(--color-brand-text, #e6edf3)' }}>
+                    {selectedDetailsWd.payoutAccount?.bankName}
+                  </strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--color-neutral-500, #8b949e)' }}>
+                    Account Number:
+                  </span>
+                  <code style={{ fontFamily: 'monospace' }}>
+                    •••• {selectedDetailsWd.payoutAccount?.accountNumber?.slice(-4)}
+                  </code>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: 'var(--color-neutral-500, #8b949e)' }}>Account Name:</span>
+                  <span>{selectedDetailsWd.payoutAccount?.accountName}</span>
+                </div>
+              </div>
+
+              {selectedDetailsWd.failureReason && (
+                <div
+                  style={{
+                    background: 'rgba(239, 68, 68, 0.1)',
+                    border: '1px solid rgba(239, 68, 68, 0.25)',
+                    padding: '10px 12px',
+                    borderRadius: 8,
+                    color: '#f87171',
+                    fontSize: '0.85rem',
+                    marginBottom: '1rem',
+                  }}
+                >
+                  <strong>Reason:</strong> {selectedDetailsWd.failureReason}
+                </div>
+              )}
+
+              {/* Activity Timeline */}
+              {selectedDetailsWd.auditLog && selectedDetailsWd.auditLog.length > 0 && (
+                <div>
+                  <h4
+                    style={{
+                      margin: '0 0 12px',
+                      fontSize: '0.92rem',
+                      fontWeight: 700,
+                      color: 'var(--color-brand-text, #e6edf3)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}
+                  >
+                    <FiList size={16} /> Activity Timeline
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {selectedDetailsWd.auditLog.map((log, idx) => {
+                      const item = formatFriendlyTimelineEntry(log.status, log.note)
+                      return (
+                        <div
+                          key={idx}
+                          style={{
+                            background: 'var(--color-neutral-50, #161b22)',
+                            border: '1px solid var(--color-neutral-200, #30363d)',
+                            borderRadius: 8,
+                            padding: '12px 14px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 6,
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              flexWrap: 'wrap',
+                              gap: 6,
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <span
+                                style={{
+                                  background: item.badgeBg,
+                                  color: item.badgeColor,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 4,
+                                  padding: '2px 8px',
+                                  borderRadius: 6,
+                                  fontWeight: 700,
+                                  fontSize: '0.74rem',
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '0.03em',
+                                }}
+                              >
+                                {item.iconType === 'completed' && <FiCheckCircle size={11} />}
+                                {item.iconType === 'review' && <FiShield size={11} />}
+                                {item.iconType === 'processing' && <FiClock size={11} />}
+                                {(item.iconType === 'failed' || item.iconType === 'reversed') && (
+                                  <FiAlertCircle size={11} />
+                                )}
+                                {item.badgeText}
+                              </span>
+                              <strong
+                                style={{
+                                  color: 'var(--color-brand-text, #f1f5f9)',
+                                  fontSize: '0.86rem',
+                                  fontWeight: 600,
+                                }}
+                              >
+                                {item.stageTitle}
+                              </strong>
+                            </div>
+                            <span
+                              style={{
+                                color: 'var(--color-neutral-500, #8b949e)',
+                                fontSize: '0.78rem',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                              }}
+                            >
+                              <FiCalendar size={11} /> {formatDate(log.timestamp)}
+                            </span>
+                          </div>
+                          <div
+                            style={{
+                              color: 'var(--color-neutral-400, #94a3b8)',
+                              fontSize: '0.84rem',
+                              lineHeight: 1.5,
+                              paddingLeft: 2,
+                            }}
+                          >
+                            {item.friendlyNote}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div
+              style={{
+                padding: '1rem 1.5rem',
+                borderTop: '1px solid var(--color-neutral-200, #30363d)',
+                display: 'flex',
+                justifyContent: 'flex-end',
+              }}
+            >
+              <button
+                className="sl-btn sl-btn--secondary"
+                onClick={() => setSelectedDetailsWd(null)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

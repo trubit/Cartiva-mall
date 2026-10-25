@@ -25,25 +25,25 @@ export const PressPage: FC = () => {
   const releases = [
     {
       id: 'pr-1',
-      title: 'Cartiva Launches Autonomous Business Economy Engine with Real-Time Stabilization',
+      title: 'Cartival Launches Autonomous Business Economy Engine with Real-Time Stabilization',
       date: 'August 22, 2026',
       category: 'Product Launch',
       summary:
-        'Cartiva introduces an industry-first controlled microeconomic governor that analyzes velocity, inflation, dynamic pricing limits, and algorithmic seller liquidity.',
+        'Cartival introduces an industry-first controlled microeconomic governor that analyzes velocity, inflation, dynamic pricing limits, and algorithmic seller liquidity.',
       readTime: '4 min read',
     },
     {
       id: 'pr-2',
-      title: 'Cartiva Expands Cross-Platform Ecosystem with Scoped Partner APIs and Webhooks',
+      title: 'Cartival Expands Cross-Platform Ecosystem with Scoped Partner APIs and Webhooks',
       date: 'July 14, 2026',
       category: 'Ecosystem & Partnerships',
       summary:
-        'Third-party logistics partners, ERP integrators, and dropshipping networks can now integrate seamlessly with Cartiva via HMAC-SHA256 verified REST webhooks.',
+        'Third-party logistics partners, ERP integrators, and dropshipping networks can now integrate seamlessly with Cartival via HMAC-SHA256 verified REST webhooks.',
       readTime: '3 min read',
     },
     {
       id: 'pr-3',
-      title: 'Cartiva Milestone: 1 Million+ Concurrency Benchmark Passed with Sub-50ms Latency',
+      title: 'Cartival Milestone: 1 Million+ Concurrency Benchmark Passed with Sub-50ms Latency',
       date: 'June 29, 2026',
       category: 'Engineering & Scale',
       summary:
@@ -52,11 +52,11 @@ export const PressPage: FC = () => {
     },
     {
       id: 'pr-4',
-      title: 'Cartiva Introduces Zero-Trust IAM RBAC Architecture & Escrow Payment Enclaves',
+      title: 'Cartival Introduces Zero-Trust IAM RBAC Architecture & Escrow Payment Enclaves',
       date: 'May 18, 2026',
       category: 'Security & IAM',
       summary:
-        'Eliminating traditional surface vulnerabilities, Cartiva deploys automated role-based permission validation and PCI-DSS Level 1 tokenized payment guards.',
+        'Eliminating traditional surface vulnerabilities, Cartival deploys automated role-based permission validation and PCI-DSS Level 1 tokenized payment guards.',
       readTime: '4 min read',
     },
   ]
@@ -125,7 +125,7 @@ export const PressPage: FC = () => {
               marginBottom: '20px',
             }}
           >
-            <FaNewspaper /> Cartiva Newsroom & Media
+            <FaNewspaper /> Cartival Newsroom & Media
           </div>
           <h1
             style={{
@@ -148,7 +148,7 @@ export const PressPage: FC = () => {
             }}
           >
             Read the latest company updates, engineering breakthroughs, commercial partnership
-            announcements, and executive news from Cartiva.
+            announcements, and executive news from Cartival Mall.
           </p>
         </div>
 
@@ -202,7 +202,7 @@ export const PressPage: FC = () => {
             <button
               onClick={() =>
                 setDownloadNotice(
-                  'Media Kit package requested. Media kit and branding guidelines can be downloaded or requested directly via press@cartiva.mall.',
+                  'Media Kit package requested. Media kit and branding guidelines can be downloaded or requested directly via press@cartivalmall.com.',
                 )
               }
               style={{
@@ -254,7 +254,7 @@ export const PressPage: FC = () => {
                 <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>
                   Media Inquiries
                 </h3>
-                <span style={{ fontSize: '12px', color: '#64748b' }}>press@cartiva.com</span>
+                <span style={{ fontSize: '12px', color: '#64748b' }}>press@cartivalmall.com</span>
               </div>
             </div>
             <p style={{ margin: '0 0 20px', fontSize: '14px', color: '#64748b', lineHeight: 1.6 }}>
@@ -262,7 +262,7 @@ export const PressPage: FC = () => {
               dedicated media relations desk.
             </p>
             <a
-              href="mailto:press@cartiva.com"
+              href="mailto:press@cartivalmall.com"
               style={{
                 background: '#0284c7',
                 color: '#ffffff',

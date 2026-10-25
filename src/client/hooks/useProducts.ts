@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { productService } from '../services/productService.js'
+import { offlineProductStorage } from '../services/offlineProductStorage.js'
 import type { ProductFilters } from '../../shared/types/product.types.js'
 
 export const PRODUCT_KEYS = {
@@ -25,7 +26,41 @@ export const PRODUCT_KEYS = {
 export const useProducts = (filters: ProductFilters = {}) =>
   useQuery({
     queryKey: PRODUCT_KEYS.list(filters),
-    queryFn: () => productService.getProducts(filters),
+    queryFn: async () => {
+      try {
+        const res = await productService.getProducts(filters)
+        if (res.data && res.data.length > 0) {
+          void offlineProductStorage.saveProducts(res.data)
+        }
+        return res
+      } catch (err) {
+        const isOffline = typeof navigator !== 'undefined' && !navigator.onLine
+        const isNetworkErr = (err as any)?.code === 'ERR_NETWORK' || !(err as any)?.response
+        if (isOffline || isNetworkErr) {
+          const cached = await offlineProductStorage.getCachedProducts({
+            category: filters.category,
+            search: filters.search,
+            page: filters.page,
+            limit: filters.limit || 12,
+          })
+          if (cached.products.length > 0) {
+            return {
+              data: cached.products,
+              pagination: {
+                page: filters.page || 1,
+                limit: filters.limit || 12,
+                total: cached.total,
+                totalPages: Math.ceil(cached.total / (filters.limit || 12)) || 1,
+                hasNext: false,
+                hasPrev: (filters.page || 1) > 1,
+              },
+              isOfflineData: true,
+            }
+          }
+        }
+        throw err
+      }
+    },
     placeholderData: keepPreviousData,
     staleTime: 2 * 60 * 1000,
   })
@@ -34,7 +69,25 @@ export const useProducts = (filters: ProductFilters = {}) =>
 export const useFeaturedProducts = (limit = 12) =>
   useQuery({
     queryKey: PRODUCT_KEYS.featured(),
-    queryFn: () => productService.getFeatured(limit),
+    queryFn: async () => {
+      try {
+        const products = await productService.getFeatured(limit)
+        if (products && products.length > 0) {
+          void offlineProductStorage.saveProducts(products)
+        }
+        return products
+      } catch (err) {
+        const isOffline = typeof navigator !== 'undefined' && !navigator.onLine
+        const isNetworkErr = (err as any)?.code === 'ERR_NETWORK' || !(err as any)?.response
+        if (isOffline || isNetworkErr) {
+          const cached = await offlineProductStorage.getCachedFeatured(limit)
+          if (cached.length > 0) {
+            return cached
+          }
+        }
+        throw err
+      }
+    },
     staleTime: 5 * 60 * 1000,
   })
 
@@ -92,7 +145,25 @@ export const useProductSuggestions = (q: string) =>
 export const useProduct = (id: string) =>
   useQuery({
     queryKey: PRODUCT_KEYS.detail(id),
-    queryFn: () => productService.getProductById(id),
+    queryFn: async () => {
+      try {
+        const product = await productService.getProductById(id)
+        if (product) {
+          void offlineProductStorage.saveProduct(product)
+        }
+        return product
+      } catch (err) {
+        const isOffline = typeof navigator !== 'undefined' && !navigator.onLine
+        const isNetworkErr = (err as any)?.code === 'ERR_NETWORK' || !(err as any)?.response
+        if (isOffline || isNetworkErr) {
+          const cached = await offlineProductStorage.getCachedProduct(id)
+          if (cached) {
+            return cached
+          }
+        }
+        throw err
+      }
+    },
     enabled: !!id,
     staleTime: 2 * 60 * 1000,
   })

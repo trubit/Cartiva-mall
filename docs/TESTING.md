@@ -10,9 +10,10 @@ The repository features comprehensive automated unit, integration, component, an
 
 | Suite                           | Command                 | Config File                                  |
 | ------------------------------- | ----------------------- | -------------------------------------------- |
-| Client & Shared Unit Tests      | `npm run test`          | `vitest.config.ts`                           |
+| Full Suite (Client + Server)    | `npm run test`          | Combined (`vitest.config.ts` + `server`)     |
+| Client & Shared Unit Tests      | `npm run test:client`   | `vitest.config.ts`                           |
 | Server Unit & Integration Tests | `npm run test:server`   | `vitest.config.server.ts`                    |
-| All Unit/Integration Tests      | `npm run test:all`      | Combined                                     |
+| All Unit/Integration Tests      | `npm run test:all`      | Combined (`npm run test`)                    |
 | Playwright E2E Tests            | `npm run test:e2e`      | `playwright.config.ts`                       |
 | TypeScript Typecheck            | `npm run typecheck:all` | `tsconfig.app.json` + `tsconfig.server.json` |
 

@@ -147,7 +147,7 @@ app.use(cookieParser())
 app.use(morgan(env.isDev() ? 'dev' : 'combined'))
 
 // ─── Health Check ─────────────────────────────────────────────────────────────
-app.get('/health', async (_req, res) => {
+app.get(['/health', `${API_PREFIX}/health`], async (_req, res) => {
   const dbState = mongoose.connection.readyState // 0=disc 1=conn 2=connting 3=discting
   const dbOk = dbState === 1
 

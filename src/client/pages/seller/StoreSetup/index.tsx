@@ -224,7 +224,7 @@ export default function StoreSetup() {
           >
             {kycStatus === 'UNDER_REVIEW' || kycStatus === 'PENDING'
               ? 'Your KYC documents are currently under administrative review. Store setup will unlock immediately upon approval.'
-              : 'You must submit your KYC identity and bank details before setting up your store on Cartiva.'}
+              : 'You must submit your KYC identity and bank details before setting up your store on Cartival Mall.'}
           </p>
           <div
             style={{

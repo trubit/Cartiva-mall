@@ -97,7 +97,8 @@ describe('Seller Payout & Withdrawal Routes', () => {
       expect(sellerService.requestWithdrawal).not.toHaveBeenCalled()
     })
 
-    it('processes valid withdrawal request with payout account', async () => {
+    it('processes valid withdrawal request with payout account and expected completion date', async () => {
+      const expectedCompletionDate = '2026-05-08T16:00:00.000Z'
       const mockWithdrawal = {
         _id: 'wd_1',
         withdrawalNumber: 'WD-2026-XYZ',
@@ -107,6 +108,7 @@ describe('Seller Payout & Withdrawal Routes', () => {
         netAmount: 10000,
         currency: 'NGN',
         status: 'processing',
+        expectedCompletionDate,
         payoutAccount: {
           bankName: 'Access Bank',
           bankCode: '044',
@@ -126,6 +128,7 @@ describe('Seller Payout & Withdrawal Routes', () => {
       expect(res.status).toBe(201)
       expect(res.body.success).toBe(true)
       expect(res.body.data.withdrawalNumber).toBe('WD-2026-XYZ')
+      expect(res.body.data.expectedCompletionDate).toBe(expectedCompletionDate)
       expect(sellerService.requestWithdrawal).toHaveBeenCalledWith('seller_user_123', {
         amount: 10000,
         payoutAccountId: 'acc_123',

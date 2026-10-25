@@ -93,6 +93,24 @@ export interface ISellerBankDetailsDoc {
   bankCode?: string
 }
 
+export interface IOrderSellerAllocationDoc {
+  sellerId: Types.ObjectId
+  storeName?: string
+  productSubtotal?: number
+  shippingFee?: number
+  grossAmount: number
+  commissionAmount: number
+  netAmount: number
+  subaccountCode?: string
+  status: 'pending' | 'allocated' | 'settled' | 'refunded'
+  fulfillmentStatus?: 'unfulfilled' | 'shipped' | 'delivered' | 'delivered_confirmed' | 'cancelled'
+  carrier?: string
+  trackingNumber?: string
+  shippedAt?: Date
+  deliveredAt?: Date
+  deliveryConfirmedAt?: Date
+}
+
 // ─── Main document interface ──────────────────────────────────────────────────
 export interface IOrderDocument extends Document {
   orderNumber: string
@@ -109,6 +127,10 @@ export interface IOrderDocument extends Document {
   shippingFee: number
   taxAmount: number
   grandTotal: number
+  platformCommission?: number
+  sellerEarnings?: number
+  paystackFee?: number
+  sellerAllocations?: IOrderSellerAllocationDoc[]
   couponCode?: string
   currency: string
   exchangeRateUsed?: number
@@ -141,6 +163,9 @@ export interface IOrderDocument extends Document {
   notes?: string
   tracking?: IOrderTrackingDoc
   returnRequest?: IReturnRequestDoc
+  deliveryConfirmedAt?: Date
+  deliveryConfirmedBy?: Types.ObjectId
+  deliveryConfirmationSource?: 'customer' | 'admin'
   history: IOrderHistoryEntry[]
   createdAt: Date
   updatedAt: Date
@@ -269,6 +294,35 @@ const shippingCalculationAuditSchema = new mongoose.Schema<IShippingCalculationA
   { _id: false },
 )
 
+const orderSellerAllocationSchema = new mongoose.Schema<IOrderSellerAllocationDoc>(
+  {
+    sellerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    storeName: { type: String, trim: true },
+    productSubtotal: { type: Number, default: 0, min: 0 },
+    shippingFee: { type: Number, default: 0, min: 0 },
+    grossAmount: { type: Number, required: true, min: 0 },
+    commissionAmount: { type: Number, required: true, min: 0 },
+    netAmount: { type: Number, required: true, min: 0 },
+    subaccountCode: { type: String, trim: true },
+    status: {
+      type: String,
+      enum: ['pending', 'allocated', 'settled', 'refunded'],
+      default: 'pending',
+    },
+    fulfillmentStatus: {
+      type: String,
+      enum: ['unfulfilled', 'shipped', 'delivered', 'delivered_confirmed', 'cancelled'],
+      default: 'unfulfilled',
+    },
+    carrier: { type: String, trim: true },
+    trackingNumber: { type: String, trim: true },
+    shippedAt: { type: Date },
+    deliveredAt: { type: Date },
+    deliveryConfirmedAt: { type: Date },
+  },
+  { _id: false },
+)
+
 const orderSchema = new mongoose.Schema<IOrderDocument>(
   {
     orderNumber: { type: String, required: true, unique: true, index: true },
@@ -285,6 +339,10 @@ const orderSchema = new mongoose.Schema<IOrderDocument>(
     shippingFee: { type: Number, default: 0, min: 0 },
     taxAmount: { type: Number, default: 0, min: 0 },
     grandTotal: { type: Number, required: true, min: 0 },
+    platformCommission: { type: Number, default: 0, min: 0 },
+    sellerEarnings: { type: Number, default: 0, min: 0 },
+    paystackFee: { type: Number, default: 0, min: 0 },
+    sellerAllocations: { type: [orderSellerAllocationSchema], default: [] },
     couponCode: { type: String, trim: true, uppercase: true },
     currency: { type: String, required: true, default: 'USD', uppercase: true },
     exchangeRateUsed: { type: Number, min: 0 },
@@ -332,6 +390,9 @@ const orderSchema = new mongoose.Schema<IOrderDocument>(
     notes: { type: String, maxlength: 500 },
     tracking: { type: trackingSchema },
     returnRequest: { type: returnRequestSchema },
+    deliveryConfirmedAt: { type: Date, index: true },
+    deliveryConfirmedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    deliveryConfirmationSource: { type: String, enum: ['customer', 'admin'] },
     history: { type: [historyEntrySchema], default: [] },
   },
   {

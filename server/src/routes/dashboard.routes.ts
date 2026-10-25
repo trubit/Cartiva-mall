@@ -28,6 +28,8 @@ router.get('/notifications', dashboardController.getNotifications)
 router.get('/notifications/unread-count', dashboardController.getUnreadCount)
 router.put('/notifications/read-all', dashboardController.markAllRead)
 router.put('/notifications/:id/read', dashboardController.markRead)
+router.delete('/notifications/:id', dashboardController.deleteNotification)
+router.delete('/notifications', dashboardController.clearAllNotifications)
 
 // ── Payment History ───────────────────────────────────────────────────────────
 router.get('/payments', dashboardController.getPaymentHistory)

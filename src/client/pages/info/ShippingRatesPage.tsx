@@ -89,7 +89,7 @@ export const ShippingRatesPage: FC = () => {
               margin: 0,
             }}
           >
-            Transparent doorstep delivery rates centrally configured and guaranteed by Cartiva Mall
+            Transparent doorstep delivery rates centrally configured and guaranteed by Cartival Mall
             administrators. All shipments include full GPS tracking and comprehensive parcel transit
             insurance.
           </p>
@@ -116,7 +116,7 @@ export const ShippingRatesPage: FC = () => {
               Track an Incoming Order
             </h3>
             <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
-              Enter your Cartiva Order ID or carrier tracking number to view real-time transit
+              Enter your Cartival Order ID or carrier tracking number to view real-time transit
               milestones.
             </p>
           </div>
@@ -412,7 +412,7 @@ export const ShippingRatesPage: FC = () => {
               Dispatched with Top Global Couriers
             </h3>
             <p style={{ fontSize: '14px', color: '#94a3b8', margin: 0, maxWidth: '600px' }}>
-              Cartiva orders are processed and insured with FedEx, UPS, USPS, DHL Express, and
+              Cartival orders are processed and insured with FedEx, UPS, USPS, DHL Express, and
               regional last-mile postal partners.
             </p>
           </div>

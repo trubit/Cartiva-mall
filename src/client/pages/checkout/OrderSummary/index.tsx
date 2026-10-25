@@ -2,12 +2,13 @@ import { useCheckoutStore } from '../../../store/checkoutStore.js'
 import { useCurrencyStore } from '../../../store/currencyStore.js'
 import { useCreateOrder } from '../../../hooks/usePayment.js'
 import OrderReview from '../../../components/checkout/OrderReview/index.js'
-import { FiCreditCard, FiLock } from 'react-icons/fi'
+import { FiCreditCard, FiLock, FiWifiOff } from 'react-icons/fi'
 
 export default function OrderSummaryStep() {
   const { session, prevStep } = useCheckoutStore()
   const currentCurrency = useCurrencyStore((s) => s.currentCurrency)
   const { mutate: createOrder, isPending, error } = useCreateOrder()
+  const isOffline = typeof navigator !== 'undefined' && !navigator.onLine
 
   if (!session?.shippingAddress) {
     return (
@@ -21,6 +22,7 @@ export default function OrderSummaryStep() {
   }
 
   const handlePlaceOrder = () => {
+    if (isOffline) return
     if (!session._id) return
     createOrder({
       checkoutSessionId: session._id,
@@ -84,13 +86,39 @@ export default function OrderSummaryStep() {
         </div>
       </div>
 
+      {isOffline && (
+        <div
+          role="alert"
+          style={{
+            marginBottom: 20,
+            padding: '14px 18px',
+            background: 'rgba(232, 160, 32, 0.12)',
+            borderRadius: 10,
+            border: '1px solid rgba(232, 160, 32, 0.4)',
+            color: '#E8A020',
+            fontSize: '0.875rem',
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+          }}
+        >
+          <FiWifiOff size={20} aria-hidden="true" />
+          <span>
+            You are currently offline. An active internet connection is required to submit your
+            order and verify payment with Cartival Mall. Your selected cart items and shipping
+            details are safely saved.
+          </span>
+        </div>
+      )}
+
       {error && (
         <div className="checkout-step__error-banner">
           {(error as Error).message ?? 'Failed to place order. Please try again.'}
         </div>
       )}
 
-      <OrderReview onPlaceOrder={handlePlaceOrder} isSubmitting={isPending} />
+      <OrderReview onPlaceOrder={handlePlaceOrder} isSubmitting={isPending} disabled={isOffline} />
 
       <button className="btn btn-ghost checkout-step__back-link" onClick={prevStep}>
         ← Back to Shipping

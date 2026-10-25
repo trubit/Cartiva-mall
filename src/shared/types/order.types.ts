@@ -67,6 +67,35 @@ export interface ISellerBankDetails {
   bankCode?: string
 }
 
+export interface IOrderSellerAllocation {
+  sellerId: string
+  storeName?: string
+  productSubtotal?: number
+  shippingFee?: number
+  grossAmount: number
+  commissionAmount: number
+  netAmount: number
+  subaccountCode?: string
+  status: 'pending' | 'allocated' | 'settled' | 'refunded'
+  fulfillmentStatus?: 'unfulfilled' | 'shipped' | 'delivered' | 'delivered_confirmed' | 'cancelled'
+  carrier?: string
+  trackingNumber?: string
+  shippedAt?: string
+  deliveredAt?: string
+  deliveryConfirmedAt?: string
+}
+
+export interface ISellerOrderBreakdown {
+  sellerProductSubtotal: number
+  sellerShippingFee: number
+  sellerCommission: number
+  sellerGrossAmount: number
+  sellerNetAmount: number
+  sellerFulfillmentStatus?: string
+  carrier?: string
+  trackingNumber?: string
+}
+
 // ─── Full order ───────────────────────────────────────────────────────────────
 export interface IOrder {
   _id: string
@@ -83,6 +112,11 @@ export interface IOrder {
   shippingFee: number
   taxAmount: number
   grandTotal: number
+  platformCommission?: number
+  sellerEarnings?: number
+  paystackFee?: number
+  sellerAllocations?: IOrderSellerAllocation[]
+  sellerBreakdown?: ISellerOrderBreakdown
   couponCode?: string
   currency: string
   exchangeRateUsed?: number
@@ -108,6 +142,9 @@ export interface IOrder {
   notes?: string
   tracking?: IOrderTracking
   returnRequest?: IReturnRequest
+  deliveryConfirmedAt?: string
+  deliveryConfirmedBy?: string
+  deliveryConfirmationSource?: 'customer' | 'admin'
   createdAt: string
   updatedAt: string
 }

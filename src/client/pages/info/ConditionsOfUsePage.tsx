@@ -79,7 +79,7 @@ export const ConditionsOfUsePage: FC = () => {
               color: '#ffffff',
             }}
           >
-            Cartiva Conditions of Use
+            Cartival Mall Conditions of Use
           </h1>
           <p
             style={{
@@ -90,8 +90,8 @@ export const ConditionsOfUsePage: FC = () => {
               margin: '0 0 16px',
             }}
           >
-            Please read these terms and conditions carefully before accessing or using the Cartiva
-            marketplace, mobile applications, merchant portals, or purchasing products.
+            Please read these terms and conditions carefully before accessing or using the Cartival
+            Mall marketplace, mobile applications, merchant portals, or purchasing products.
           </p>
           <div style={{ display: 'flex', gap: '16px', fontSize: '13px', color: '#94a3b8' }}>
             <span>
@@ -246,9 +246,9 @@ export const ConditionsOfUsePage: FC = () => {
               <p
                 style={{ color: '#334155', lineHeight: 1.7, margin: '0 0 12px', fontSize: '15px' }}
               >
-                By accessing, browsing, registering on, or purchasing through the Cartiva website,
-                mobile applications, or associated API services, you expressly agree to be bound by
-                these Conditions of Use and all policies incorporated herein by reference.
+                By accessing, browsing, registering on, or purchasing through the Cartival Mall
+                website, mobile applications, or associated API services, you expressly agree to be
+                bound by these Conditions of Use and all policies incorporated herein by reference.
               </p>
               <p style={{ color: '#334155', lineHeight: 1.7, margin: 0, fontSize: '15px' }}>
                 You must be at least 18 years of age or the legal age of majority in your
@@ -312,8 +312,11 @@ export const ConditionsOfUsePage: FC = () => {
               >
                 <strong>Security Alert:</strong> If you suspect unauthorized access or security
                 breach, you must immediately change your password and notify{' '}
-                <a href="mailto:security@cartiva.com" style={{ color: '#4f46e5', fontWeight: 600 }}>
-                  security@cartiva.com
+                <a
+                  href="mailto:security@cartivalmall.com"
+                  style={{ color: '#4f46e5', fontWeight: 600 }}
+                >
+                  security@cartivalmall.com
                 </a>
                 .
               </div>
@@ -355,15 +358,16 @@ export const ConditionsOfUsePage: FC = () => {
               <p
                 style={{ color: '#334155', lineHeight: 1.7, margin: '0 0 12px', fontSize: '15px' }}
               >
-                Cartiva operates as a curated multi-vendor marketplace platform. Products displayed
-                on the platform are listed and fulfilled by either Cartiva or independent
-                third-party verified merchants ("Sellers").
+                Cartival Mall operates as a curated multi-vendor marketplace platform. Products
+                displayed on the platform are listed and fulfilled by either Cartival Mall or
+                independent third-party verified merchants ("Sellers").
               </p>
               <p style={{ color: '#334155', lineHeight: 1.7, margin: 0, fontSize: '15px' }}>
-                While Cartiva enforces strict quality control, atomic inventory safeguards, and
-                anti-counterfeiting verification, individual merchants are responsible for the
-                description, compliance, and warranty of their merchant-fulfilled goods. Cartiva
-                guarantees 100% buyer protection through our escrow-backed payment settlement model.
+                While Cartival Mall enforces strict quality control, atomic inventory safeguards,
+                and anti-counterfeiting verification, individual merchants are responsible for the
+                description, compliance, and warranty of their merchant-fulfilled goods. Cartival
+                Mall guarantees 100% buyer protection through our escrow-backed payment settlement
+                model.
               </p>
             </div>
 
@@ -456,8 +460,8 @@ export const ConditionsOfUsePage: FC = () => {
                 <Link to="/orders" style={{ color: '#4f46e5', fontWeight: 600 }}>
                   Orders Dashboard
                 </Link>
-                . All purchases made from Cartiva are made pursuant to a shipment contract with
-                certified commercial freight and postal carriers.
+                . All purchases made from Cartival Mall are made pursuant to a shipment contract
+                with certified commercial freight and postal carriers.
               </p>
               <p style={{ color: '#334155', lineHeight: 1.7, margin: 0, fontSize: '15px' }}>
                 Risk of loss and title for items pass to you upon delivery confirmation by the
@@ -511,7 +515,7 @@ export const ConditionsOfUsePage: FC = () => {
               <p style={{ color: '#334155', lineHeight: 1.7, margin: 0, fontSize: '15px' }}>
                 Upon warehouse inspection or merchant receipt verification, refunds are returned to
                 your original payment method (e.g. Stripe, Paystack) within 3–5 business days or
-                credited immediately to your Cartiva Wallet Balance.
+                credited immediately to your Cartival Wallet Balance.
               </p>
             </div>
 
@@ -552,8 +556,8 @@ export const ConditionsOfUsePage: FC = () => {
                 style={{ color: '#334155', lineHeight: 1.7, margin: '0 0 12px', fontSize: '15px' }}
               >
                 All proprietary software, logos, UI designs, codebases, microservice APIs, and text
-                are the exclusive property of Cartiva, Inc. or its licensors and are protected under
-                international copyright, trademark, and trade secret laws.
+                are the exclusive property of Cartival Mall, Inc. or its licensors and are protected
+                under international copyright, trademark, and trade secret laws.
               </p>
               <p style={{ color: '#334155', lineHeight: 1.7, margin: 0, fontSize: '15px' }}>
                 You agree not to scrape, reverse-engineer, inject automated bot traffic, probe
@@ -598,14 +602,14 @@ export const ConditionsOfUsePage: FC = () => {
                 style={{ color: '#334155', lineHeight: 1.7, margin: '0 0 12px', fontSize: '15px' }}
               >
                 Any controversy or dispute arising out of or relating to these Conditions of Use or
-                your purchase on Cartiva shall be resolved through confidential, binding arbitration
-                administered by the American Arbitration Association (AAA) under its Commercial
-                Arbitration Rules.
+                your purchase on Cartival Mall shall be resolved through confidential, binding
+                arbitration administered by the American Arbitration Association (AAA) under its
+                Commercial Arbitration Rules.
               </p>
               <p style={{ color: '#334155', lineHeight: 1.7, margin: 0, fontSize: '15px' }}>
-                You and Cartiva agree that each may bring claims against the other only in your or
-                its individual capacity and not as a plaintiff or class member in any purported
-                class action.
+                You and Cartival Mall agree that each may bring claims against the other only in
+                your or its individual capacity and not as a plaintiff or class member in any
+                purported class action.
               </p>
             </div>
           </div>

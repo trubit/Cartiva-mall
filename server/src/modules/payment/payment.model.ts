@@ -19,6 +19,14 @@ export interface IRefundLog {
   createdAt: Date
 }
 
+export interface ISellerPaymentBreakdown {
+  sellerId: Types.ObjectId
+  grossAmount: number
+  commissionAmount: number
+  netAmount: number
+  subaccountCode?: string
+}
+
 export interface IPaymentDocument extends Document {
   userId: Types.ObjectId
   orderId: Types.ObjectId
@@ -29,6 +37,13 @@ export interface IPaymentDocument extends Document {
   paymentMethod: string
   currency: string
   amount: number
+  paystackFee?: number
+  paystackFeeMinor?: number
+  splitCode?: string
+  subaccountCode?: string
+  settlementType?: 'direct_split' | 'platform_escrow_withdrawal'
+  sellerBreakdown?: ISellerPaymentBreakdown[]
+  netPlatformSettlement?: number
   status: PaymentDocStatus
   metadata?: Record<string, unknown>
   refunds: IRefundLog[]
@@ -43,6 +58,17 @@ const refundLogSchema = new mongoose.Schema<IRefundLog>(
     reason: { type: String },
     status: { type: String, required: true, default: 'succeeded' },
     createdAt: { type: Date, default: Date.now },
+  },
+  { _id: false },
+)
+
+const sellerBreakdownSchema = new mongoose.Schema<ISellerPaymentBreakdown>(
+  {
+    sellerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    grossAmount: { type: Number, required: true, min: 0 },
+    commissionAmount: { type: Number, required: true, min: 0 },
+    netAmount: { type: Number, required: true, min: 0 },
+    subaccountCode: { type: String, trim: true },
   },
   { _id: false },
 )
@@ -64,6 +90,17 @@ const paymentSchema = new mongoose.Schema<IPaymentDocument>(
     paymentMethod: { type: String, required: true, default: 'card' },
     currency: { type: String, required: true, uppercase: true, default: 'USD' },
     amount: { type: Number, required: true, min: 0 },
+    paystackFee: { type: Number, default: 0, min: 0 },
+    paystackFeeMinor: { type: Number, default: 0, min: 0 },
+    splitCode: { type: String, trim: true, index: true, sparse: true },
+    subaccountCode: { type: String, trim: true },
+    settlementType: {
+      type: String,
+      enum: ['direct_split', 'platform_escrow_withdrawal'],
+      default: 'platform_escrow_withdrawal',
+    },
+    sellerBreakdown: { type: [sellerBreakdownSchema], default: [] },
+    netPlatformSettlement: { type: Number, default: 0 },
     status: {
       type: String,
       enum: [

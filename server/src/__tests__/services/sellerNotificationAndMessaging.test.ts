@@ -157,17 +157,16 @@ describe('Seller Order Notifications & Real-Time Messaging Suite', () => {
     await recordOrderSellerEarnings(mockOrder)
 
     // Verify In-App Notifications in Database
-    const notifA = await Notification.findOne({ userId: sellerAId })
+    const notifA = await Notification.findOne({ userId: sellerAId, channel: 'IN_APP' })
     expect(notifA).toBeDefined()
-    expect(notifA?.title).toBe('New Paid Order Received!')
-    expect(notifA?.message).toContain('Laptop Pro 16')
-    expect(notifA?.message).not.toContain('Designer Sunglasses') // Strict multi-seller isolation!
+    expect(notifA?.title).toBe('New Order — Shipping Required')
+    expect(notifA?.message).toContain('You have received a new order on Cartival Mall')
     expect(notifA?.data?.orderNumber).toBe('TSM-2026-NOTIF-01')
 
-    const notifB = await Notification.findOne({ userId: sellerBId })
+    const notifB = await Notification.findOne({ userId: sellerBId, channel: 'IN_APP' })
     expect(notifB).toBeDefined()
-    expect(notifB?.message).toContain('Designer Sunglasses')
-    expect(notifB?.message).not.toContain('Laptop Pro 16') // Strict multi-seller isolation!
+    expect(notifB?.title).toBe('New Order — Shipping Required')
+    expect(notifB?.message).toContain('You have received a new order on Cartival Mall')
 
     // Verify Real-time Socket.IO Events
     expect(socketSpy).toHaveBeenCalledWith(
@@ -195,6 +194,8 @@ describe('Seller Order Notifications & Real-Time Messaging Suite', () => {
       100000,
       400, // ₦200 * 2 units
       99600, // 100000 - 400
+      expect.any(Number),
+      expect.anything(),
     )
 
     expect(emailSpy).toHaveBeenCalledWith(
@@ -208,6 +209,8 @@ describe('Seller Order Notifications & Real-Time Messaging Suite', () => {
       15000,
       200, // ₦200 * 1 unit
       14800, // 15000 - 200
+      expect.any(Number),
+      expect.anything(),
     )
 
     // Verify SMS Dispatch with authenticated seller phone numbers
@@ -295,8 +298,17 @@ describe('Seller Order Notifications & Real-Time Messaging Suite', () => {
     expect(ledger).toBeDefined()
     expect(ledger?.amount).toBe(29800) // 30000 - 200
 
-    const notif = await Notification.findOne({ userId: sellerAId })
+    const notif = await Notification.findOne({ userId: sellerAId, channel: 'IN_APP' })
     expect(notif).toBeDefined()
+    expect(notif?.title).toBe('New Order — Shipping Required')
+
+    const failedEmailNotif = await Notification.findOne({
+      userId: sellerAId,
+      channel: 'EMAIL',
+      status: 'FAILED',
+    })
+    expect(failedEmailNotif).toBeDefined()
+    expect(failedEmailNotif?.failureReason).toContain('Brevo service 503 unavailable')
   })
 
   it('provides secure buyer-seller messaging with IDOR protection and real-time synchronization', async () => {

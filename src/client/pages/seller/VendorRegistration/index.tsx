@@ -103,7 +103,7 @@ export default function VendorRegistration() {
                   className="form-control"
                   value={form.businessName}
                   onChange={(e) => update('businessName', e.target.value)}
-                  placeholder="e.g. Truson Electronics"
+                  placeholder="e.g. Cartival Electronics"
                 />
               </div>
               <div>
@@ -129,7 +129,7 @@ export default function VendorRegistration() {
                 className="form-control"
                 value={form.displayName}
                 onChange={(e) => update('displayName', e.target.value)}
-                placeholder="e.g. Truson Store"
+                placeholder="e.g. Cartival Store"
               />
               <p style={{ fontSize: '0.75rem', color: 'var(--color-neutral-400)', marginTop: 6 }}>
                 This is what customers will see on your store page.
@@ -256,11 +256,12 @@ export default function VendorRegistration() {
                   fontStyle: 'italic',
                 }}
               >
-                “Selling on Cartiva gave our business instant nationwide distribution. Orders arrive
-                reliably and customer escrow payouts clear into our bank account with zero hassle.”
+                “Selling on Cartival Mall gave our business instant nationwide distribution. Orders
+                arrive reliably and customer escrow payouts clear into our bank account with zero
+                hassle.”
               </p>
               <div style={{ fontSize: '0.78rem', color: '#93c5fd', fontWeight: 600 }}>
-                &mdash; Verified Cartiva Merchant Partner
+                &mdash; Verified Cartival Merchant Partner
               </div>
             </div>
           </div>

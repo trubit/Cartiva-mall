@@ -1,5 +1,5 @@
 /**
- * Cartiva Mall PWA Service Worker Registration
+ * Cartival Mall PWA Service Worker Registration
  */
 
 export function registerServiceWorker(): void {

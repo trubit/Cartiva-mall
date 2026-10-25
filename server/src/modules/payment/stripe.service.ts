@@ -59,6 +59,15 @@ export const createPaymentIntent = async (orderId: string, userId: string) => {
   let clientSecret = `${paymentIntentId}_secret_${crypto.randomBytes(8).toString('hex')}`
 
   const client = stripeClient()
+  if (!client) {
+    if (process.env.NODE_ENV !== 'test') {
+      throw new AppError(
+        'Stripe payment processing is not configured on this server. Please choose another payment method.',
+        503,
+      )
+    }
+  }
+
   if (client) {
     try {
       const params = new URLSearchParams()
@@ -136,16 +145,19 @@ export const confirmPaymentIntent = async (paymentIntentId: string, userId: stri
   if (order.paymentStatus === 'paid') return order
 
   const client = stripeClient()
-  if (
-    client &&
-    !paymentIntentId.startsWith('pi_test_') &&
-    !paymentIntentId.startsWith('pi_stripe_')
-  ) {
+  if (!client && process.env.NODE_ENV !== 'test') {
+    throw new AppError('Stripe payment processing is not configured on this server', 503)
+  }
+
+  if (client) {
     try {
       const piData = await callStripe(
         () =>
           client
-            .get<{ status: string; id: string }>(`/payment_intents/${paymentIntentId}`)
+            .get<{
+              status: string
+              id: string
+            }>(`/payment_intents/${encodeURIComponent(paymentIntentId)}`)
             .then((r) => r.data),
         'Stripe confirmPaymentIntent',
       )

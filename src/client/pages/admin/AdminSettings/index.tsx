@@ -1,6 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { FiAlertTriangle, FiShield, FiList, FiCreditCard, FiDollarSign } from 'react-icons/fi'
+import {
+  FiAlertTriangle,
+  FiShield,
+  FiList,
+  FiCreditCard,
+  FiDollarSign,
+  FiMail,
+} from 'react-icons/fi'
 import {
   useAdminFraudAlerts,
   useAdminAuditLogs,
@@ -10,8 +17,15 @@ import { formatDate } from '../../../../shared/helpers/index.js'
 import { useCurrency } from '../../../hooks/useCurrency.js'
 import type { FraudAlert, AuditLog, AdminPayment } from '../../../services/adminService.js'
 import CommissionPolicyManager from './CommissionPolicyManager.js'
+import PayoutNotificationSettingsManager from './PayoutNotificationSettingsManager.js'
 
-const TABS = ['Commission Policy', 'Fraud Alerts', 'Audit Log', 'Payments'] as const
+const TABS = [
+  'Commission Policy',
+  'Payout Alerts',
+  'Fraud Alerts',
+  'Audit Log',
+  'Payments',
+] as const
 type Tab = (typeof TABS)[number]
 
 const SEVERITY_CLASSES: Record<string, string> = {
@@ -29,6 +43,13 @@ export default function AdminSettings() {
     if (!tabParam) return 'Commission Policy'
     const lower = tabParam.toLowerCase()
     if (lower.includes('commission') || lower.includes('fee')) return 'Commission Policy'
+    if (
+      lower.includes('payout') ||
+      lower.includes('withdraw') ||
+      lower.includes('notify') ||
+      lower.includes('email')
+    )
+      return 'Payout Alerts'
     if (lower.includes('fraud')) return 'Fraud Alerts'
     if (lower.includes('audit')) return 'Audit Log'
     if (lower.includes('pay')) return 'Payments'
@@ -95,6 +116,7 @@ export default function AdminSettings() {
             style={{ display: 'flex', alignItems: 'center', gap: '.35rem' }}
           >
             {t === 'Commission Policy' && <FiDollarSign size={13} />}
+            {t === 'Payout Alerts' && <FiMail size={13} />}
             {t === 'Fraud Alerts' && <FiAlertTriangle size={13} />}
             {t === 'Audit Log' && <FiList size={13} />}
             {t === 'Payments' && <FiCreditCard size={13} />}
@@ -121,6 +143,9 @@ export default function AdminSettings() {
 
       {/* ── Commission Policy ─────────────────────────────────────────────────── */}
       {tab === 'Commission Policy' && <CommissionPolicyManager />}
+
+      {/* ── Payout Alerts ─────────────────────────────────────────────────────── */}
+      {tab === 'Payout Alerts' && <PayoutNotificationSettingsManager />}
 
       {/* ── Fraud Alerts ─────────────────────────────────────────────────────── */}
       {tab === 'Fraud Alerts' && (

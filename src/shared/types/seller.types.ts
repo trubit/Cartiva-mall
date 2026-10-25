@@ -112,22 +112,27 @@ export interface ISellerPayoutAccount {
 
 export type SellerWithdrawalStatus =
   | 'pending'
+  | 'pending_approval'
   | 'processing'
   | 'completed'
   | 'failed'
   | 'cancelled'
   | 'reversed'
+  | 'rejected'
 
 export interface ISellerWithdrawal {
   _id: string
   withdrawalNumber: string
-  sellerId: string
+  sellerId: any
   amount: number
   fee: number
   netAmount: number
   currency: string
   status: SellerWithdrawalStatus
   payoutMethod: 'paystack' | 'stripe' | 'manual'
+  manualPayoutReference?: string
+  fulfilledBy?: any
+  fulfilledAt?: string
   payoutAccount: {
     bankName: string
     bankCode: string
@@ -139,6 +144,7 @@ export interface ISellerWithdrawal {
   providerTransferCode?: string
   failureReason?: string
   requestedAt: string
+  expectedCompletionDate?: string
   processedAt?: string
   completedAt?: string
   auditLog?: Array<{

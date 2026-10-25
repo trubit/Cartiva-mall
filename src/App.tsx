@@ -78,31 +78,50 @@ function AuthSync() {
   useEffect(() => {
     if (!isAuthenticated) return // guest — nothing to do
 
-    // Silently validate the session via httpOnly refresh cookie.
-    // If the cookie is missing/expired, clear persisted auth so future
-    // page loads don't trigger a 401 spam loop.
-    authService
-      .refresh()
-      .then((res) => {
-        if (res?.data?.accessToken && res?.data?.user) {
-          setAuth(res.data.user, res.data.accessToken)
-        } else {
-          clearAuth()
-        }
-      })
-      .catch(() => {
-        // Refresh cookie gone (expired, cleared, or server restarted).
-        // Wipe persisted isAuthenticated so we don't loop.
-        clearAuth()
-      })
-    // Only run once on mount — dependency array is intentionally empty.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    const attemptRefresh = () => {
+      // Don't attempt if device is offline
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        return
+      }
+
+      authService
+        .refresh()
+        .then((res) => {
+          if (res?.data?.accessToken && res?.data?.user) {
+            setAuth(res.data.user, res.data.accessToken)
+          } else {
+            clearAuth()
+          }
+        })
+        .catch((err: any) => {
+          // If offline or network error, preserve stored session identity so offline features remain accessible.
+          // Only wipe auth if the server explicitly rejected the credentials with 401 or 403.
+          const status = err?.response?.status
+          if (status === 401 || status === 403) {
+            clearAuth()
+          }
+        })
+    }
+
+    attemptRefresh()
+
+    // When connection is restored, silently re-validate credentials and refresh stale data
+    const handleOnline = () => {
+      attemptRefresh()
+      void queryClient.invalidateQueries({ queryKey: ['cart'] })
+      void queryClient.invalidateQueries({ queryKey: ['products'] })
+    }
+
+    window.addEventListener('online', handleOnline)
+    return () => window.removeEventListener('online', handleOnline)
+  }, [isAuthenticated, setAuth, clearAuth])
 
   return null
 }
 
 import { useSocket } from './client/hooks/useSocket.js'
+import ScrollToTop from './client/components/common/ScrollToTop.js'
+import ConnectionStatus from './client/components/common/ConnectionStatus/index.js'
 
 function SocketSync() {
   const user = useAuthStore((s) => s.user)
@@ -118,13 +137,13 @@ export default function App() {
         <ThemeProvider theme={muiTheme}>
           <QueryClientProvider client={queryClient}>
             <BrowserRouter>
+              <ConnectionStatus />
+              <ScrollToTop />
               <ThemeSync />
               <CurrencySync />
               <AuthSync />
               <SocketSync />
-              <ErrorBoundary>
-                <AppRouter />
-              </ErrorBoundary>
+              <AppRouter />
             </BrowserRouter>
           </QueryClientProvider>
         </ThemeProvider>

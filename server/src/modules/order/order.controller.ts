@@ -194,6 +194,24 @@ export const updateOrderStatus = async (
   }
 }
 
+// ─── Confirm delivery (customer / admin) ──────────────────────────────────────
+export const confirmDelivery = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const result = await orderService.confirmDelivery(
+      req.params['id'] as string,
+      req.user!.userId,
+      req.user!.role,
+    )
+    sendSuccess(res, result.order, result.message)
+  } catch (err) {
+    next(err)
+  }
+}
+
 // ─── Request return ───────────────────────────────────────────────────────────
 export const requestReturn = async (
   req: Request,

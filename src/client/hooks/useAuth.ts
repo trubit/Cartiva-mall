@@ -10,6 +10,7 @@ import { usePaymentStore } from '../store/paymentStore.js'
 import { useCheckoutStore } from '../store/checkoutStore.js'
 import { cartService } from '../services/cartService.js'
 import { queryClient } from '../services/queryClient.js'
+import { offlineProductStorage } from '../services/offlineProductStorage.js'
 import { CART_KEY } from './useCart.js'
 import type {
   LoginInput,
@@ -130,6 +131,7 @@ export const useLogout = () => {
       usePaymentStore.getState().reset()
       useCheckoutStore.getState().reset()
       queryClient.clear()
+      void offlineProductStorage.clearProductCache()
     },
     onSettled: () => {
       navigate('/login', { replace: true })

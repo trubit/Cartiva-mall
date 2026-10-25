@@ -15,18 +15,16 @@ const FOOTER_COLS = [
     title: 'Make Money with Us',
     links: [
       { label: 'Sell Products Online', to: '/register' },
-      { label: 'Sell on Cartiva', to: '/register' },
-      { label: 'Become an Affiliate', to: '/affiliate' },
+      { label: 'Sell on Cartival Mall', to: '/seller/onboarding' },
       { label: 'Advertise Your Products', to: '/advertise' },
     ],
   },
   {
-    title: 'Payment Products',
+    title: 'Payment & Security',
     links: [
       { label: 'Secure Payment', to: '/payment' },
-      { label: 'Business Card', to: '/business-card' },
-      { label: 'Reload Balance', to: '/reload' },
-      { label: 'Gift Cards', to: '/gift-cards' },
+      { label: 'Shipping Rates & Transit', to: '/shipping' },
+      { label: 'Returns & Replacements', to: '/returns' },
     ],
   },
   {
@@ -34,9 +32,7 @@ const FOOTER_COLS = [
     links: [
       { label: 'Your Account', to: '/profile' },
       { label: 'Your Orders', to: '/orders' },
-      { label: 'Shipping Rates', to: '/shipping' },
-      { label: 'Returns & Replacements', to: '/returns' },
-      { label: 'Help', to: '/help' },
+      { label: 'Help & Support Center', to: '/help' },
     ],
   },
 ]
@@ -63,7 +59,7 @@ export default function Footer() {
                 <ul className="amz-footer__col-list">
                   {col.links.map((l) => (
                     <li key={l.label}>
-                      <Link to={l.to} className="amz-footer__link">
+                      <Link to={l.to} className="amz-footer__link" onClick={scrollToTop}>
                         {l.label}
                       </Link>
                     </li>
@@ -82,22 +78,22 @@ export default function Footer() {
       <div className="amz-footer__bottom">
         <div className="container">
           <div className="amz-footer__bottom-inner">
-            <Link to="/" className="amz-footer__logo">
+            <Link to="/" className="amz-footer__logo" onClick={scrollToTop}>
               <Logo size="sm" theme="dark" />
             </Link>
             <div className="amz-footer__bottom-links">
-              <Link to="/conditions" className="amz-footer__bottom-link">
+              <Link to="/conditions" className="amz-footer__bottom-link" onClick={scrollToTop}>
                 Conditions of Use
               </Link>
-              <Link to="/privacy" className="amz-footer__bottom-link">
+              <Link to="/privacy" className="amz-footer__bottom-link" onClick={scrollToTop}>
                 Privacy Notice
               </Link>
-              <Link to="/privacy-choices" className="amz-footer__bottom-link">
+              <Link to="/privacy-choices" className="amz-footer__bottom-link" onClick={scrollToTop}>
                 Your Ads Privacy Choices
               </Link>
             </div>
           </div>
-          <p className="amz-footer__copy">&copy; {year}, Cartiva, Inc. or its affiliates</p>
+          <p className="amz-footer__copy">&copy; {year}, Cartival Mall, Inc. or its affiliates</p>
         </div>
       </div>
     </footer>

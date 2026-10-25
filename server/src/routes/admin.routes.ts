@@ -75,8 +75,15 @@ router.patch(
   adminController.updateOrderStatus,
 )
 
-// ─── Payments ─────────────────────────────────────────────────────────────────
+// ─── Payments & Financial Reconciliation ──────────────────────────────────────
 router.get('/payments', adminController.listPayments)
+router.get('/financial-breakdown', dashboardLimiter, adminController.getFinancialBreakdown)
+router.get('/withdrawals', adminController.listWithdrawals)
+router.post('/withdrawals/:id/fulfill-manual', adminController.fulfillManualWithdrawal)
+router.post('/withdrawals/:id/reject', adminController.rejectWithdrawal)
+router.post('/withdrawals/reconcile-stuck', adminController.reconcileStuckWithdrawals)
+router.get('/payout-settings', adminController.getPayoutSettings)
+router.put('/payout-settings', adminController.updatePayoutSettings)
 
 // ─── Analytics ────────────────────────────────────────────────────────────────
 router.get('/analytics', dashboardLimiter, adminController.getAnalytics)

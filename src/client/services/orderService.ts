@@ -100,4 +100,9 @@ export const orderService = {
   }): Promise<PagedOrders> {
     return api.get('/orders/seller', { params }).then(unwrapPage<IOrder[]>)
   },
+
+  // ── Delivery confirmation (customer / admin) ──────────────────────────────
+  confirmDelivery(orderId: string): Promise<IOrder> {
+    return api.post(`/orders/${orderId}/confirm-delivery`).then(unwrap<IOrder>)
+  },
 }

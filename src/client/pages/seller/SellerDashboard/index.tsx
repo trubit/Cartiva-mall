@@ -11,9 +11,11 @@ import {
   FiShield,
   FiCheckCircle,
   FiClock,
+  FiTruck,
 } from 'react-icons/fi'
 import { useSellerDashboard } from '../../../hooks/useSeller.js'
 import { useSellerKycStatus } from '../../../hooks/useSellerKyc.js'
+import { useSellerOrders } from '../../../hooks/useOrders.js'
 import { useCurrency } from '../../../hooks/useCurrency.js'
 import SellerStatsCard from '../../../components/seller/SellerStatsCard/index.js'
 import { RevenueAreaChart, OrderStatusPie } from '../../../components/seller/RevenueChart/index.js'
@@ -28,11 +30,23 @@ export default function SellerDashboard() {
   const navigate = useNavigate()
   const { data, isLoading, isError, refetch: refetchDashboard } = useSellerDashboard()
   const { data: kycData, refetch: refetchKyc } = useSellerKycStatus()
+  const { data: sellerOrdersData } = useSellerOrders({ page: 1, limit: 50 })
   const { formatPrice: formatCurrency } = useCurrency()
   const [showAddProduct, setShowAddProduct] = useState(false)
 
   const stats = data?.stats
   const recentOrders = (data?.recentOrders ?? []) as unknown as ISellerRecentOrder[]
+
+  const activeShippingAlerts = (sellerOrdersData?.orders ?? []).filter((order) => {
+    const isPaid = order.paymentStatus === 'paid'
+    const notDelivered =
+      !order.deliveryConfirmedAt &&
+      order.sellerBreakdown?.sellerFulfillmentStatus !== 'delivered_confirmed'
+    const isActionable = ['confirmed', 'processing', 'shipped', 'outForDelivery'].includes(
+      order.orderStatus,
+    )
+    return isPaid && notDelivered && isActionable
+  })
 
   const isVerified = Boolean(kycData?.isVerified || kycData?.kycStatus === 'VERIFIED')
   const storeCreated = kycData?.storeCreated || false
@@ -121,7 +135,7 @@ export default function SellerDashboard() {
               </h4>
               <p style={{ margin: '2px 0 0', fontSize: '0.82rem', color: '#1d4ed8' }}>
                 Your KYC is approved! Complete your store profile to start listing products on
-                Cartiva.
+                Cartival Mall.
               </p>
             </div>
           </div>
@@ -237,6 +251,114 @@ export default function SellerDashboard() {
           >
             Retry
           </button>
+        </div>
+      )}
+
+      {/* ── Persistent Seller Shipping Alerts (Awaiting Buyer Doorstep Confirmation) ── */}
+      {activeShippingAlerts.length > 0 && (
+        <div className="mb-4">
+          <div
+            className="card border-0 shadow-sm rounded-3 overflow-hidden"
+            style={{
+              background: '#fffbf5',
+              border: '1px solid #fed7aa',
+              borderLeft: '5px solid #f97316',
+            }}
+          >
+            <div className="card-body p-4">
+              <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                <div className="d-flex align-items-center gap-2">
+                  <div
+                    className="rounded-circle d-flex align-items-center justify-content-center"
+                    style={{ width: 38, height: 38, background: '#ffedd5', color: '#ea580c' }}
+                  >
+                    <FiTruck size={20} />
+                  </div>
+                  <div>
+                    <h5 className="fw-bold mb-0" style={{ color: '#9a3412', fontSize: '1.05rem' }}>
+                      New Order — Shipping Required
+                    </h5>
+                    <div
+                      className="badge bg-warning text-dark mt-1"
+                      style={{ fontSize: '0.75rem' }}
+                    >
+                      {activeShippingAlerts.length} order
+                      {activeShippingAlerts.length !== 1 ? 's' : ''} awaiting delivery confirmation
+                    </div>
+                  </div>
+                </div>
+                <Link
+                  to="/seller/orders"
+                  className="btn btn-sm btn-outline-warning text-dark fw-semibold d-inline-flex align-items-center gap-1"
+                >
+                  Manage All Orders <FiArrowRight size={13} />
+                </Link>
+              </div>
+
+              <p className="text-secondary mb-3" style={{ fontSize: '0.9rem', lineHeight: 1.55 }}>
+                You have received a new order on Cartival Mall. As an independent seller, you are
+                responsible for preparing and shipping this product directly to the customer. The
+                shipping fee paid by the customer for this order will be included in your payout
+                calculation, subject to payment verification, applicable deductions, refunds, and
+                settlement rules. Please arrange delivery and keep the order status updated. This
+                alert will remain visible until the buyer confirms successful delivery.
+              </p>
+
+              <div className="d-flex flex-column gap-2">
+                {activeShippingAlerts.slice(0, 5).map((ord) => {
+                  const subtotal = ord.sellerBreakdown?.sellerProductSubtotal ?? ord.subtotal
+                  const shipping = ord.sellerBreakdown?.sellerShippingFee ?? ord.shippingFee
+                  const net =
+                    ord.sellerBreakdown?.sellerNetAmount ?? ord.sellerEarnings ?? ord.grandTotal
+
+                  return (
+                    <div
+                      key={ord._id}
+                      className="d-flex flex-column flex-md-row align-items-md-center justify-content-between p-3 rounded-2 bg-white border gap-2"
+                      style={{ fontSize: '0.86rem' }}
+                    >
+                      <div>
+                        <div className="d-flex align-items-center gap-2">
+                          <span className="fw-bold text-dark">Order #{ord.orderNumber}</span>
+                          <span className="badge bg-light text-secondary border">
+                            {ord.orderStatus === 'shipped'
+                              ? 'Shipped — Awaiting Buyer Doorstep Confirmation'
+                              : 'Ready to Pack & Ship'}
+                          </span>
+                        </div>
+                        <div className="text-muted small mt-1">
+                          Destination:{' '}
+                          {ord.shippingAddress?.city ? `${ord.shippingAddress.city}, ` : ''}
+                          {ord.shippingAddress?.state || ''}
+                          {' • '}
+                          {ord.items.length} item(s)
+                        </div>
+                      </div>
+                      <div className="d-flex align-items-center gap-3">
+                        <div className="text-end">
+                          <div className="text-muted small">
+                            Products: {formatCurrency(subtotal, ord.currency)}
+                          </div>
+                          <div className="text-success fw-semibold">
+                            Shipping Fee: +{formatCurrency(shipping, ord.currency)}
+                          </div>
+                          <div className="fw-bold text-primary small">
+                            Net Payout: {formatCurrency(net, ord.currency)}
+                          </div>
+                        </div>
+                        <Link
+                          to="/seller/orders"
+                          className="btn btn-sm btn-warning text-dark fw-bold px-3 py-1"
+                        >
+                          Fulfill Order
+                        </Link>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

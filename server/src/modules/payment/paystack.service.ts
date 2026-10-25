@@ -7,7 +7,11 @@ import { invalidateOrderCaches } from '../order/order.service.js'
 import { Payment } from './payment.model.js'
 import { Product } from '../product/product.model.js'
 import { Cart } from '../cart/cart.model.js'
-import { SellerWithdrawal, SellerLedger } from '../seller/sellerPayout.model.js'
+import {
+  SellerWithdrawal,
+  SellerLedger,
+  SellerPayoutAccount,
+} from '../seller/sellerPayout.model.js'
 import { AppError } from '../../middlewares/error.middleware.js'
 import { emitToUser } from '../../sockets/index.js'
 import { createNotification } from '../notification/notification.model.js'
@@ -16,9 +20,13 @@ import { logger } from '../../utils/logger.js'
 import { callPaystack } from '../../utils/circuit-breakers.js'
 import { withDbTransaction } from '../../utils/db-transaction.js'
 import { eventBus } from '../event-bus/eventBus.service.js'
-import { recordOrderSellerEarnings, reverseOrderSellerEarnings } from '../fee/sellerFee.service.js'
+import {
+  recordOrderSellerEarnings,
+  reverseOrderSellerEarnings,
+  getCartivaCommissionPerUnit,
+} from '../fee/sellerFee.service.js'
 import { currencyService } from '../currency/currency.service.js'
-import { toMinorUnits } from '../../../../src/shared/utils/money.js'
+import { toMinorUnits, roundMoney, Money } from '../../../../src/shared/utils/money.js'
 import { User } from '../user/user.model.js'
 import { sendBuyerOrderConfirmationEmail } from '../../utils/email.js'
 import { sendBuyerOrderConfirmationSms } from '../../utils/sms.js'
@@ -79,24 +87,223 @@ export const initializeTransaction = async (orderId: string, userId: string, ema
   const amountMinor = toMinorUnits(payableAmount, paystackTargetCurrency)
   const reference = orderReference(order.orderNumber)
 
+  // 1. Calculate per-seller financial breakdown for this order
+  const sellerMap = new Map<
+    string,
+    {
+      sellerId: mongoose.Types.ObjectId
+      productSubtotal: number
+      shippingFee: number
+      gross: number
+      commission: number
+      net: number
+      subaccountCode?: string
+    }
+  >()
+
+  const commissionPerUnit = await getCartivaCommissionPerUnit(paystackTargetCurrency)
+
+  for (const item of order.items) {
+    let sellerId = item.sellerId
+    if (!sellerId) {
+      const prod = await Product.findById(item.productId).select('sellerId').lean()
+      if (prod?.sellerId) sellerId = prod.sellerId
+    }
+    if (!sellerId) continue
+
+    const sellerKey = sellerId.toString()
+    if (!sellerMap.has(sellerKey)) {
+      sellerMap.set(sellerKey, {
+        sellerId: new mongoose.Types.ObjectId(sellerKey),
+        productSubtotal: 0,
+        shippingFee: 0,
+        gross: 0,
+        commission: 0,
+        net: 0,
+      })
+    }
+
+    const entry = sellerMap.get(sellerKey)!
+    let lineTotalInTarget = item.lineTotal
+    if (orderCurrency !== paystackTargetCurrency) {
+      const conv = await currencyService.convert(
+        item.lineTotal,
+        orderCurrency,
+        paystackTargetCurrency,
+      )
+      lineTotalInTarget = conv.targetAmount
+    }
+
+    const itemCommission = roundMoney(
+      Money.from(commissionPerUnit).multiply(item.quantity).toNumber(),
+      paystackTargetCurrency,
+    )
+
+    entry.productSubtotal = Money.from(entry.productSubtotal)
+      .add(lineTotalInTarget)
+      .round(paystackTargetCurrency)
+    entry.commission = Money.from(entry.commission)
+      .add(itemCommission)
+      .round(paystackTargetCurrency)
+  }
+
+  // Allocate customer-paid shipping fee to the seller(s)
+  let shippingFeeInTarget = order.shippingFee || 0
+  if (orderCurrency !== paystackTargetCurrency && shippingFeeInTarget > 0) {
+    const conv = await currencyService.convert(
+      shippingFeeInTarget,
+      orderCurrency,
+      paystackTargetCurrency,
+    )
+    shippingFeeInTarget = conv.targetAmount
+  }
+
+  const sellersList = Array.from(sellerMap.values())
+  if (sellersList.length === 1) {
+    sellersList[0].shippingFee = shippingFeeInTarget
+  } else if (sellersList.length > 1 && shippingFeeInTarget > 0) {
+    const totalSubtotalInTarget = sellersList.reduce(
+      (sum, s) => Money.from(sum).add(s.productSubtotal).toNumber(),
+      0,
+    )
+    let assignedShipping = 0
+    // Sort descending by productSubtotal to identify the primary seller for remainder allocation
+    const sortedIndices = sellersList
+      .map((s, idx) => ({ idx, subtotal: s.productSubtotal }))
+      .sort((a, b) => b.subtotal - a.subtotal)
+
+    for (const s of sellersList) {
+      const ratio =
+        totalSubtotalInTarget > 0
+          ? s.productSubtotal / totalSubtotalInTarget
+          : 1 / sellersList.length
+      const allocated = roundMoney(
+        Money.from(shippingFeeInTarget).multiply(ratio).toNumber(),
+        paystackTargetCurrency,
+      )
+      s.shippingFee = allocated
+      assignedShipping = Money.from(assignedShipping).add(allocated).round(paystackTargetCurrency)
+    }
+
+    const remainder = roundMoney(
+      Money.from(shippingFeeInTarget).subtract(assignedShipping).toNumber(),
+      paystackTargetCurrency,
+    )
+    if (remainder !== 0 && sortedIndices.length > 0) {
+      const primaryIdx = sortedIndices[0].idx
+      sellersList[primaryIdx].shippingFee = Money.from(sellersList[primaryIdx].shippingFee)
+        .add(remainder)
+        .round(paystackTargetCurrency)
+    }
+  }
+
+  // Compute final seller gross and net earnings
+  for (const s of sellersList) {
+    s.gross = Money.from(s.productSubtotal).add(s.shippingFee).round(paystackTargetCurrency)
+    s.net = Math.max(0, Money.from(s.gross).subtract(s.commission).round(paystackTargetCurrency))
+  }
+
+  // 2. Check if all sellers have active Paystack subaccounts
+  let allHaveSubaccounts = sellerMap.size > 0
+  for (const [, sData] of sellerMap) {
+    const payoutAcc = await SellerPayoutAccount.findOne({
+      sellerId: sData.sellerId,
+      subaccountCode: { $exists: true, $ne: '' },
+    }).sort({ isDefault: -1, createdAt: -1 })
+
+    if (payoutAcc?.subaccountCode) {
+      sData.subaccountCode = payoutAcc.subaccountCode
+    } else {
+      allHaveSubaccounts = false
+    }
+  }
+
+  const sellerBreakdowns = Array.from(sellerMap.values()).map((s) => ({
+    sellerId: s.sellerId,
+    productSubtotal: s.productSubtotal,
+    shippingFee: s.shippingFee,
+    grossAmount: s.gross,
+    commissionAmount: s.commission,
+    netAmount: s.net,
+    subaccountCode: s.subaccountCode,
+  }))
+
+  const totalPlatformCommission = roundMoney(
+    sellerBreakdowns.reduce((sum, s) => sum + s.commissionAmount, 0),
+    paystackTargetCurrency,
+  )
+  const totalSellerEarnings = roundMoney(
+    sellerBreakdowns.reduce((sum, s) => sum + s.netAmount, 0),
+    paystackTargetCurrency,
+  )
+
+  let splitCode: string | undefined
+  let subaccountCode: string | undefined
+  let settlementType: 'direct_split' | 'platform_escrow_withdrawal' = 'platform_escrow_withdrawal'
+
+  const initPayload: Record<string, unknown> = {
+    email,
+    amount: amountMinor,
+    currency: paystackTargetCurrency,
+    reference,
+    metadata: {
+      orderId: orderId.toString(),
+      userId: userId.toString(),
+      orderNumber: order.orderNumber,
+      sellerCount: sellerMap.size,
+      totalPlatformCommission,
+      totalSellerEarnings,
+      settlementType,
+    },
+    callback_url: `${env.FRONTEND_URL}/payment/paystack-callback?orderId=${orderId}`,
+  }
+
+  // 3. Configure direct split if sellers have subaccounts
+  if (allHaveSubaccounts && sellerMap.size === 1) {
+    const single = sellerBreakdowns[0]
+    subaccountCode = single.subaccountCode
+    settlementType = 'direct_split'
+    initPayload.subaccount = subaccountCode
+    initPayload.transaction_charge = toMinorUnits(single.commissionAmount, paystackTargetCurrency)
+    initPayload.bearer = 'account' // Platform bears gateway processing fee from commission
+    ;(initPayload.metadata as Record<string, unknown>).settlementType = 'direct_split'
+    ;(initPayload.metadata as Record<string, unknown>).subaccountCode = subaccountCode
+  } else if (allHaveSubaccounts && sellerMap.size > 1) {
+    try {
+      const splitRes = await createSplit({
+        name: `Cartiva-${order.orderNumber}`,
+        type: 'flat',
+        currency: paystackTargetCurrency,
+        subaccounts: sellerBreakdowns.map((s) => ({
+          subaccount: s.subaccountCode!,
+          share: toMinorUnits(s.netAmount, paystackTargetCurrency),
+        })),
+        bearerType: 'account',
+      })
+      splitCode = splitRes.splitCode
+      settlementType = 'direct_split'
+      initPayload.split_code = splitCode
+      ;(initPayload.metadata as Record<string, unknown>).settlementType = 'direct_split'
+      ;(initPayload.metadata as Record<string, unknown>).splitCode = splitCode
+    } catch (splitErr) {
+      logger.warn(
+        'Could not create Paystack multi-split, falling back to managed balance withdrawal',
+        {
+          splitErr,
+          orderNumber: order.orderNumber,
+        },
+      )
+      settlementType = 'platform_escrow_withdrawal'
+    }
+  }
+
   type InitRes = { data: { access_code: string; authorization_url: string } }
   let initData: InitRes
   try {
     initData = await callPaystack(
       () =>
         client()
-          .post<InitRes>('/transaction/initialize', {
-            email,
-            amount: amountMinor,
-            currency: paystackTargetCurrency,
-            reference,
-            metadata: {
-              orderId: orderId.toString(),
-              userId: userId.toString(),
-              orderNumber: order.orderNumber,
-            },
-            callback_url: `${env.FRONTEND_URL}/payment/paystack-callback?orderId=${orderId}`,
-          })
+          .post<InitRes>('/transaction/initialize', initPayload)
           .then((r) => r.data),
       'Paystack initialize',
     )
@@ -105,8 +312,25 @@ export const initializeTransaction = async (orderId: string, userId: string, ema
   }
 
   // Upsert so repeat calls are idempotent — one Payment record per order.
+  const sellerAllocationsDoc = sellerBreakdowns.map((s) => ({
+    sellerId: s.sellerId,
+    productSubtotal: s.productSubtotal,
+    shippingFee: s.shippingFee,
+    grossAmount: s.grossAmount,
+    commissionAmount: s.commissionAmount,
+    netAmount: s.netAmount,
+    subaccountCode: s.subaccountCode,
+    status: 'pending' as const,
+    fulfillmentStatus: 'unfulfilled' as const,
+  }))
+
   await Promise.all([
-    Order.findByIdAndUpdate(orderId, { paystackReference: reference }),
+    Order.findByIdAndUpdate(orderId, {
+      paystackReference: reference,
+      platformCommission: totalPlatformCommission,
+      sellerEarnings: totalSellerEarnings,
+      sellerAllocations: sellerAllocationsDoc,
+    }),
     Payment.findOneAndUpdate(
       { orderId, paymentMethod: 'paystack', status: { $ne: 'completed' } },
       {
@@ -115,6 +339,10 @@ export const initializeTransaction = async (orderId: string, userId: string, ema
           currency: paystackTargetCurrency,
           amount: payableAmount,
           status: 'pending',
+          splitCode,
+          subaccountCode,
+          settlementType,
+          sellerBreakdown: sellerBreakdowns,
         },
         $setOnInsert: { userId, orderId },
       },
@@ -130,6 +358,11 @@ export const initializeTransaction = async (orderId: string, userId: string, ema
     currency: paystackTargetCurrency,
     amount: amountMinor,
     payableAmount,
+    splitCode,
+    subaccountCode,
+    settlementType,
+    platformCommission: totalPlatformCommission,
+    sellerEarnings: totalSellerEarnings,
   }
 }
 
@@ -153,11 +386,6 @@ export const verifyTransaction = async (
     tx = raw?.data && typeof raw.data === 'object' ? raw.data : raw
   } catch (err) {
     throw paystackError(err, 'Failed to verify transaction with Paystack')
-  }
-
-  const txStatus = String(tx?.status || '')
-  if (txStatus !== 'success') {
-    throw new AppError(`Payment not completed — Paystack status: ${txStatus || 'pending'}`, 400)
   }
 
   const meta = tx.metadata as Record<string, any> | undefined
@@ -185,6 +413,23 @@ export const verifyTransaction = async (
     if (paymentDoc?.orderId) {
       order = await Order.findById(paymentDoc.orderId)
     }
+  }
+
+  const txStatus = String(tx?.status || '')
+  if (txStatus !== 'success') {
+    if (order && txStatus === 'failed') {
+      await Promise.all([
+        Order.findByIdAndUpdate(order._id, {
+          paymentStatus: 'failed',
+          orderStatus: 'cancelled',
+        }),
+        Payment.findOneAndUpdate(
+          { $or: [{ paymentIntentId: reference }, { orderId: order._id }] },
+          { status: 'failed' },
+        ),
+      ])
+    }
+    throw new AppError(`Payment not completed — Paystack status: ${txStatus || 'pending'}`, 400)
   }
 
   if (!order) throw new AppError('Order not found for this payment reference', 404)
@@ -216,6 +461,11 @@ export const verifyTransaction = async (
   const resolvedOrderId = order._id.toString()
   let updated: typeof order | null = null
 
+  // Authoritatively extract actual Paystack fee from transaction verify response
+  const actualFeeMinor = typeof tx.fees === 'number' ? tx.fees : 0
+  const actualFee = actualFeeMinor > 0 ? actualFeeMinor / 100 : 0
+  const paidAmount = typeof tx.amount === 'number' ? tx.amount / 100 : order.grandTotal
+
   // Atomic: update Payment + Order + deduct stock in one DB transaction.
   // Stock deduction runs inside the transaction so a subsequent crash cannot
   // leave inventory un-decremented after the order is confirmed.
@@ -229,8 +479,11 @@ export const verifyTransaction = async (
           status: 'completed',
           transactionId: String(tx.id ?? ''),
           paymentIntentId: reference,
-          amount: typeof tx.amount === 'number' ? tx.amount / 100 : order.grandTotal,
+          amount: paidAmount,
           currency: (tx.currency as string) || order.currency,
+          paystackFee: actualFee,
+          paystackFeeMinor: actualFeeMinor,
+          netPlatformSettlement: Math.max(0, paidAmount - actualFee),
         },
       },
       { upsert: true, ...s },
@@ -243,6 +496,7 @@ export const verifyTransaction = async (
           paymentStatus: 'paid',
           orderStatus: 'confirmed',
           paystackReference: reference,
+          paystackFee: actualFee,
         },
         $push: {
           'tracking.events': {
@@ -458,6 +712,11 @@ export const handleWebhook = async (rawBody: Buffer, signature: string) => {
     const resolvedOrderId = order._id.toString()
     let confirmed: typeof order | null = null
 
+    // Authoritatively extract actual Paystack fee from webhook payload
+    const actualFeeMinor = typeof tx.fees === 'number' ? tx.fees : 0
+    const actualFee = actualFeeMinor > 0 ? actualFeeMinor / 100 : 0
+    const paidAmount = typeof tx.amount === 'number' ? tx.amount / 100 : order.grandTotal
+
     await withDbTransaction(async (dbSess) => {
       const s = dbSess ? { session: dbSess } : undefined
 
@@ -468,8 +727,11 @@ export const handleWebhook = async (rawBody: Buffer, signature: string) => {
             status: 'completed',
             transactionId: String(tx.id ?? ''),
             paymentIntentId: reference,
-            amount: typeof tx.amount === 'number' ? tx.amount / 100 : order.grandTotal,
+            amount: paidAmount,
             currency: (tx.currency as string) || order.currency,
+            paystackFee: actualFee,
+            paystackFeeMinor: actualFeeMinor,
+            netPlatformSettlement: Math.max(0, paidAmount - actualFee),
           },
         },
         { upsert: true, ...s },
@@ -482,6 +744,7 @@ export const handleWebhook = async (rawBody: Buffer, signature: string) => {
             paymentStatus: 'paid',
             orderStatus: 'confirmed',
             paystackReference: reference,
+            paystackFee: actualFee,
           },
           $push: {
             'tracking.events': {
@@ -579,8 +842,30 @@ export const handleWebhook = async (rawBody: Buffer, signature: string) => {
     )
     if (alreadyProcessed) return
 
+    const txRef = typeof tx.reference === 'string' ? tx.reference : undefined
+    const txTrfCode = typeof tx.transfer_code === 'string' ? tx.transfer_code : undefined
+    const conditions: Array<{
+      withdrawalNumber?: string
+      providerReference?: string
+      providerTransferCode?: string
+    }> = []
+    if (txRef) {
+      conditions.push({ withdrawalNumber: txRef }, { providerReference: txRef })
+    }
+    if (txTrfCode) {
+      conditions.push({ providerTransferCode: txTrfCode })
+    }
+    if (reference) {
+      conditions.push(
+        { providerReference: reference },
+        { providerTransferCode: reference },
+        { withdrawalNumber: reference },
+      )
+    }
+    if (conditions.length === 0) return
+
     const withdrawal = await SellerWithdrawal.findOne({
-      $or: [{ providerReference: reference }, { providerTransferCode: reference }],
+      $or: conditions,
       status: { $in: ['pending', 'processing'] },
     })
 
@@ -640,9 +925,31 @@ export const handleWebhook = async (rawBody: Buffer, signature: string) => {
     )
     if (alreadyProcessed) return
 
+    const txRef = typeof tx.reference === 'string' ? tx.reference : undefined
+    const txTrfCode = typeof tx.transfer_code === 'string' ? tx.transfer_code : undefined
+    const conditions: Array<{
+      withdrawalNumber?: string
+      providerReference?: string
+      providerTransferCode?: string
+    }> = []
+    if (txRef) {
+      conditions.push({ withdrawalNumber: txRef }, { providerReference: txRef })
+    }
+    if (txTrfCode) {
+      conditions.push({ providerTransferCode: txTrfCode })
+    }
+    if (reference) {
+      conditions.push(
+        { providerReference: reference },
+        { providerTransferCode: reference },
+        { withdrawalNumber: reference },
+      )
+    }
+    if (conditions.length === 0) return
+
     const withdrawal = await SellerWithdrawal.findOne({
-      $or: [{ providerReference: reference }, { providerTransferCode: reference }],
-      status: { $ne: 'failed' },
+      $or: conditions,
+      status: { $nin: ['failed', 'reversed'] },
     })
 
     if (withdrawal) {
@@ -659,13 +966,18 @@ export const handleWebhook = async (rawBody: Buffer, signature: string) => {
       })
       await withdrawal.save()
 
+      const lastLedger = await SellerLedger.findOne({ sellerId: withdrawal.sellerId }).sort({
+        createdAt: -1,
+      })
+      const computedBalanceAfter = (lastLedger?.balanceAfter ?? 0) + withdrawal.amount
+
       // Record reversal in ledger so funds are safely returned to seller's available balance
       await SellerLedger.create({
         sellerId: withdrawal.sellerId,
         type: 'WITHDRAWAL_REVERSED',
         amount: withdrawal.amount,
         currency: withdrawal.currency,
-        balanceAfter: 0,
+        balanceAfter: computedBalanceAfter,
         referenceType: 'withdrawal',
         referenceId: withdrawal.withdrawalNumber,
         description: `Reversal of failed withdrawal ${withdrawal.withdrawalNumber}: ${withdrawal.failureReason}`,
@@ -917,6 +1229,97 @@ export const createTransferRecipient = async (data: {
     }
   } catch (err) {
     throw paystackError(err, 'Failed to create transfer recipient on Paystack')
+  }
+}
+
+/**
+ * Creates a Paystack subaccount for a seller to support direct split payments
+ */
+export const createSubaccount = async (data: {
+  businessName: string
+  settlementBank: string
+  accountNumber: string
+  percentageCharge?: number
+  description?: string
+}): Promise<{ subaccountCode: string; details: Record<string, unknown> }> => {
+  type SubaccountRes = {
+    status: boolean
+    message: string
+    data: {
+      subaccount_code: string
+      business_name: string
+      [key: string]: unknown
+    }
+  }
+
+  try {
+    const res = await callPaystack(
+      () =>
+        client()
+          .post<SubaccountRes>('/subaccount', {
+            business_name: data.businessName,
+            settlement_bank: data.settlementBank.trim(),
+            account_number: data.accountNumber.trim(),
+            percentage_charge: data.percentageCharge ?? 0,
+            description: data.description || `Cartiva Seller Subaccount: ${data.businessName}`,
+          })
+          .then((r) => r.data),
+      'Paystack createSubaccount',
+    )
+    if (!res.status || !res.data?.subaccount_code) {
+      throw new AppError('Failed to create Paystack subaccount', 400)
+    }
+    return {
+      subaccountCode: res.data.subaccount_code,
+      details: res.data,
+    }
+  } catch (err) {
+    throw paystackError(err, 'Failed to create subaccount on Paystack')
+  }
+}
+
+/**
+ * Creates a Paystack Multi-Split payment configuration
+ */
+export const createSplit = async (data: {
+  name: string
+  type: 'flat' | 'percentage'
+  currency: string
+  subaccounts: Array<{ subaccount: string; share: number }>
+  bearerType?: 'all' | 'account' | 'subaccount' | 'all-proportional'
+}): Promise<{ splitCode: string; details: Record<string, unknown> }> => {
+  type SplitRes = {
+    status: boolean
+    message: string
+    data: {
+      split_code: string
+      [key: string]: unknown
+    }
+  }
+
+  try {
+    const res = await callPaystack(
+      () =>
+        client()
+          .post<SplitRes>('/split', {
+            name: data.name,
+            type: data.type,
+            currency: data.currency,
+            subaccounts: data.subaccounts,
+            bearer_type: data.bearerType || 'account',
+          })
+          .then((r) => r.data),
+      'Paystack createSplit',
+    )
+    if (!res.status || !res.data?.split_code) {
+      throw new AppError('Failed to create Paystack transaction split', 400)
+    }
+    return {
+      splitCode: res.data.split_code,
+      details: res.data,
+    }
+  } catch (err) {
+    throw paystackError(err, 'Failed to create split configuration on Paystack')
   }
 }
 

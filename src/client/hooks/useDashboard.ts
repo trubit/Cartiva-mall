@@ -103,6 +103,8 @@ export const useMarkNotificationRead = () => {
     onSuccess: () => {
       decrementUnread()
       qc.invalidateQueries({ queryKey: NOTIF_KEY })
+      qc.invalidateQueries({ queryKey: ['notifications'] })
+      qc.invalidateQueries({ queryKey: [...DASHBOARD_KEY, 'summary'] })
     },
   })
 }
@@ -116,6 +118,38 @@ export const useMarkAllNotificationsRead = () => {
     onSuccess: () => {
       resetUnread()
       qc.invalidateQueries({ queryKey: NOTIF_KEY })
+      qc.invalidateQueries({ queryKey: ['notifications'] })
+      qc.invalidateQueries({ queryKey: [...DASHBOARD_KEY, 'summary'] })
+    },
+  })
+}
+
+export const useDeleteNotification = () => {
+  const qc = useQueryClient()
+  const decrementUnread = useDashboardStore((s) => s.decrementUnreadCount)
+
+  return useMutation({
+    mutationFn: (id: string) => dashboardService.deleteNotification(id),
+    onSuccess: () => {
+      decrementUnread()
+      qc.invalidateQueries({ queryKey: NOTIF_KEY })
+      qc.invalidateQueries({ queryKey: ['notifications'] })
+      qc.invalidateQueries({ queryKey: [...DASHBOARD_KEY, 'summary'] })
+    },
+  })
+}
+
+export const useClearAllNotifications = () => {
+  const qc = useQueryClient()
+  const resetUnread = useDashboardStore((s) => s.resetUnreadCount)
+
+  return useMutation({
+    mutationFn: () => dashboardService.clearAllNotifications(),
+    onSuccess: () => {
+      resetUnread()
+      qc.invalidateQueries({ queryKey: NOTIF_KEY })
+      qc.invalidateQueries({ queryKey: ['notifications'] })
+      qc.invalidateQueries({ queryKey: [...DASHBOARD_KEY, 'summary'] })
     },
   })
 }

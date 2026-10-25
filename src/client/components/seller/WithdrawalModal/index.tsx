@@ -7,10 +7,20 @@ import {
   FiArrowRight,
   FiShield,
   FiPlus,
+  FiClock,
+  FiCalendar,
 } from 'react-icons/fi'
 import { useRequestWithdrawal, useSellerPayoutAccounts } from '../../../hooks/useSeller.js'
 import { useCurrency } from '../../../hooks/useCurrency.js'
-import type { ISellerPayoutAccount } from '../../../../shared/types/seller.types.js'
+import type {
+  ISellerPayoutAccount,
+  ISellerWithdrawal,
+} from '../../../../shared/types/seller.types.js'
+import {
+  calculateExpectedCompletionDate,
+  formatDate,
+  WITHDRAWAL_POLICY_SUMMARY,
+} from '../../../../shared/helpers/index.js'
 
 interface WithdrawalModalProps {
   isOpen: boolean
@@ -37,6 +47,7 @@ export default function WithdrawalModal({
   const [confirmedAuth, setConfirmedAuth] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [completedTxNumber, setCompletedTxNumber] = useState<string>('')
+  const [submittedWd, setSubmittedWd] = useState<ISellerWithdrawal | null>(null)
 
   // Set default account when accounts load
   React.useEffect(() => {
@@ -93,6 +104,7 @@ export default function WithdrawalModal({
       setErrorMsg('Please confirm and authorize this transaction.')
       return
     }
+    if (requestWithdrawalMutation.isPending) return
 
     setErrorMsg(null)
     const idempotencyKey = `wd-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
@@ -104,8 +116,11 @@ export default function WithdrawalModal({
         idempotencyKey,
       })
 
-      if (res.data?.withdrawalNumber) {
-        setCompletedTxNumber(res.data.withdrawalNumber)
+      if (res.data) {
+        setSubmittedWd(res.data)
+        if (res.data.withdrawalNumber) {
+          setCompletedTxNumber(res.data.withdrawalNumber)
+        }
       }
       setStep('success')
     } catch (err: any) {
@@ -121,6 +136,7 @@ export default function WithdrawalModal({
     setAmountStr('')
     setErrorMsg(null)
     setConfirmedAuth(false)
+    setSubmittedWd(null)
     onClose()
   }
 
@@ -156,6 +172,27 @@ export default function WithdrawalModal({
               onSubmit={handleProceedToReview}
               style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}
             >
+              {/* Mandatory 4-Working-Day Processing Policy Banner */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 10,
+                  padding: '10px 14px',
+                  background: 'rgba(2, 132, 199, 0.08)',
+                  border: '1px solid rgba(2, 132, 199, 0.25)',
+                  borderRadius: 8,
+                  fontSize: '0.84rem',
+                  color: 'var(--color-brand-text, #0369a1)',
+                  lineHeight: 1.45,
+                }}
+              >
+                <FiClock style={{ marginTop: 2, flexShrink: 0, color: '#0284c7' }} />
+                <div>
+                  <strong>4-Working-Day Processing Policy:</strong> {WITHDRAWAL_POLICY_SUMMARY}
+                </div>
+              </div>
+
               {/* Available Balance Box */}
               <div
                 style={{
@@ -419,6 +456,31 @@ export default function WithdrawalModal({
                     •••• {selectedAccount.accountNumber.slice(-4)}
                   </span>
                 </div>
+                <div className="sl-summary-row">
+                  <span>Expected Completion</span>
+                  <span
+                    style={{
+                      fontWeight: 700,
+                      color: '#0284c7',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                    }}
+                  >
+                    <FiCalendar size={13} />{' '}
+                    {formatDate(calculateExpectedCompletionDate(new Date()))}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    fontSize: '0.78rem',
+                    color: 'var(--color-neutral-500, #64748b)',
+                    margin: '6px 0 10px',
+                  }}
+                >
+                  * Processing target is up to 7 working days (excluding weekends and applicable
+                  public holidays).
+                </div>
                 <div className="sl-summary-row sl-summary-row--total">
                   <span>Payout Total</span>
                   <span style={{ color: '#007185', fontSize: '1.2rem' }}>
@@ -488,58 +550,177 @@ export default function WithdrawalModal({
 
           {/* STEP 3: SUCCESS STATE */}
           {step === 'success' && (
-            <div style={{ textAlign: 'center', padding: '1.5rem 0' }}>
+            <div style={{ textAlign: 'center', padding: '1rem 0' }}>
               <div
                 style={{
-                  width: 64,
-                  height: 64,
+                  width: 56,
+                  height: 56,
                   borderRadius: '50%',
                   background: 'rgba(16, 185, 129, 0.12)',
                   color: '#10b981',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '2rem',
-                  margin: '0 auto 1rem',
+                  fontSize: '1.75rem',
+                  margin: '0 auto 0.75rem',
                 }}
               >
                 <FiCheckCircle />
               </div>
-              <h4 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0 0 0.5rem' }}>
-                Withdrawal Submitted!
+              <h4
+                style={{
+                  fontSize: '1.2rem',
+                  fontWeight: 800,
+                  margin: '0 0 0.5rem',
+                  color: 'var(--color-brand-text, #0f172a)',
+                }}
+              >
+                Withdrawal Request Submitted Successfully
               </h4>
               <p
                 style={{
-                  fontSize: '0.9rem',
-                  color: 'var(--color-neutral-600)',
-                  margin: '0 0 1rem',
+                  fontSize: '0.88rem',
+                  color: 'var(--color-neutral-600, #475569)',
+                  margin: '0 auto 1.25rem',
+                  lineHeight: 1.55,
+                  maxWidth: 480,
                 }}
               >
-                Your payout request of <strong>{formatPrice(netAmount, currency)}</strong> has been
-                received and is being processed by the banking network.
+                Your withdrawal is being processed and may take up to 7 working days to complete.
+                Working days exclude weekends and applicable public holidays. You can track the
+                status of your withdrawal in your account.
               </p>
-              {completedTxNumber && (
+
+              {/* Structured Summary Card */}
+              <div
+                style={{
+                  background: 'var(--color-neutral-50, #f8fafc)',
+                  border: '1px solid var(--color-neutral-200, #e2e8f0)',
+                  borderRadius: 10,
+                  padding: '1rem 1.25rem',
+                  textAlign: 'left',
+                  marginBottom: '1.5rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.65rem',
+                  fontSize: '0.86rem',
+                }}
+              >
+                <div
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                >
+                  <span style={{ color: 'var(--color-neutral-500, #64748b)' }}>
+                    Request Reference:
+                  </span>
+                  <code
+                    style={{
+                      fontFamily: 'monospace',
+                      fontWeight: 700,
+                      fontSize: '0.88rem',
+                      color: '#0284c7',
+                    }}
+                  >
+                    {submittedWd?.withdrawalNumber || completedTxNumber}
+                  </code>
+                </div>
+                <div
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                >
+                  <span style={{ color: 'var(--color-neutral-500, #64748b)' }}>
+                    Withdrawal Amount:
+                  </span>
+                  <strong style={{ fontSize: '1.05rem', color: '#16a34a' }}>
+                    {formatPrice(
+                      submittedWd?.netAmount || netAmount,
+                      submittedWd?.currency || currency,
+                    )}
+                  </strong>
+                </div>
+                <div
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                >
+                  <span style={{ color: 'var(--color-neutral-500, #64748b)' }}>
+                    Submission Date:
+                  </span>
+                  <span style={{ fontWeight: 600 }}>
+                    {formatDate(submittedWd?.requestedAt || new Date())}
+                  </span>
+                </div>
+                <div
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                >
+                  <span style={{ color: 'var(--color-neutral-500, #64748b)' }}>
+                    Current Status:
+                  </span>
+                  <span
+                    style={{
+                      background: '#e0f2fe',
+                      color: '#075985',
+                      padding: '2px 8px',
+                      borderRadius: 4,
+                      fontWeight: 700,
+                      fontSize: '0.78rem',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                    }}
+                  >
+                    <FiClock size={11} />{' '}
+                    {submittedWd?.status === 'pending_approval' ? 'Pending Approval' : 'Processing'}
+                  </span>
+                </div>
                 <div
                   style={{
-                    display: 'inline-block',
-                    padding: '0.4rem 0.85rem',
-                    background: 'var(--color-neutral-100, #f1f5f9)',
-                    borderRadius: 6,
-                    fontSize: '0.8rem',
-                    fontWeight: 700,
-                    marginBottom: '1.5rem',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    paddingTop: '0.5rem',
+                    borderTop: '1px dashed var(--color-neutral-200, #e2e8f0)',
                   }}
                 >
-                  Ref: {completedTxNumber}
+                  <span style={{ color: 'var(--color-neutral-500, #64748b)' }}>
+                    Expected Completion:
+                  </span>
+                  <strong
+                    style={{
+                      color: '#0284c7',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                    }}
+                  >
+                    <FiCalendar size={13} />{' '}
+                    {formatDate(
+                      submittedWd?.expectedCompletionDate ||
+                        calculateExpectedCompletionDate(new Date()),
+                    )}
+                  </strong>
                 </div>
-              )}
+                {selectedAccount && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <span style={{ color: 'var(--color-neutral-500, #64748b)' }}>
+                      Destination Bank:
+                    </span>
+                    <span style={{ fontWeight: 600 }}>
+                      {selectedAccount.bankName} (•••• {selectedAccount.accountNumber.slice(-4)})
+                    </span>
+                  </div>
+                )}
+              </div>
+
               <button
                 type="button"
                 className="sl-btn sl-btn--primary sl-btn--lg"
                 onClick={handleModalClose}
                 style={{ width: '100%', justifyContent: 'center' }}
               >
-                Done
+                Track in My Account
               </button>
             </div>
           )}

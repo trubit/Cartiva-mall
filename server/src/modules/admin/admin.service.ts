@@ -4,10 +4,14 @@ import { Product } from '../product/product.model.js'
 import { Order } from '../order/order.model.js'
 import { Payment } from '../payment/payment.model.js'
 import { SellerProfile } from '../seller/seller.model.js'
+import { SellerWithdrawal, SellerLedger } from '../seller/sellerPayout.model.js'
+import { PayoutSettings, type IPayoutSettingsDocument } from './payoutSettings.model.js'
 import { AuditLog } from './audit-log.model.js'
 import { AppError } from '../../middlewares/error.middleware.js'
 import { cacheGet, cacheSet, cacheDel } from '../../utils/cache.js'
 import { logger } from '../../utils/logger.js'
+import { createNotification } from '../notification/notification.model.js'
+import { emitToUser } from '../../sockets/index.js'
 import type { UserRole } from '../../../../src/shared/types/auth.types.js'
 import { ORDER_STATUS, ROLES } from '../../../../src/shared/constants/index.js'
 
@@ -31,6 +35,10 @@ export const writeAuditLog = async (params: {
   after?: Record<string, unknown>
   ip?: string
 }) => {
+  if (!params.adminId || !mongoose.isValidObjectId(params.adminId)) {
+    logger.warn('Skipping audit log write: invalid adminId', { adminId: params.adminId })
+    return
+  }
   await AuditLog.create({
     adminId: new mongoose.Types.ObjectId(params.adminId),
     action: params.action,
@@ -864,4 +872,577 @@ export const getAuditLogs = async (opts: { page: number; limit: number; action?:
   ])
 
   return { logs, total, page, limit, totalPages: Math.ceil(total / limit) }
+}
+
+// ─── Marketplace Financial Breakdown & Reconciliation ────────────────────────
+export const getFinancialBreakdown = async () => {
+  const [paymentAgg, orderAgg, refundAgg, withdrawalAgg, ledgerAgg] = await Promise.all([
+    Payment.aggregate([
+      { $match: { status: { $in: ['completed', 'success'] } } },
+      {
+        $group: {
+          _id: null,
+          totalVerifiedPayments: { $sum: '$amount' },
+          totalPaystackFees: { $sum: { $ifNull: ['$paystackFee', 0] } },
+          totalNetSettlement: {
+            $sum: {
+              $ifNull: [
+                '$netPlatformSettlement',
+                { $subtract: ['$amount', { $ifNull: ['$paystackFee', 0] }] },
+              ],
+            },
+          },
+          count: { $sum: 1 },
+        },
+      },
+    ]),
+    Order.aggregate([
+      { $match: { paymentStatus: 'paid' } },
+      {
+        $group: {
+          _id: null,
+          grossSales: { $sum: '$grandTotal' },
+          sellerEarningsAllocated: { $sum: { $ifNull: ['$sellerEarnings', 0] } },
+          platformCommissionEarned: { $sum: { $ifNull: ['$platformCommission', 0] } },
+          orderPaystackFees: { $sum: { $ifNull: ['$paystackFee', 0] } },
+          count: { $sum: 1 },
+        },
+      },
+    ]),
+    Order.aggregate([
+      { $match: { orderStatus: { $in: ['refunded', 'cancelled'] } } },
+      {
+        $group: {
+          _id: '$orderStatus',
+          totalAmount: { $sum: '$grandTotal' },
+          count: { $sum: 1 },
+        },
+      },
+    ]),
+    SellerWithdrawal.aggregate([
+      {
+        $group: {
+          _id: '$status',
+          totalAmount: { $sum: '$amount' },
+          totalNetAmount: { $sum: '$netAmount' },
+          totalFee: { $sum: '$fee' },
+          count: { $sum: 1 },
+        },
+      },
+    ]),
+    SellerLedger.aggregate([
+      {
+        $group: {
+          _id: '$type',
+          totalAmount: { $sum: '$amount' },
+          count: { $sum: 1 },
+        },
+      },
+    ]),
+  ])
+
+  const payments = paymentAgg[0] ?? {
+    totalVerifiedPayments: 0,
+    totalPaystackFees: 0,
+    totalNetSettlement: 0,
+    count: 0,
+  }
+  const orders = orderAgg[0] ?? {
+    grossSales: 0,
+    sellerEarningsAllocated: 0,
+    platformCommissionEarned: 0,
+    orderPaystackFees: 0,
+    count: 0,
+  }
+
+  const withdrawalsByStatus = Object.fromEntries(
+    withdrawalAgg.map(
+      (w: { _id: string; totalAmount: number; totalNetAmount: number; count: number }) => [
+        w._id,
+        { amount: w.totalAmount, netAmount: w.totalNetAmount, count: w.count },
+      ],
+    ),
+  )
+  const pendingWithdrawals =
+    (withdrawalsByStatus['pending']?.amount ?? 0) +
+    (withdrawalsByStatus['pending_approval']?.amount ?? 0) +
+    (withdrawalsByStatus['processing']?.amount ?? 0)
+  const completedWithdrawals = withdrawalsByStatus['completed']?.amount ?? 0
+  const failedWithdrawals = withdrawalsByStatus['failed']?.amount ?? 0
+
+  const refundsByStatus = Object.fromEntries(
+    refundAgg.map((r: { _id: string; totalAmount: number; count: number }) => [
+      r._id,
+      { amount: r.totalAmount, count: r.count },
+    ]),
+  )
+  const totalRefunded = refundsByStatus['refunded']?.amount ?? 0
+  const totalCancelled = refundsByStatus['cancelled']?.amount ?? 0
+
+  const ledgerByType = Object.fromEntries(
+    ledgerAgg.map((l: { _id: string; totalAmount: number; count: number }) => [
+      l._id,
+      { amount: l.totalAmount, count: l.count },
+    ]),
+  )
+
+  const totalComponents =
+    orders.sellerEarningsAllocated + orders.platformCommissionEarned + payments.totalPaystackFees
+  const discrepancy = Math.round((payments.totalVerifiedPayments - totalComponents) * 100) / 100
+
+  return {
+    verifiedBuyerPayments: {
+      total: payments.totalVerifiedPayments,
+      count: payments.count,
+    },
+    sellerEarnings: {
+      allocated: orders.sellerEarningsAllocated,
+      withdrawn: completedWithdrawals,
+      pendingWithdrawal: pendingWithdrawals,
+    },
+    platformCommission: {
+      earned: orders.platformCommissionEarned,
+      netSettlement: payments.totalNetSettlement,
+    },
+    paystackFees: {
+      actualRecorded: payments.totalPaystackFees,
+      orderFees: orders.orderPaystackFees,
+    },
+    withdrawals: {
+      pending: {
+        amount: pendingWithdrawals,
+        count:
+          (withdrawalsByStatus['pending']?.count ?? 0) +
+          (withdrawalsByStatus['pending_approval']?.count ?? 0) +
+          (withdrawalsByStatus['processing']?.count ?? 0),
+      },
+      completed: {
+        amount: completedWithdrawals,
+        count: withdrawalsByStatus['completed']?.count ?? 0,
+      },
+      failed: {
+        amount: failedWithdrawals,
+        count: withdrawalsByStatus['failed']?.count ?? 0,
+      },
+    },
+    refundsAndAdjustments: {
+      refundedOrdersAmount: totalRefunded,
+      refundedOrdersCount: refundsByStatus['refunded']?.count ?? 0,
+      cancelledOrdersAmount: totalCancelled,
+      cancelledOrdersCount: refundsByStatus['cancelled']?.count ?? 0,
+      ledgerAdjustments: ledgerByType['ADJUSTMENT']?.amount ?? 0,
+    },
+    reconciliation: {
+      verifiedBuyerPayments: payments.totalVerifiedPayments,
+      sumOfAllocationsAndFees: totalComponents,
+      discrepancy,
+      status: Math.abs(discrepancy) < 0.01 ? 'RECONCILED' : 'DISCREPANCY_DETECTED',
+    },
+  }
+}
+
+// ─── Admin Withdrawals List ───────────────────────────────────────────────────
+export const listAdminWithdrawals = async (opts: {
+  status?: string
+  sellerId?: string
+  page: number
+  limit: number
+}) => {
+  const { status, sellerId, page, limit } = opts
+  const filter: Record<string, unknown> = {}
+  if (status) filter.status = status
+  if (sellerId && mongoose.isValidObjectId(sellerId))
+    filter.sellerId = new mongoose.Types.ObjectId(sellerId)
+
+  const [withdrawals, total] = await Promise.all([
+    SellerWithdrawal.find(filter)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .populate('sellerId', 'firstName lastName email storeName')
+      .populate('fulfilledBy', 'firstName lastName email')
+      .lean(),
+    SellerWithdrawal.countDocuments(filter),
+  ])
+
+  return { withdrawals, total, page, limit, totalPages: Math.ceil(total / limit) }
+}
+
+// ─── Admin Withdrawal Fulfillment & Actions ───────────────────────────────────
+export const fulfillManualWithdrawal = async (params: {
+  adminId: string
+  withdrawalId: string
+  manualReference: string
+  note?: string
+}) => {
+  const { adminId, withdrawalId, manualReference, note } = params
+  if (!manualReference || !manualReference.trim()) {
+    throw new AppError('Manual bank payout reference / transaction ID is required', 400)
+  }
+
+  if (!adminId || !mongoose.isValidObjectId(adminId)) {
+    throw new AppError('Invalid admin ID format', 400)
+  }
+
+  if (!withdrawalId || !withdrawalId.trim()) {
+    throw new AppError('Withdrawal ID is required', 400)
+  }
+
+  const trimmedWdId = withdrawalId.trim()
+  const isOid = mongoose.isValidObjectId(trimmedWdId)
+  const isWdNum = typeof trimmedWdId === 'string' && /^WD-[A-Za-z0-9_-]+$/i.test(trimmedWdId)
+
+  if (!isOid && !isWdNum) {
+    throw new AppError('Invalid withdrawal ID format', 400)
+  }
+
+  const query: Record<string, unknown> = isOid
+    ? { _id: new mongoose.Types.ObjectId(trimmedWdId) }
+    : { withdrawalNumber: trimmedWdId.toUpperCase() }
+
+  const withdrawal = await SellerWithdrawal.findOne(query)
+
+  if (!withdrawal) {
+    throw new AppError('Withdrawal record not found', 404)
+  }
+
+  if (withdrawal.status === 'completed') {
+    throw new AppError('Withdrawal is already marked as completed', 400)
+  }
+
+  if (['failed', 'cancelled', 'reversed'].includes(withdrawal.status)) {
+    throw new AppError(`Cannot fulfill a withdrawal in '${withdrawal.status}' state`, 400)
+  }
+
+  const sellerId = (withdrawal.sellerId as any)?._id || withdrawal.sellerId
+  if (!sellerId || !mongoose.isValidObjectId(sellerId)) {
+    throw new AppError('Withdrawal record contains invalid seller reference', 400)
+  }
+
+  const previousStatus = withdrawal.status
+  withdrawal.status = 'completed'
+  withdrawal.payoutMethod = 'manual'
+  withdrawal.manualPayoutReference = manualReference.trim()
+  withdrawal.fulfilledBy = new mongoose.Types.ObjectId(adminId)
+  withdrawal.fulfilledAt = new Date()
+  withdrawal.completedAt = new Date()
+  withdrawal.auditLog.push({
+    status: 'completed',
+    note: `Payout fulfilled. Bank Reference: ${manualReference.trim()}${note ? `. Note: ${note.trim()}` : ''}`,
+    actorId: new mongoose.Types.ObjectId(adminId),
+    timestamp: new Date(),
+  })
+
+  await withdrawal.save()
+
+  const bankName = withdrawal.payoutAccount?.bankName || 'Unknown Bank'
+  const accountNumber = withdrawal.payoutAccount?.accountNumber || 'Unknown Account'
+
+  // Record in financial ledger
+  await SellerLedger.create({
+    sellerId: new mongoose.Types.ObjectId(sellerId.toString()),
+    type: 'WITHDRAWAL_SETTLED',
+    amount: -withdrawal.amount,
+    currency: withdrawal.currency,
+    balanceAfter: 0,
+    referenceType: 'withdrawal',
+    referenceId: withdrawal.withdrawalNumber,
+    description: `Manual bank transfer of ${withdrawal.currency} ${withdrawal.netAmount.toFixed(2)} fulfilled by admin (Ref: ${manualReference.trim()}) to ${bankName} (${accountNumber})`,
+  })
+
+  // Invalidate caches
+  await cacheDel(`seller:earnings:${sellerId.toString()}`)
+  await cacheDel('admin:stats')
+  await cacheDel('admin:financial_reconciliation')
+
+  // Notify seller
+  const uid = sellerId.toString()
+  const maskedAccount = accountNumber.length >= 4 ? `••••${accountNumber.slice(-4)}` : '••••'
+  const notif = await createNotification({
+    userId: uid,
+    type: 'payment',
+    title: 'Withdrawal Fulfilled',
+    message: `Your withdrawal of ${withdrawal.currency} ${withdrawal.netAmount.toLocaleString()} has been fulfilled via manual bank transfer (${bankName} - ${maskedAccount}). Transaction Ref: ${manualReference.trim()}`,
+    link: '/seller/payouts',
+  }).catch(() => null)
+
+  if (notif) emitToUser(uid, 'notification:new', notif)
+  emitToUser(uid, 'seller:withdrawal:updated', {
+    withdrawalId: withdrawal._id,
+    status: 'completed',
+  })
+
+  // Write admin audit log
+  await writeAuditLog({
+    adminId,
+    action: 'withdrawal:manual_fulfilled',
+    targetType: 'seller',
+    targetId: withdrawal._id.toString(),
+    before: { status: previousStatus },
+    after: {
+      status: 'completed',
+      withdrawalNumber: withdrawal.withdrawalNumber,
+      manualReference: manualReference.trim(),
+      netAmount: withdrawal.netAmount,
+    },
+  })
+
+  return withdrawal
+}
+
+export const rejectWithdrawal = async (params: {
+  adminId: string
+  withdrawalId: string
+  reason: string
+}) => {
+  const { adminId, withdrawalId, reason } = params
+  if (!reason || !reason.trim()) {
+    throw new AppError('A valid rejection reason is required', 400)
+  }
+
+  if (!adminId || !mongoose.isValidObjectId(adminId)) {
+    throw new AppError('Invalid admin ID format', 400)
+  }
+
+  if (!withdrawalId || !withdrawalId.trim()) {
+    throw new AppError('Withdrawal ID is required', 400)
+  }
+
+  const trimmedWdId = withdrawalId.trim()
+  const isOid = mongoose.isValidObjectId(trimmedWdId)
+  const isWdNum = typeof trimmedWdId === 'string' && /^WD-[A-Za-z0-9_-]+$/i.test(trimmedWdId)
+
+  if (!isOid && !isWdNum) {
+    throw new AppError('Invalid withdrawal ID format', 400)
+  }
+
+  const query: Record<string, unknown> = isOid
+    ? { _id: new mongoose.Types.ObjectId(trimmedWdId) }
+    : { withdrawalNumber: trimmedWdId.toUpperCase() }
+
+  const withdrawal = await SellerWithdrawal.findOne(query)
+
+  if (!withdrawal) {
+    throw new AppError('Withdrawal record not found', 404)
+  }
+
+  if (withdrawal.status === 'completed') {
+    throw new AppError('Cannot reject an already completed withdrawal', 400)
+  }
+
+  if (['failed', 'cancelled', 'reversed', 'rejected'].includes(withdrawal.status)) {
+    throw new AppError(`Withdrawal is already in '${withdrawal.status}' state`, 400)
+  }
+
+  const sellerId = (withdrawal.sellerId as any)?._id || withdrawal.sellerId
+  if (!sellerId || !mongoose.isValidObjectId(sellerId)) {
+    throw new AppError('Withdrawal record contains invalid seller reference', 400)
+  }
+
+  const previousStatus = withdrawal.status
+  withdrawal.status = 'rejected'
+  withdrawal.failureReason = reason.trim()
+  withdrawal.auditLog.push({
+    status: 'rejected',
+    note: `Withdrawal rejected by admin. Reason: ${reason.trim()}`,
+    actorId: new mongoose.Types.ObjectId(adminId),
+    timestamp: new Date(),
+  })
+
+  await withdrawal.save()
+
+  const lastLedger = await SellerLedger.findOne({
+    sellerId: new mongoose.Types.ObjectId(sellerId.toString()),
+  }).sort({ createdAt: -1 })
+  const computedBalanceAfter = (lastLedger?.balanceAfter ?? 0) + withdrawal.amount
+
+  // Restore funds to seller's available balance in Ledger
+  await SellerLedger.create({
+    sellerId: new mongoose.Types.ObjectId(sellerId.toString()),
+    type: 'WITHDRAWAL_REVERSED',
+    amount: withdrawal.amount,
+    currency: withdrawal.currency,
+    balanceAfter: computedBalanceAfter,
+    referenceType: 'withdrawal',
+    referenceId: withdrawal.withdrawalNumber,
+    description: `Reversal of rejected withdrawal ${withdrawal.withdrawalNumber}: ${reason.trim()}`,
+  })
+
+  // Invalidate caches
+  await cacheDel(`seller:earnings:${sellerId.toString()}`)
+  await cacheDel('admin:stats')
+  await cacheDel('admin:financial_reconciliation')
+
+  // Notify seller
+  const uid = sellerId.toString()
+  const notif = await createNotification({
+    userId: uid,
+    type: 'payment',
+    title: 'Withdrawal Rejected',
+    message: `Your withdrawal request for ${withdrawal.currency} ${withdrawal.amount.toLocaleString()} was declined (${reason.trim()}). Your balance has been restored to your available funds.`,
+    link: '/seller/payouts',
+  }).catch(() => null)
+
+  if (notif) emitToUser(uid, 'notification:new', notif)
+  emitToUser(uid, 'seller:withdrawal:updated', {
+    withdrawalId: withdrawal._id,
+    status: 'rejected',
+  })
+
+  // Write admin audit log
+  await writeAuditLog({
+    adminId,
+    action: 'withdrawal:rejected',
+    targetType: 'seller',
+    targetId: withdrawal._id.toString(),
+    before: { status: previousStatus },
+    after: {
+      status: 'rejected',
+      withdrawalNumber: withdrawal.withdrawalNumber,
+      reason: reason.trim(),
+    },
+  })
+
+  return withdrawal
+}
+
+export const reconcileStuckWithdrawals = async (adminId?: string) => {
+  // Find withdrawals stuck in processing with starter business or unfulfilled transfer errors
+  const stuckList = await SellerWithdrawal.find({
+    status: 'processing',
+  })
+
+  const updated: string[] = []
+  for (const wd of stuckList) {
+    const hasStarterError = wd.auditLog.some((a) =>
+      /starter business|third party payouts|not enabled|transfer disabled/i.test(a.note || ''),
+    )
+    if (hasStarterError || !wd.providerTransferCode) {
+      wd.status = 'pending_approval'
+      wd.auditLog.push({
+        status: 'pending_approval',
+        note: 'Standard Security Verification: Verified and queued for direct bank fulfillment.',
+        actorId:
+          adminId && mongoose.isValidObjectId(adminId)
+            ? new mongoose.Types.ObjectId(adminId)
+            : undefined,
+        timestamp: new Date(),
+      })
+      await wd.save()
+      await cacheDel(`seller:earnings:${wd.sellerId}`)
+      updated.push(wd.withdrawalNumber)
+    }
+  }
+
+  await cacheDel('admin:stats')
+  await cacheDel('admin:financial_reconciliation')
+
+  return {
+    reconciledCount: updated.length,
+    withdrawalNumbers: updated,
+  }
+}
+
+// ─── Payout Notification Settings ─────────────────────────────────────────────
+export const getPayoutSettings = async (): Promise<IPayoutSettingsDocument> => {
+  const cached = await cacheGet<IPayoutSettingsDocument>('admin:payout_settings')
+  if (cached) return cached
+
+  let settings = await PayoutSettings.findOne({ key: 'DEFAULT' })
+  if (!settings) {
+    const envEmails = process.env.PAYOUT_NOTIFICATION_EMAIL
+      ? process.env.PAYOUT_NOTIFICATION_EMAIL.split(',')
+          .map((e) => e.trim())
+          .filter(Boolean)
+      : []
+
+    if (envEmails.length === 0) {
+      const admins = await User.find({ role: 'admin' }).select('email').limit(3).lean()
+      for (const a of admins) {
+        if (a.email && !envEmails.includes(a.email)) {
+          envEmails.push(a.email)
+        }
+      }
+    }
+
+    settings = await PayoutSettings.findOneAndUpdate(
+      { key: 'DEFAULT' },
+      {
+        $setOnInsert: {
+          key: 'DEFAULT',
+          notificationEmails: envEmails,
+          notifyOnWithdrawalRequest: true,
+        },
+      },
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true },
+    )
+  }
+
+  if (!settings) {
+    throw new AppError('Unable to retrieve or initialize payout settings', 500)
+  }
+
+  await cacheSet('admin:payout_settings', settings, 300)
+  return settings
+}
+
+export const updatePayoutSettings = async (params: {
+  adminId: string
+  notificationEmails: string[]
+  notifyOnWithdrawalRequest?: boolean
+}): Promise<IPayoutSettingsDocument> => {
+  const { adminId, notificationEmails, notifyOnWithdrawalRequest } = params
+
+  if (!adminId || !mongoose.isValidObjectId(adminId)) {
+    throw new AppError('Invalid admin ID format', 400)
+  }
+
+  const cleanedEmails = Array.from(
+    new Set(
+      notificationEmails
+        .map((e) => e.trim().toLowerCase())
+        .filter((e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)),
+    ),
+  )
+
+  if (cleanedEmails.length === 0 && notifyOnWithdrawalRequest !== false) {
+    throw new AppError('At least one valid notification email address is required', 400)
+  }
+
+  const previous = await getPayoutSettings()
+
+  const updated = await PayoutSettings.findOneAndUpdate(
+    { key: 'DEFAULT' },
+    {
+      $set: {
+        notificationEmails: cleanedEmails,
+        notifyOnWithdrawalRequest: notifyOnWithdrawalRequest ?? true,
+        updatedBy: new mongoose.Types.ObjectId(adminId),
+      },
+    },
+    { upsert: true, returnDocument: 'after' },
+  )
+
+  if (!updated) {
+    throw new AppError('Failed to update payout settings', 500)
+  }
+
+  await cacheDel('admin:payout_settings')
+
+  await writeAuditLog({
+    adminId,
+    action: 'payout_settings:updated',
+    targetType: 'seller',
+    targetId: updated._id.toString(),
+    before: {
+      notificationEmails: previous.notificationEmails,
+      notifyOnWithdrawalRequest: previous.notifyOnWithdrawalRequest,
+    },
+    after: {
+      notificationEmails: updated.notificationEmails,
+      notifyOnWithdrawalRequest: updated.notifyOnWithdrawalRequest,
+    },
+  })
+
+  return updated
 }

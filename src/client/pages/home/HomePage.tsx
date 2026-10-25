@@ -13,6 +13,12 @@ import {
   FiPackage,
   FiCheck,
   FiLock,
+  FiSearch,
+  FiEye,
+  FiShoppingCart,
+  FiCreditCard,
+  FiHelpCircle,
+  FiChevronDown,
 } from 'react-icons/fi'
 import {
   useFeaturedProducts,
@@ -43,15 +49,105 @@ const CATEGORY_ICONS: Record<string, string> = {
   'Jewelry & Accessories': '💍',
 }
 
-const PERKS = [
+const JOURNEY_STEPS = [
+  {
+    step: '01',
+    title: 'Discover',
+    desc: 'Find what you need by browsing our curated collections or searching specific brands and everyday essentials.',
+    icon: <FiSearch />,
+    linkText: 'Browse catalogue',
+    linkTo: '/products',
+  },
+  {
+    step: '02',
+    title: 'Explore',
+    desc: 'Inspect transparent item details, authentic ratings, verified specifications, and high-resolution photography.',
+    icon: <FiEye />,
+    linkText: 'View top picks',
+    linkTo: '#featured-products',
+  },
+  {
+    step: '03',
+    title: 'Add to Cart',
+    desc: 'Select your options and quantities, check transparent itemized totals, and review your bag with ease.',
+    icon: <FiShoppingCart />,
+    linkText: 'View your bag',
+    linkTo: '/cart',
+  },
+  {
+    step: '04',
+    title: 'Place Your Order',
+    desc: 'Check out securely via cards or bank transfer. Your payment is held in escrow until your package arrives.',
+    icon: <FiCreditCard />,
+    linkText: 'Payment safety',
+    linkTo: '/payment',
+  },
+  {
+    step: '05',
+    title: 'Track Your Order',
+    desc: 'Follow your delivery with real-time status milestones in your dashboard from dispatch to your door.',
+    icon: <FiTruck />,
+    linkText: 'Track an order',
+    linkTo: '/orders',
+  },
+]
+
+const CONFIDENCE_POLICIES = [
+  {
+    icon: <FiTruck />,
+    title: 'Shipping & Delivery',
+    desc: 'Doorstep delivery with tracked dispatch timelines and transparent regional rates across Nigeria.',
+    linkTo: '/shipping',
+    linkText: 'Shipping rates & guidelines',
+  },
+  {
+    icon: <FiRefreshCw />,
+    title: '30-Day Returns Policy',
+    desc: 'Hassle-free 30-day return window and prompt refund restoration if an item is not as described.',
+    linkTo: '/returns',
+    linkText: 'Return policy details',
+  },
   {
     icon: <FiShield />,
-    title: 'Verified Sellers',
-    desc: 'Every seller is verified for your safety',
+    title: 'Payment Protection',
+    desc: 'Bank-grade SSL tokenization and buyer escrow protection safeguarding every transaction.',
+    linkTo: '/payment',
+    linkText: 'Payment protection overview',
   },
-  { icon: <FiTruck />, title: 'Fast Delivery', desc: 'Get orders delivered quickly to your door' },
-  { icon: <FiRefreshCw />, title: 'Easy Returns', desc: '30-day hassle-free return policy' },
-  { icon: <FiShield />, title: 'Secure Payments', desc: 'End-to-end encrypted checkout' },
+  {
+    icon: <FiHelpCircle />,
+    title: 'Customer Care & Help',
+    desc: 'Direct merchant messaging and responsive support to resolve any order inquiries quickly.',
+    linkTo: '/help',
+    linkText: 'Help & support center',
+  },
+]
+
+const FAQ_ITEMS = [
+  {
+    q: 'How do I find products on Cartival Mall?',
+    a: 'You can use the search bar at the top of the page to search by keyword, brand, or model with instant suggestions. You can also explore our department categories or browse curated highlights like Featured Products and Today’s Deals.',
+  },
+  {
+    q: 'How does placing an order and payment work?',
+    a: 'Browse the catalogue, select your desired options and quantity, and click "Add to Cart". Review your items in your bag, click "Proceed to Checkout", provide your shipping address, and complete payment securely via cards or bank transfer. All purchases are backed by buyer escrow protection.',
+  },
+  {
+    q: 'How can I track my shipment once dispatched?',
+    a: 'Once your order is confirmed, you can view real-time delivery status under "Your Orders" in your account dashboard. You can track your shipment as it moves from order placement to dispatch and final delivery.',
+  },
+  {
+    q: 'What payment methods are supported on the platform?',
+    a: 'We accept debit/credit cards (Mastercard, Visa, Verve) and direct bank transfers processed securely through Paystack with full PCI-DSS encryption and fraud prevention safeguards.',
+  },
+  {
+    q: 'How do I contact customer support or message a merchant?',
+    a: 'You can visit our dedicated Help Center at /help for answers to common questions, or message merchants directly using our in-app messaging system for product or order questions.',
+  },
+  {
+    q: 'What happens if an item arrives damaged or not as described?',
+    a: 'Every purchase is covered by our 30-day return policy and buyer escrow protection. If an item arrives damaged, defective, or not as described, you can initiate a return or contact support for replacement or immediate balance restoration.',
+  },
 ]
 
 export default function HomePage() {
@@ -62,15 +158,20 @@ export default function HomePage() {
   const { data: homeRecs, isLoading: homeRecsLoading } = useHomeRecommendations()
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const [quickViewProduct, setQuickViewProduct] = useState<IProduct | null>(null)
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0)
 
   const bestSellers = homeRecs?.bestSellers ?? []
   const newArrivals = homeRecs?.newArrivals ?? []
   const personalizedForYou = homeRecs?.personalizedForYou ?? []
 
+  const toggleFaq = (index: number) => {
+    setOpenFaqIndex((prev) => (prev === index ? null : index))
+  }
+
   return (
     <>
-      {/* ── Full-Bleed Hero ───────────────────────────────────── */}
-      <section className="hero-banner hero-banner--fullbleed" aria-label="Welcome to Cartiva Mall">
+      {/* ── Section 1: Hero — Full-Bleed High-Impact Visual ── */}
+      <section className="hero-banner hero-banner--fullbleed" aria-label="Welcome to Cartival Mall">
         {/* Full-bleed background photo layer */}
         <div className="hero-banner__bg-layer" aria-hidden="true">
           <img
@@ -94,43 +195,39 @@ export default function HomePage() {
             <Logo size="lg" theme="dark" />
             <div className="hero-banner__tagline">
               <FiShield className="hero-banner__tagline-icon" />
-              <span>Trusted &middot; Fast &middot; Secure</span>
+              <span>Cartival Mall &middot; Verified Marketplace</span>
             </div>
           </div>
 
           <div className="hero-banner__content">
             <h1 className="hero-banner__title">
-              Shop Smarter.
-              <span className="hero-banner__title-accent">Live Better.</span>
+              Good finds. Great choices.
+              <span className="hero-banner__title-accent">Shopping made easy.</span>
             </h1>
 
             <p className="hero-banner__subtitle">
-              Discover thousands of products from verified sellers. Great deals, fast delivery, easy
-              returns, and zero-risk buyer escrow protection.
+              Discover products you love, find what fits your needs, and place your order in a few
+              simple steps.
             </p>
 
             {/* Real Search component with suggestions & route integration */}
             <div className="hero-banner__search-wrap">
-              <ProductSearch placeholder="Search products, brands, categories…" />
+              <ProductSearch placeholder="Search genuine products, brands, collections…" />
             </div>
 
             {/* Real CTAs connected to platform routes */}
             <div className="hero-banner__actions">
-              <Link to="/products" className="hero-btn-primary" id="hero-shop-now-btn">
+              <Link to="/products" className="hero-btn-primary" id="hero-explore-collection-btn">
                 <FiShoppingBag size={18} />
-                <span>Shop Now</span>
+                <span>Explore the collection</span>
               </Link>
-              <Link
-                to={isAuthenticated ? '/seller/register' : '/register'}
-                className="hero-btn-secondary"
-                id="hero-become-seller-btn"
-              >
-                <span>Become a Seller</span>
+              <a href="#how-it-works" className="hero-btn-secondary" id="hero-discover-works-btn">
+                <span>Discover how it works</span>
                 <FiArrowRight size={16} />
-              </Link>
+              </a>
             </div>
 
-            {/* Honest Trust Assurance (No fabricated metrics) */}
+            {/* Honest Trust Assurance */}
             <div className="hero-banner__trust-pill">
               <div className="hero-banner__trust-item">
                 <FiCheck className="hero-banner__trust-check" />
@@ -148,15 +245,132 @@ export default function HomePage() {
               </span>
               <div className="hero-banner__trust-item">
                 <FiLock className="hero-banner__trust-check" />
-                <span>PCI-DSS Encrypted Payments</span>
+                <span>Secure Encrypted Checkout</span>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── Category strip ───────────────────────────────────── */}
+      {/* ── Section B: Editorial Shopping Introduction ── */}
+      <section className="editorial-intro-section" aria-labelledby="editorial-intro-heading">
+        <div className="container">
+          <div className="editorial-intro-grid">
+            <div className="editorial-intro-content">
+              <div className="section-eyebrow">The Cartival Mall Standard</div>
+              <h2 id="editorial-intro-heading" className="editorial-intro-title">
+                Curated for quality. Delivered with care.
+              </h2>
+              <p className="editorial-intro-lead">
+                Cartival Mall brings together authentic products from verified independent creators
+                and regional merchants, backed by transparent pricing, buyer escrow safeguards, and
+                dependable doorstep delivery.
+              </p>
+
+              <div className="editorial-intro-pillars">
+                <div className="editorial-pillar-item">
+                  <FiCheck className="editorial-pillar-check" />
+                  <div className="editorial-pillar-text">
+                    <strong>Authentic Merchant Goods</strong>
+                    <span>
+                      Verified items sourced directly from reputable independent merchants.
+                    </span>
+                  </div>
+                </div>
+                <div className="editorial-pillar-item">
+                  <FiCheck className="editorial-pillar-check" />
+                  <div className="editorial-pillar-text">
+                    <strong>Transparent Multi-Currency Pricing</strong>
+                    <span>Clear checkout with zero hidden fees in NGN, USD, EUR, and GBP.</span>
+                  </div>
+                </div>
+                <div className="editorial-pillar-item">
+                  <FiCheck className="editorial-pillar-check" />
+                  <div className="editorial-pillar-text">
+                    <strong>Guaranteed Buyer Escrow</strong>
+                    <span>
+                      Your payment is held safely until your shipment is inspected and confirmed.
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <Link
+                  to="/products"
+                  className="journey-sequence-link"
+                  style={{ fontSize: '1rem', fontWeight: 700 }}
+                >
+                  <span>Browse all departments</span>
+                  <FiArrowRight size={16} />
+                </Link>
+              </div>
+            </div>
+
+            <div className="editorial-intro-media">
+              <div className="editorial-intro-img-frame">
+                <img
+                  src={HUMAN_IMAGES.homeSellerMerchant.url}
+                  alt={HUMAN_IMAGES.homeSellerMerchant.alt}
+                  className="editorial-intro-img"
+                  loading="lazy"
+                  width={HUMAN_IMAGES.homeSellerMerchant.width}
+                  height={HUMAN_IMAGES.homeSellerMerchant.height}
+                />
+              </div>
+              <div className="editorial-floating-badge">
+                <div className="editorial-floating-badge-icon">
+                  <FiAward />
+                </div>
+                <div className="editorial-floating-badge-text">
+                  Direct connection to verified merchants across fashion, tech, and everyday
+                  essentials.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Section C: How Shopping Works (5-Step Sequence) ── */}
+      <section className="journey-section" id="how-it-works" aria-labelledby="journey-heading">
+        <div className="container">
+          <div className="section-editorial-header">
+            <div className="section-eyebrow">5 Simple Steps</div>
+            <h2 id="journey-heading">How Shopping Works on Cartival Mall</h2>
+            <p>A clear, transparent path from discovery to delivery.</p>
+          </div>
+
+          <div className="journey-sequence-grid">
+            {JOURNEY_STEPS.map((item) => (
+              <div key={item.step} className="journey-sequence-card">
+                <div className="journey-sequence-header">
+                  <div className="journey-sequence-icon">{item.icon}</div>
+                  <span className="journey-sequence-step">{item.step}</span>
+                </div>
+                <h3 className="journey-sequence-title">{item.title}</h3>
+                <p className="journey-sequence-desc">{item.desc}</p>
+                {item.linkTo.startsWith('#') ? (
+                  <a href={item.linkTo} className="journey-sequence-link">
+                    <span>{item.linkText}</span>
+                    <FiArrowRight size={14} />
+                  </a>
+                ) : (
+                  <Link to={item.linkTo} className="journey-sequence-link">
+                    <span>{item.linkText}</span>
+                    <FiArrowRight size={14} />
+                  </Link>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Section D: Real Product Discovery ── */}
+      {/* Category Rail */}
       <section
+        id="categories"
         style={{
           background: 'var(--color-white)',
           borderBottom: '1px solid var(--color-neutral-200)',
@@ -174,7 +388,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── Active promotion banners ──────────────────────────── */}
+      {/* Active Promotion Banners */}
       {promotions.length > 0 && (
         <section style={{ padding: '1rem 0', background: 'var(--color-brand-bg)' }}>
           <div className="container">
@@ -229,7 +443,7 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* ── Today's Deals banner ─────────────────────────────── */}
+      {/* Today's Deals Banner */}
       <div
         style={{ background: '#fff3cd', borderBottom: '1px solid #ffc107', padding: '0.5rem 0' }}
       >
@@ -259,14 +473,18 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* ── Featured Products ─────────────────────────────────── */}
+      {/* Featured Highlights */}
       {(isLoading || featured.length > 0) && (
-        <section className="section section--sm" style={{ background: 'var(--color-brand-bg)' }}>
+        <section
+          className="section section--sm"
+          id="featured-products"
+          style={{ background: 'var(--color-brand-bg)' }}
+        >
           <div className="container">
             <div className="section-hd">
               <div>
                 <div className="section-hd__label">Top Picks</div>
-                <h2 className="section-hd__title">Featured Products</h2>
+                <h2 className="section-hd__title">Featured Highlights</h2>
               </div>
               <Link to="/products?isFeatured=true" className="section-hd__link">
                 See all <FiArrowRight size={13} />
@@ -290,13 +508,13 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* ── Shop by Category ────────────────────────────────── */}
+      {/* Shop by Category */}
       <section className="section section--sm" style={{ background: 'var(--color-white)' }}>
         <div className="container">
           <div className="section-hd">
             <div>
               <div className="section-hd__label">Browse</div>
-              <h2 className="section-hd__title">Shop by Category</h2>
+              <h2 className="section-hd__title">Shop by Department</h2>
             </div>
           </div>
 
@@ -317,7 +535,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── Trending Products ─────────────────────────────── */}
+      {/* Trending Now */}
       {(trendingLoading || trending.length > 0) && (
         <section className="section section--sm" style={{ background: 'var(--color-white)' }}>
           <div className="container">
@@ -327,7 +545,7 @@ export default function HomePage() {
                   <FiTrendingUp size={12} style={{ marginRight: 4 }} />
                   Hot Right Now
                 </div>
-                <h2 className="section-hd__title">Trending Products</h2>
+                <h2 className="section-hd__title">Trending Now</h2>
               </div>
               <Link to="/products?sort=popular" className="section-hd__link">
                 See all <FiArrowRight size={13} />
@@ -351,7 +569,7 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* ── Recommended For You ───────────────────────────── */}
+      {/* Recommended Picks */}
       {(recommendedLoading || recommended.length > 0) && (
         <section className="section section--sm" style={{ background: 'var(--color-brand-bg)' }}>
           <div className="container">
@@ -359,9 +577,9 @@ export default function HomePage() {
               <div>
                 <div className="section-hd__label" style={{ color: 'var(--color-brand-accent)' }}>
                   <FiStar size={12} style={{ marginRight: 4 }} />
-                  Picked For You
+                  Curated For You
                 </div>
-                <h2 className="section-hd__title">Recommended</h2>
+                <h2 className="section-hd__title">Recommended Picks</h2>
               </div>
               <Link to="/products?sort=rating" className="section-hd__link">
                 See all <FiArrowRight size={13} />
@@ -385,7 +603,7 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* ── Best Sellers ──────────────────────────────────── */}
+      {/* Best Sellers */}
       {(homeRecsLoading || bestSellers.length > 0) && (
         <section className="section section--sm" style={{ background: 'var(--color-white)' }}>
           <div className="container">
@@ -418,7 +636,7 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* ── New Arrivals ───────────────────────────────────── */}
+      {/* New Arrivals */}
       {(homeRecsLoading || newArrivals.length > 0) && (
         <section className="section section--sm" style={{ background: 'var(--color-brand-bg)' }}>
           <div className="container">
@@ -451,7 +669,7 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* ── Personalized For You (authenticated users only) ── */}
+      {/* Personalized For You (authenticated users only) */}
       {isAuthenticated && (homeRecsLoading || personalizedForYou.length > 0) && (
         <section className="section section--sm" style={{ background: 'var(--color-white)' }}>
           <div className="container">
@@ -461,7 +679,7 @@ export default function HomePage() {
                   <FiStar size={12} style={{ marginRight: 4 }} />
                   Made For You
                 </div>
-                <h2 className="section-hd__title">Recommended For You</h2>
+                <h2 className="section-hd__title">Personalized Picks</h2>
               </div>
               <Link to="/products" className="section-hd__link">
                 Explore more <FiArrowRight size={13} />
@@ -484,30 +702,83 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* ── Why Shop With Us ────────────────────────────────── */}
-      <section className="section section--sm" style={{ background: 'var(--color-brand-bg)' }}>
+      {/* ── Section E: Brand Confidence & Customer Reassurance ── */}
+      <section className="reassurance-section" aria-labelledby="reassurance-heading">
         <div className="container">
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-              gap: 'var(--space-4)',
-            }}
-          >
-            {PERKS.map(({ icon, title, desc }) => (
-              <div key={title} className="perk-card">
-                <div className="perk-card__icon">{icon}</div>
-                <div>
-                  <div className="perk-card__title">{title}</div>
-                  <div className="perk-card__desc">{desc}</div>
+          <div className="section-editorial-header">
+            <div className="section-eyebrow">Buyer Assurance</div>
+            <h2 id="reassurance-heading">Built on Trust & Transparency</h2>
+            <p>Clear policies and guaranteed buyer rights protect you on every order.</p>
+          </div>
+
+          <div className="reassurance-grid">
+            {CONFIDENCE_POLICIES.map((p) => (
+              <Link key={p.title} to={p.linkTo} className="reassurance-card">
+                <div className="reassurance-card-header">
+                  <div className="reassurance-card-icon">{p.icon}</div>
+                  <h3 className="reassurance-card-title">{p.title}</h3>
                 </div>
-              </div>
+                <p className="reassurance-card-desc">{p.desc}</p>
+                <div className="reassurance-card-action">
+                  <span>{p.linkText}</span>
+                  <FiArrowRight size={14} />
+                </div>
+              </Link>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── CTA banner ──────────────────────────────────────── */}
+      {/* ── Section F: Frequently Asked Questions ── */}
+      <section className="faq-section" aria-labelledby="faq-heading">
+        <div className="container">
+          <div className="section-editorial-header">
+            <div className="section-eyebrow">Common Inquiries</div>
+            <h2 id="faq-heading">Frequently Asked Questions</h2>
+            <p>
+              Find quick, clear answers about ordering, payment, delivery, and buyer protection.
+            </p>
+          </div>
+
+          <div className="faq-container">
+            <div className="faq-list">
+              {FAQ_ITEMS.map((item, index) => {
+                const isOpen = openFaqIndex === index
+                const contentId = `faq-content-${index}`
+                const triggerId = `faq-trigger-${index}`
+
+                return (
+                  <div key={item.q} className={`faq-item ${isOpen ? 'faq-item--open' : ''}`}>
+                    <button
+                      id={triggerId}
+                      className="faq-trigger"
+                      onClick={() => toggleFaq(index)}
+                      aria-expanded={isOpen}
+                      aria-controls={contentId}
+                      type="button"
+                    >
+                      <span>{item.q}</span>
+                      <FiChevronDown className="faq-icon" aria-hidden="true" />
+                    </button>
+                    {isOpen && (
+                      <div
+                        id={contentId}
+                        role="region"
+                        aria-labelledby={triggerId}
+                        className="faq-content"
+                      >
+                        {item.a}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Merchant Community Banner (Grow Your Business on Cartival Mall) ── */}
       <section className="seller-cta-section">
         <div className="container">
           <div className="seller-cta-card">
@@ -531,7 +802,7 @@ export default function HomePage() {
                   marginBottom: 'var(--space-2)',
                 }}
               >
-                Grow Your Business on Cartiva
+                Grow Your Business on Cartival Mall
               </h2>
               <p
                 style={{
@@ -569,6 +840,34 @@ export default function HomePage() {
                   Learn More
                 </Link>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Section G: Strong Final Shopping Invitation ── */}
+      <section className="final-invitation-section" aria-labelledby="final-invitation-heading">
+        <div className="container">
+          <div className="final-invitation-inner">
+            <h2 id="final-invitation-heading" className="final-invitation-title">
+              Your next great find starts here.
+            </h2>
+            <p className="final-invitation-desc">
+              Explore what's available and find something that works for you.
+            </p>
+            <div className="final-invitation-buttons">
+              <Link to="/products" className="hero-btn-primary" id="final-start-shopping-btn">
+                <FiShoppingBag size={18} />
+                <span>Start shopping</span>
+              </Link>
+              <a
+                href="#categories"
+                className="hero-btn-secondary"
+                id="final-browse-departments-btn"
+              >
+                <span>Browse by Department</span>
+                <FiArrowRight size={16} />
+              </a>
             </div>
           </div>
         </div>

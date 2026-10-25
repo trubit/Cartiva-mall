@@ -40,7 +40,7 @@ export const sendSms = async (options: SmsOptions): Promise<boolean> => {
   }
 
   const recipient = formatPhoneNumber(options.to)
-  const senderId = options.from || env.SMS_FROM || 'Cartiva'
+  const senderId = options.from || env.SMS_FROM || 'Cartival'
   const apiKey = env.SMS_PROVIDER_API_KEY
 
   if (apiKey) {
@@ -87,7 +87,7 @@ export const sendBuyerOrderConfirmationSms = async (
   totalAmount: number,
   currency: string,
 ): Promise<void> => {
-  const message = `Cartiva: Your order #${orderNumber} (${currency} ${totalAmount.toFixed(2)}) is confirmed! Track real-time status at ${env.CLIENT_URL}/orders`
+  const message = `Cartival: Your order #${orderNumber} (${currency} ${totalAmount.toFixed(2)}) is confirmed! Track real-time status at ${env.CLIENT_URL}/orders`
   await sendSms({ to: phone, message })
 }
 
@@ -101,7 +101,7 @@ export const sendBuyerDeliveryUpdateSms = async (
   trackingNumber?: string,
 ): Promise<void> => {
   const trackInfo = trackingNumber ? ` Tracking: ${trackingNumber}.` : ''
-  const message = `Cartiva: Order #${orderNumber} is now ${status.toUpperCase()}.${trackInfo} View details: ${env.CLIENT_URL}/orders`
+  const message = `Cartival: Order #${orderNumber} is now ${status.toUpperCase()}.${trackInfo} View details: ${env.CLIENT_URL}/orders`
   await sendSms({ to: phone, message })
 }
 
@@ -114,6 +114,6 @@ export const sendSellerOrderAlertSms = async (
   netEarnings: number,
   currency: string,
 ): Promise<void> => {
-  const message = `Cartiva Seller: You received a new paid order #${orderNumber}! Net payout: ${currency} ${netEarnings.toFixed(2)}. Fulfill now at ${env.CLIENT_URL}/seller/orders`
+  const message = `Cartival Seller: You received a new paid order #${orderNumber}! Net payout: ${currency} ${netEarnings.toFixed(2)}. Fulfill now at ${env.CLIENT_URL}/seller/orders`
   await sendSms({ to: phone, message })
 }
