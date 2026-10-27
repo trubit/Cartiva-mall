@@ -80,8 +80,10 @@ describe('Marketplace Payment Split, Fee Accounting, and Seller Withdrawal Suite
 
   beforeEach(async () => {
     vi.clearAllMocks()
-    env.PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY || 'sk_test_ci_mock_secret_key_1234567890'
-    env.PAYSTACK_PUBLIC_KEY = process.env.PAYSTACK_PUBLIC_KEY || 'pk_test_ci_mock_public_key_1234567890'
+    env.PAYSTACK_SECRET_KEY =
+      process.env.PAYSTACK_SECRET_KEY || 'sk_test_ci_mock_secret_key_1234567890'
+    env.PAYSTACK_PUBLIC_KEY =
+      process.env.PAYSTACK_PUBLIC_KEY || 'pk_test_ci_mock_public_key_1234567890'
     await clearCommissionPolicyCache()
 
     // Reset collections
@@ -671,7 +673,10 @@ describe('Marketplace Payment Split, Fee Accounting, and Seller Withdrawal Suite
       }),
     ).rejects.toThrow(/Insufficient available balance/)
 
-    const redisSpy = vi.spyOn(redis, 'set').mockResolvedValueOnce('OK' as any).mockResolvedValueOnce(null as any)
+    const redisSpy = vi
+      .spyOn(redis, 'set')
+      .mockResolvedValueOnce('OK' as any)
+      .mockResolvedValueOnce(null as any)
 
     const results = await Promise.allSettled([
       requestWithdrawal(sellerAId.toString(), {
