@@ -133,6 +133,8 @@ jobs:
           NODE_ENV: test
           JWT_ACCESS_SECRET: ci-test-jwt-access-secret-32chars-min
           JWT_REFRESH_SECRET: ci-test-jwt-refresh-secret-32chars-min
+          PAYSTACK_SECRET_KEY: sk_test_ci_mock_secret_key_1234567890
+          PAYSTACK_PUBLIC_KEY: pk_test_ci_mock_public_key_1234567890
 
       - name: Upload server coverage report
         uses: actions/upload-artifact@v4

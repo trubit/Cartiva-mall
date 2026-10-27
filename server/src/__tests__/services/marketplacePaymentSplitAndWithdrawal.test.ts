@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, beforeAll, vi } from 'vitest'
 import mongoose from 'mongoose'
 import crypto from 'crypto'
+import { redis } from '../../database/redis.js'
 import {
   initializeTransaction,
   verifyTransaction,
@@ -66,8 +67,21 @@ describe('Marketplace Payment Split, Fee Accounting, and Seller Withdrawal Suite
     return handleWebhook(rawBody, signature)
   }
 
+  beforeAll(() => {
+    if (!process.env.PAYSTACK_SECRET_KEY) {
+      process.env.PAYSTACK_SECRET_KEY = 'sk_test_ci_mock_secret_key_1234567890'
+    }
+    if (!process.env.PAYSTACK_PUBLIC_KEY) {
+      process.env.PAYSTACK_PUBLIC_KEY = 'pk_test_ci_mock_public_key_1234567890'
+    }
+    env.PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY
+    env.PAYSTACK_PUBLIC_KEY = process.env.PAYSTACK_PUBLIC_KEY
+  })
+
   beforeEach(async () => {
     vi.clearAllMocks()
+    env.PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY || 'sk_test_ci_mock_secret_key_1234567890'
+    env.PAYSTACK_PUBLIC_KEY = process.env.PAYSTACK_PUBLIC_KEY || 'pk_test_ci_mock_public_key_1234567890'
     await clearCommissionPolicyCache()
 
     // Reset collections
@@ -657,6 +671,8 @@ describe('Marketplace Payment Split, Fee Accounting, and Seller Withdrawal Suite
       }),
     ).rejects.toThrow(/Insufficient available balance/)
 
+    const redisSpy = vi.spyOn(redis, 'set').mockResolvedValueOnce('OK' as any).mockResolvedValueOnce(null as any)
+
     const results = await Promise.allSettled([
       requestWithdrawal(sellerAId.toString(), {
         amount: 8000,
@@ -669,6 +685,8 @@ describe('Marketplace Payment Split, Fee Accounting, and Seller Withdrawal Suite
         idempotencyKey: 'CONCURRENT-KEY-2',
       }),
     ])
+
+    redisSpy.mockRestore()
 
     const fulfilled = results.filter((r) => r.status === 'fulfilled')
     const rejected = results.filter((r) => r.status === 'rejected')
