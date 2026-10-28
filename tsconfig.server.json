@@ -5,7 +5,7 @@
     "lib": ["ES2023"],
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "types": ["node"],
+    "types": ["node", "multer"],
     "skipLibCheck": true,
     "composite": true,
     "rootDir": ".",
@@ -27,5 +27,5 @@
     "esModuleInterop": true
   },
   "include": ["server/src", "src/shared"],
-  "exclude": ["node_modules", "dist"]
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts", "**/__tests__/**"]
 }
