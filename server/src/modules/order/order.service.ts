@@ -1,5 +1,5 @@
 import mongoose from 'mongoose'
-import { nanoid } from 'nanoid'
+import { nanoid } from '../../utils/nanoid.js'
 import { Order, type IOrderDocument } from './order.model.js'
 import { Checkout } from '../checkout/checkout.model.js'
 import { Cart } from '../cart/cart.model.js'

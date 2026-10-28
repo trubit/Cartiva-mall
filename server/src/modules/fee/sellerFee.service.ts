@@ -1,5 +1,5 @@
 import mongoose from 'mongoose'
-import { nanoid } from 'nanoid'
+import { nanoid } from '../../utils/nanoid.js'
 import { SellerFee, type ISellerFeeDocument } from './sellerFee.model.js'
 import {
   MarketplaceCommissionPolicy,
