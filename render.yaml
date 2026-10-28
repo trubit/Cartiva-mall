@@ -1,6 +1,7 @@
 services:
+  # ─── Backend API Service (Node.js + WebSockets) ────────────────────────
   - type: web
-    name: cartiva-api
+    name: cartiva-backend
     runtime: node
     plan: free
     region: frankfurt
@@ -10,6 +11,16 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: CLIENT_URL
+        fromService:
+          type: web
+          name: cartiva-frontend
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: FRONTEND_URL
+        fromService:
+          type: web
+          name: cartiva-frontend
+          envVarKey: RENDER_EXTERNAL_URL
       - key: MONGODB_URI
         sync: false
       - key: REDIS_URL
@@ -18,5 +29,21 @@ services:
         sync: false
       - key: JWT_REFRESH_SECRET
         sync: false
-      - key: CLIENT_URL
-        sync: false
+
+  # ─── Frontend Web App (React + Vite Static Site) ───────────────────────
+  - type: web
+    name: cartiva-frontend
+    runtime: static
+    plan: free
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: cartiva-backend
+          envVarKey: RENDER_EXTERNAL_URL
