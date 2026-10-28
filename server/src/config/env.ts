@@ -7,15 +7,36 @@ const required = (key: string): string => {
   return val
 }
 
+const parseRedisUrl = (urlStr?: string) => {
+  if (!urlStr) return null
+  try {
+    const u = new URL(urlStr)
+    return {
+      host: u.hostname,
+      port: parseInt(u.port || '6379', 10),
+      password: decodeURIComponent(u.password || ''),
+      tls: u.protocol === 'rediss:',
+    }
+  } catch {
+    return null
+  }
+}
+
+const parsedRedis = parseRedisUrl(process.env.REDIS_URL)
+
 export const env = {
   NODE_ENV: (process.env.NODE_ENV ?? 'development') as 'development' | 'production' | 'test',
   PORT: parseInt(process.env.PORT ?? '5000', 10),
   CLIENT_URL: process.env.CLIENT_URL ?? 'http://localhost:5170',
   MONGODB_URI: required('MONGODB_URI'),
-  REDIS_HOST: process.env.REDIS_HOST ?? '127.0.0.1',
-  REDIS_PORT: parseInt(process.env.REDIS_PORT ?? '6379', 10),
-  REDIS_PASSWORD: process.env.REDIS_PASSWORD ?? '',
-  REDIS_TLS_ENABLED: process.env.REDIS_TLS_ENABLED === 'true',
+  REDIS_URL: process.env.REDIS_URL ?? '',
+  REDIS_HOST: process.env.REDIS_HOST ?? parsedRedis?.host ?? '127.0.0.1',
+  REDIS_PORT: parseInt(
+    process.env.REDIS_PORT ?? (parsedRedis ? String(parsedRedis.port) : '6379'),
+    10,
+  ),
+  REDIS_PASSWORD: process.env.REDIS_PASSWORD ?? parsedRedis?.password ?? '',
+  REDIS_TLS_ENABLED: process.env.REDIS_TLS_ENABLED === 'true' || (parsedRedis?.tls ?? false),
   JWT_ACCESS_SECRET: required('JWT_ACCESS_SECRET'),
   JWT_PREVIOUS_SECRET: process.env.JWT_PREVIOUS_SECRET ?? '',
   JWT_REFRESH_SECRET: required('JWT_REFRESH_SECRET'),
