@@ -48,7 +48,7 @@ export function doRefresh(): Promise<string | null> {
   if (!refreshPromise) {
     refreshPromise = axios
       .post<{ data: { accessToken: string; user?: any } }>(
-        '/api/v1/auth/refresh',
+        `${resolvedBaseUrl}/auth/refresh`,
         {},
         { withCredentials: true },
       )

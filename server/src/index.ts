@@ -2,7 +2,7 @@ import { createServer } from 'http'
 import mongoose from 'mongoose'
 import app from './app.js'
 import { connectMongoDB } from './database/mongodb.js'
-import { connectRedis, redis } from './database/redis.js'
+import { connectRedis, disconnectRedis } from './database/redis.js'
 import { initSockets } from './sockets/index.js'
 import { env } from './config/env.js'
 import { logger } from './utils/logger.js'
@@ -129,8 +129,8 @@ const bootstrap = async (): Promise<void> => {
         await stopWebhookWorker()
         await stopEventBusWorker()
         await stopGodModeWorker()
-        await redis.quit()
-        logger.info('Redis connection closed')
+        await disconnectRedis()
+        logger.info('Redis connections closed cleanly')
         logger.info('Graceful shutdown complete')
         process.exit(0)
       } catch (err) {

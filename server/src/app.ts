@@ -7,9 +7,11 @@ import cookieParser from 'cookie-parser'
 import mongoose from 'mongoose'
 import { redis } from './database/redis.js'
 import { env } from './config/env.js'
-import { globalLimiter } from './middlewares/rateLimiter.middleware.js'
+import { globalLimiter, rateLimiterStatus } from './middlewares/rateLimiter.middleware.js'
 import { notFound, errorHandler } from './middlewares/error.middleware.js'
 import { API_PREFIX } from '../../src/shared/constants/index.js'
+import path from 'path'
+import fs from 'fs'
 
 import authRoutes from './routes/auth.routes.js'
 import profileRoutes from './routes/profile.routes.js'
@@ -164,6 +166,7 @@ app.get(['/health', `${API_PREFIX}/health`], async (_req, res) => {
     checks: {
       mongodb: dbOk ? 'ok' : dbState === 2 ? 'connecting' : 'unavailable',
       redis: redisOk ? 'ok' : 'unavailable',
+      rateLimiter: rateLimiterStatus.isDegraded ? 'degraded' : 'ok',
     },
   })
 })
@@ -178,7 +181,7 @@ app.get('/ready', async (_req, res) => {
     .then((p) => p === 'PONG')
     .catch(() => false)
 
-  const isReady = dbOk && redisOk
+  const isReady = dbOk && redisOk && !rateLimiterStatus.isDegraded
 
   res.status(isReady ? 200 : 503).json({
     success: isReady,
@@ -189,6 +192,7 @@ app.get('/ready', async (_req, res) => {
     checks: {
       mongodb: dbOk ? 'ok' : 'unavailable',
       redis: redisOk ? 'ok' : 'unavailable',
+      rateLimiter: rateLimiterStatus.isDegraded ? 'degraded' : 'ok',
     },
   })
 })
@@ -234,6 +238,46 @@ app.use(`${API_PREFIX}/event-system`, eventSystemRoutes)
 app.use(`${API_PREFIX}/godmode`, godmodeRoutes)
 app.use(`${API_PREFIX}/currencies`, currencyRoutes)
 app.use(`${API_PREFIX}/fees`, feeRoutes)
+
+// ─── Static Client Serving & SPA Routing ──────────────────────────────────────
+const clientDistPath = path.resolve(process.cwd(), 'dist')
+
+// Serve static assets (JS, CSS, images, PWA manifests)
+app.use(express.static(clientDistPath, { index: false }))
+
+// Serve SPA index.html for all non-API GET / HEAD requests, or fallback root JSON
+app.use((req, res, next) => {
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    return next()
+  }
+  if (
+    req.path.startsWith(API_PREFIX) ||
+    req.path.startsWith('/api') ||
+    req.path.startsWith('/webhooks') ||
+    req.path === '/health' ||
+    req.path === '/ready'
+  ) {
+    return next()
+  }
+
+  const indexPath = path.join(clientDistPath, 'index.html')
+  if (fs.existsSync(indexPath)) {
+    return res.sendFile(indexPath)
+  }
+
+  // Graceful root endpoint when frontend has not been compiled into dist
+  if (req.path === '/') {
+    return res.status(200).json({
+      success: true,
+      message: 'Cartival Mall API is running',
+      version: '1.0.0',
+      health: '/health',
+      ready: '/ready',
+    })
+  }
+
+  next()
+})
 
 // ─── Error Handling ───────────────────────────────────────────────────────────
 app.use(notFound)

@@ -76,6 +76,7 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       target: 'es2020',
+      emptyOutDir: false,
       cssCodeSplit: true,
       chunkSizeWarningLimit: 650,
       rollupOptions: {

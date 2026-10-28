@@ -1,26 +1,136 @@
-import rateLimit from 'express-rate-limit'
+import rateLimit, {
+  MemoryStore,
+  type Store,
+  type ClientRateLimitInfo,
+  type Options as RateLimitOptions,
+} from 'express-rate-limit'
 import { RedisStore, type RedisReply } from 'rate-limit-redis'
-import { redis } from '../database/redis.js'
+import type { Redis } from 'ioredis'
+import { redis, isRedisReady } from '../database/redis.js'
 import { env } from '../config/env.js'
+import { logger } from '../utils/logger.js'
 
-// In production each limiter gets its own RedisStore so counts are shared across
-// all cluster workers. In development Redis is optional; fall back to in-memory.
-export const makeStore = (prefix: string) => {
-  if (env.NODE_ENV !== 'production') return undefined
-  try {
-    return new RedisStore({
-      prefix,
-      sendCommand: (...args: string[]) => {
-        try {
-          return (redis.call(...(args as [string, ...string[]])) as Promise<RedisReply>).catch(
-            () => null as unknown as RedisReply,
-          )
-        } catch {
-          return Promise.resolve(null as unknown as RedisReply)
+export const rateLimiterStatus = {
+  isDegraded: false,
+  lastDegradedReason: null as string | null,
+}
+
+/**
+ * Creates a raw RedisStore with the validated sendCommand signature.
+ */
+export const createRedisStore = (prefix: string, client: Redis = redis): RedisStore => {
+  return new RedisStore({
+    prefix,
+    sendCommand: (command: string, ...args: string[]) => {
+      return client.call(command, ...args) as Promise<RedisReply>
+    },
+  })
+}
+
+/**
+ * ResilientRateLimitStore:
+ * - In production: uses distributed RedisStore across all cluster/instance workers when Redis is available.
+ * - When Redis is down or disconnected: falls back to in-memory limiting to keep endpoints protected,
+ *   logs the degraded state, and sets rateLimiterStatus.isDegraded = true for /ready status.
+ * - Recovers automatically when Redis is restored.
+ */
+export class ResilientRateLimitStore implements Store {
+  public prefix: string
+  public localKeys: boolean = false
+  private redisStore: RedisStore
+  private fallbackStore: MemoryStore
+
+  constructor(prefix: string, client: Redis = redis) {
+    this.prefix = prefix
+    this.fallbackStore = new MemoryStore()
+    this.redisStore = createRedisStore(prefix, client)
+  }
+
+  async init(options: RateLimitOptions): Promise<void> {
+    this.fallbackStore.init(options)
+    try {
+      await this.redisStore.init?.(options)
+    } catch (err) {
+      rateLimiterStatus.isDegraded = true
+      rateLimiterStatus.lastDegradedReason = err instanceof Error ? err.message : String(err)
+      logger.warn(
+        `Rate limiter Redis store init failed for ${this.prefix} — running in fallback mode`,
+        {
+          error: rateLimiterStatus.lastDegradedReason,
+        },
+      )
+    }
+  }
+
+  async increment(key: string): Promise<ClientRateLimitInfo> {
+    if (isRedisReady()) {
+      try {
+        const result = await this.redisStore.increment(key)
+        if (rateLimiterStatus.isDegraded) {
+          rateLimiterStatus.isDegraded = false
+          rateLimiterStatus.lastDegradedReason = null
+          logger.info(`Rate limiter Redis store recovered for ${this.prefix}`)
         }
-      },
+        return result
+      } catch (err) {
+        rateLimiterStatus.isDegraded = true
+        rateLimiterStatus.lastDegradedReason = err instanceof Error ? err.message : String(err)
+        logger.warn(
+          `Rate limiter Redis increment failed for ${this.prefix} — falling back to memory store`,
+          {
+            error: rateLimiterStatus.lastDegradedReason,
+          },
+        )
+      }
+    } else if (!rateLimiterStatus.isDegraded) {
+      rateLimiterStatus.isDegraded = true
+      rateLimiterStatus.lastDegradedReason = 'Redis client not in ready state'
+    }
+    return this.fallbackStore.increment(key)
+  }
+
+  async decrement(key: string): Promise<void> {
+    if (isRedisReady()) {
+      try {
+        await this.redisStore.decrement(key)
+        return
+      } catch {
+        // Fall back to memory decrement
+      }
+    }
+    await this.fallbackStore.decrement(key)
+  }
+
+  async resetKey(key: string): Promise<void> {
+    if (isRedisReady()) {
+      try {
+        await this.redisStore.resetKey(key)
+      } catch {
+        // Fall back to memory reset
+      }
+    }
+    await this.fallbackStore.resetKey(key)
+  }
+
+  async resetAll(): Promise<void> {
+    await this.fallbackStore.resetAll?.()
+  }
+
+  shutdown(): void {
+    this.fallbackStore.shutdown?.()
+  }
+}
+
+// In production each limiter gets its own ResilientRateLimitStore so counts are shared across
+// all cluster workers. In development/test Redis is optional; fall back to in-memory.
+export const makeStore = (prefix: string, client?: Redis): Store | undefined => {
+  if (env.NODE_ENV !== 'production' && !client) return undefined
+  try {
+    return new ResilientRateLimitStore(prefix, client)
+  } catch (err) {
+    logger.warn(`Failed to construct RedisStore for ${prefix}, using default memory store`, {
+      error: err instanceof Error ? err.message : String(err),
     })
-  } catch {
     return undefined
   }
 }

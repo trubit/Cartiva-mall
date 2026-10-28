@@ -5,7 +5,7 @@ services:
     runtime: node
     plan: free
     region: frankfurt
-    buildCommand: npm install --include=dev && npm run build:server
+    buildCommand: npm install --include=dev && npm run build
     startCommand: npm run start:server
     healthCheckPath: /health
     envVars:
