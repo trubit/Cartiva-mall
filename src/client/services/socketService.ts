@@ -5,7 +5,14 @@ let currentToken: string | null = null
 
 export const getSocket = (): Socket => {
   if (!socket) {
-    socket = io(window.location.origin, {
+    const rawApiUrl = (import.meta.env.VITE_API_URL as string | undefined) || ''
+    const socketOrigin = rawApiUrl
+      ? rawApiUrl.replace(/\/api\/v1\/?$/, '').replace(/\/$/, '')
+      : typeof window !== 'undefined'
+        ? window.location.origin
+        : ''
+
+    socket = io(socketOrigin, {
       withCredentials: true,
       transports: ['polling', 'websocket'],
       autoConnect: false,

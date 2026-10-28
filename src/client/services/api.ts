@@ -2,8 +2,15 @@ import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from 'axio
 import { useAuthStore } from '../store/authStore.js'
 import { withJitter, delay } from '../utils/resilience.js'
 
+const rawApiUrl = (import.meta.env.VITE_API_URL as string | undefined) || ''
+const resolvedBaseUrl = rawApiUrl
+  ? rawApiUrl.endsWith('/api/v1')
+    ? rawApiUrl
+    : `${rawApiUrl.replace(/\/$/, '')}/api/v1`
+  : '/api/v1'
+
 const api: AxiosInstance = axios.create({
-  baseURL: '/api/v1',
+  baseURL: resolvedBaseUrl,
   withCredentials: true,
   headers: { 'Content-Type': 'application/json' },
   timeout: 15000,
