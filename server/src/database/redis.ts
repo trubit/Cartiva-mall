@@ -2,13 +2,19 @@ import { Redis, type RedisOptions } from 'ioredis'
 import { env } from '../config/env.js'
 import { logger } from '../utils/logger.js'
 
-// Shared retry back-off: 200 ms → 10 s cap, give up after 20 attempts.
+// Shared retry back-off:
+// In test mode without Redis, fail immediately rather than hanging the test runner for 40s.
+// In production, back-off with 200 ms -> 10 s cap, up to 20 attempts.
 const retryStrategy = (times: number) => {
+  if (env.NODE_ENV === 'test') {
+    return null
+  }
   if (times > 20) return null
   return Math.min(times * 200, 10_000)
 }
 
 const buildRedisOptions = (extra: Partial<RedisOptions> = {}): RedisOptions => {
+  const isTest = env.NODE_ENV === 'test'
   return {
     host: env.REDIS_HOST,
     port: env.REDIS_PORT,
@@ -16,8 +22,9 @@ const buildRedisOptions = (extra: Partial<RedisOptions> = {}): RedisOptions => {
     ...(env.REDIS_TLS_ENABLED ? { tls: {} } : {}),
     retryStrategy,
     lazyConnect: true,
-    enableOfflineQueue: true,
-    maxRetriesPerRequest: 3,
+    enableOfflineQueue: !isTest,
+    maxRetriesPerRequest: isTest ? 1 : 3,
+    connectTimeout: isTest ? 1_000 : 10_000,
     ...extra,
   }
 }
