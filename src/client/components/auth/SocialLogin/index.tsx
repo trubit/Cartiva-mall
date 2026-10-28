@@ -18,7 +18,8 @@ export default function SocialLogin({ role }: SocialLoginProps) {
   // Direct mobile redirect fallback to avoid popup blockers on mobile browsers
   const startDirectGoogleRedirect = () => {
     try {
-      const redirectUri = window.location.origin + window.location.pathname
+      // Use canonical /login redirect URL to match registered OAuth 2.0 redirect URIs
+      const redirectUri = window.location.origin + '/login'
       const scope = encodeURIComponent('openid email profile')
       const state = encodeURIComponent(JSON.stringify({ role: role || 'user' }))
       const oauthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${encodeURIComponent(
@@ -53,7 +54,7 @@ export default function SocialLogin({ role }: SocialLoginProps) {
         googleAuthMutation.mutate({ token: accessToken, role: targetRole })
       }
     }
-  }, [])
+  }, [googleAuthMutation, role])
 
   // Desktop popup flow via useGoogleLogin
   const loginWithGooglePopup = useGoogleLogin({
@@ -64,18 +65,25 @@ export default function SocialLogin({ role }: SocialLoginProps) {
       }
     },
     onError: (errorResponse) => {
-      setErrorMsg(
-        `Google sign-in failed: ${errorResponse.error_description || errorResponse.error || 'Please try again.'}`,
-      )
+      const desc = errorResponse.error_description || errorResponse.error
+      if (desc?.includes('origin_mismatch') || desc?.includes('unauthorized')) {
+        setErrorMsg(
+          'Google Sign-In is awaiting domain authorization in Google Cloud Console. Please sign in with email and password below.',
+        )
+      } else {
+        setErrorMsg(`Google sign-in failed: ${desc || 'Please try again or use email sign-in.'}`)
+      }
     },
     onNonOAuthError: (nonOAuthError) => {
       if (nonOAuthError.type === 'popup_failed_to_open') {
         // Automatically switch to full-page redirect if mobile browser blocked popup
         startDirectGoogleRedirect()
       } else if (nonOAuthError.type === 'popup_closed') {
-        setErrorMsg('Google sign-in was closed before completing. Please try again.')
+        setErrorMsg(
+          'Google sign-in window was closed. If an authorization error (origin_mismatch) appeared, domain verification is pending in Google Cloud Console. You can also sign in with your email and password below.',
+        )
       } else {
-        setErrorMsg('Google sign-in failed. Please try again.')
+        setErrorMsg('Google sign-in could not be completed. Please use email and password sign-in.')
       }
     },
     flow: 'implicit',

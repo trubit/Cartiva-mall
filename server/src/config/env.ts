@@ -70,6 +70,8 @@ export const env = {
   SMS_FROM: process.env.SMS_FROM ?? process.env.TERMII_SENDER_ID ?? 'Cartiva',
   FRONTEND_URL: process.env.FRONTEND_URL ?? process.env.CLIENT_URL ?? 'http://localhost:5170',
   ADMIN_EMAIL: process.env.ADMIN_EMAIL ?? '',
+  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID ?? process.env.VITE_GOOGLE_CLIENT_ID ?? '',
+  GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET ?? '',
   isDev(): boolean {
     return this.NODE_ENV === 'development'
   },
