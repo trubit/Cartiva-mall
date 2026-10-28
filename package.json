@@ -12,6 +12,8 @@
     "kill:ports": "node scripts/kill-ports.mjs",
     "build": "tsc -b && vite build",
     "build:server": "tsc -b tsconfig.server.json --force",
+    "start": "node dist/server/server/src/index.js",
+    "start:server": "node dist/server/server/src/index.js",
     "lint": "eslint .",
     "preview": "vite preview",
     "format": "prettier --write .",
