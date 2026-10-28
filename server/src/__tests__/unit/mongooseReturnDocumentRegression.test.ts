@@ -29,11 +29,13 @@ describe('Mongoose returnDocument & Deprecation Regression Suite', () => {
     const warnings: string[] = []
 
     const originalEmitWarning = process.emitWarning
-    const emitWarningSpy = vi.spyOn(process, 'emitWarning').mockImplementation((warning, ...args) => {
-      const msg = typeof warning === 'string' ? warning : warning?.message || ''
-      warnings.push(msg)
-      return originalEmitWarning.call(process, warning, ...args as [any, any, any])
-    })
+    const emitWarningSpy = vi
+      .spyOn(process, 'emitWarning')
+      .mockImplementation((warning, ...args) => {
+        const msg = typeof warning === 'string' ? warning : warning?.message || ''
+        warnings.push(msg)
+        return originalEmitWarning.call(process, warning, ...(args as [any, any, any]))
+      })
 
     const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation((...args) => {
       warnings.push(args.map(String).join(' '))
@@ -160,9 +162,15 @@ describe('Mongoose returnDocument & Deprecation Regression Suite', () => {
               let idx = 0
               while ((idx = content.indexOf(method, idx)) !== -1) {
                 const snippet = content.slice(idx, idx + 300)
-                if (/(['"]?new['"]?\s*:\s*(true|false)|['"]?returnOriginal['"]?\s*:)/.test(snippet)) {
+                if (
+                  /(['"]?new['"]?\s*:\s*(true|false)|['"]?returnOriginal['"]?\s*:)/.test(snippet)
+                ) {
                   const line = content.slice(0, idx).split('\n').length
-                  deprecatedOccurrences.push({ file: fullPath, line, snippet: snippet.slice(0, 150) })
+                  deprecatedOccurrences.push({
+                    file: fullPath,
+                    line,
+                    snippet: snippet.slice(0, 150),
+                  })
                 }
                 idx += method.length
               }
