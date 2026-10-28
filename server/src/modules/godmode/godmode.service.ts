@@ -784,7 +784,7 @@ export const seedDefaultMarketRules = async (): Promise<void> => {
     await MarketRuleModel.findOneAndUpdate(
       { ruleId: rule.ruleId },
       { $setOnInsert: rule },
-      { upsert: true, new: false },
+      { upsert: true, returnDocument: 'before' },
     )
   }
 

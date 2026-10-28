@@ -48,7 +48,7 @@ async function main() {
   const result = await User.findOneAndUpdate(
     { email: ADMIN_EMAIL },
     { $set: { role: 'admin', isActive: true, emailVerified: true } },
-    { new: true },
+    { returnDocument: 'after' },
   )
 
   if (!result) {
