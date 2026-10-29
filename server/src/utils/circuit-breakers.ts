@@ -73,7 +73,10 @@ export async function callBrevo<T>(fn: () => Promise<T>): Promise<T> {
   } catch (err) {
     if (err instanceof CircuitBreakerOpenError) {
       logger.error('Brevo circuit breaker OPEN', { error: err.message })
-      throw new AppError('Email delivery service is temporarily unavailable. Please try again shortly.', 503)
+      throw new AppError(
+        'Email delivery service is temporarily unavailable. Please try again shortly.',
+        503,
+      )
     }
     throw err
   }

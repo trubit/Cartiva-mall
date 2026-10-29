@@ -82,7 +82,9 @@ const getSmtpTransporter = (): Transporter => {
 
 const sendViaBrevoSMTP = async (options: MailOptions): Promise<void> => {
   const transporter = getSmtpTransporter()
-  const { name, email } = parseFrom(env.EMAIL_FROM || env.EMAIL_USER || 'Cartiva <noreply@cartiva.com>')
+  const { name, email } = parseFrom(
+    env.EMAIL_FROM || env.EMAIL_USER || 'Cartiva <noreply@cartiva.com>',
+  )
 
   await transporter.sendMail({
     from: `"${name}" <${email}>`,
