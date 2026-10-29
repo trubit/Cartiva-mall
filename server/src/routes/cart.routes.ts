@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { authenticate } from '../middlewares/auth.middleware.js'
+import { authenticate, optionalAuthenticate } from '../middlewares/auth.middleware.js'
 import { validate } from '../middlewares/validate.middleware.js'
 import {
   addToCartSchema,
@@ -10,30 +10,22 @@ import * as cartController from '../modules/cart/cart.controller.js'
 
 const router = Router()
 
-// Optional authentication middleware wrapper — populates req.user if JWT present, but does not reject guest requests
-const optionalAuth = (req: any, res: any, next: any) => {
-  if (req.headers.authorization) {
-    return authenticate(req, res, next)
-  }
-  next()
-}
-
-router.get('/', optionalAuth, cartController.getCart)
-router.get('/count', optionalAuth, cartController.getCartCount)
-router.post('/add', optionalAuth, validate(addToCartSchema), cartController.addToCart)
-router.post('/items', optionalAuth, validate(addToCartSchema), cartController.addToCart)
-router.post('/sync', optionalAuth, validate(syncCartSchema), cartController.syncCart)
+router.get('/', optionalAuthenticate, cartController.getCart)
+router.get('/count', optionalAuthenticate, cartController.getCartCount)
+router.post('/add', optionalAuthenticate, validate(addToCartSchema), cartController.addToCart)
+router.post('/items', optionalAuthenticate, validate(addToCartSchema), cartController.addToCart)
+router.post('/sync', optionalAuthenticate, validate(syncCartSchema), cartController.syncCart)
 router.put(
   '/update/:productId',
-  optionalAuth,
+  optionalAuthenticate,
   validate(updateCartItemSchema),
   cartController.updateCartItem,
 )
-router.patch('/items/:itemId', optionalAuth, cartController.updateCartItem)
-router.delete('/remove/:productId', optionalAuth, cartController.removeFromCart)
-router.delete('/items/:itemId', optionalAuth, cartController.removeFromCart)
-router.delete('/clear', optionalAuth, cartController.clearCart)
-router.delete('/', optionalAuth, cartController.clearCart)
+router.patch('/items/:itemId', optionalAuthenticate, cartController.updateCartItem)
+router.delete('/remove/:productId', optionalAuthenticate, cartController.removeFromCart)
+router.delete('/items/:itemId', optionalAuthenticate, cartController.removeFromCart)
+router.delete('/clear', optionalAuthenticate, cartController.clearCart)
+router.delete('/', optionalAuthenticate, cartController.clearCart)
 
 // Save for later endpoints (require authentication)
 router.get('/save-for-later', authenticate, cartController.getSavedItems)

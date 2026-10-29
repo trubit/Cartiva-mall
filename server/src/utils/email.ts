@@ -2,6 +2,7 @@ import nodemailer, { type Transporter } from 'nodemailer'
 import { env } from '../config/env.js'
 import { logger } from './logger.js'
 import { callBrevo } from './circuit-breakers.js'
+import { AppError } from '../middlewares/error.middleware.js'
 
 interface MailOptions {
   to: string
@@ -10,7 +11,7 @@ interface MailOptions {
   text?: string
 }
 
-// ─── Brevo REST API (Preferred) ────────────────────────────────────────────────
+// ─── Brevo REST API (Preferred when REST API key xkeysib- is present) ────────
 const sendViaBrevoAPI = async (
   options: MailOptions & { from: string; fromName: string },
 ): Promise<void> => {
@@ -52,18 +53,39 @@ const sendViaBrevoAPI = async (
   })
 }
 
-// ─── Brevo SMTP Relay (Tier 2 Fallback) ─────────────────────────────────────────
+// ─── Brevo / Standard SMTP Relay (High-Performance Pooled Transporter) ────────
+let _smtpTransporter: Transporter | null = null
+
+const getSmtpTransporter = (): Transporter => {
+  if (!_smtpTransporter) {
+    const smtpPass = env.EMAIL_PASS || env.BREVO_API_KEY
+    const isSecure = env.EMAIL_PORT === 465
+
+    _smtpTransporter = nodemailer.createTransport({
+      pool: true,
+      maxConnections: 5,
+      maxMessages: 100,
+      host: env.EMAIL_HOST || 'smtp-relay.brevo.com',
+      port: env.EMAIL_PORT || 587,
+      secure: isSecure,
+      auth: {
+        user: env.EMAIL_USER,
+        pass: smtpPass,
+      },
+      connectionTimeout: 15000,
+      greetingTimeout: 10000,
+      socketTimeout: 20000,
+    })
+  }
+  return _smtpTransporter
+}
+
 const sendViaBrevoSMTP = async (options: MailOptions): Promise<void> => {
-  const transporter = nodemailer.createTransport({
-    host: env.EMAIL_HOST || 'smtp-relay.brevo.com',
-    port: env.EMAIL_PORT || 587,
-    secure: false,
-    auth: { user: env.EMAIL_USER, pass: env.EMAIL_PASS },
-    connectionTimeout: 10000,
-  })
+  const transporter = getSmtpTransporter()
+  const { name, email } = parseFrom(env.EMAIL_FROM || env.EMAIL_USER || 'Cartiva <noreply@cartiva.com>')
 
   await transporter.sendMail({
-    from: env.EMAIL_FROM,
+    from: `"${name}" <${email}>`,
     to: options.to,
     subject: options.subject,
     html: options.html,
@@ -71,7 +93,7 @@ const sendViaBrevoSMTP = async (options: MailOptions): Promise<void> => {
   })
 }
 
-// ─── Ethereal Fallback (Tier 3 Dev Preview) ────────────────────────────────────
+// ─── Ethereal Fallback (Tier 3 Dev Preview Only) ──────────────────────────────
 let _ethereal: Transporter | null = null
 
 const sendViaEthereal = async (options: MailOptions): Promise<void> => {
@@ -111,10 +133,23 @@ const parseFrom = (from: string): { name: string; email: string } => {
 
 // ─── Startup check ─────────────────────────────────────────────────────────────
 export const verifyEmailConfig = async (): Promise<void> => {
-  if (env.BREVO_API_KEY) {
+  const hasRestKey = Boolean(env.BREVO_API_KEY && !env.BREVO_API_KEY.startsWith('xsmtpsib'))
+  const hasSmtpCreds = Boolean(env.EMAIL_USER && (env.EMAIL_PASS || env.BREVO_API_KEY))
+
+  if (hasRestKey) {
     logger.info(`Email ready  provider=Brevo-API  from="${env.EMAIL_FROM}"`)
+  } else if (hasSmtpCreds) {
+    logger.info(
+      `Email ready  provider=Brevo-SMTP  host="${env.EMAIL_HOST}:${env.EMAIL_PORT}"  user="${env.EMAIL_USER}"  from="${env.EMAIL_FROM}"`,
+    )
+    getSmtpTransporter()
+      .verify()
+      .then(() => logger.info('Brevo SMTP relay connection verified successfully'))
+      .catch((err) =>
+        logger.warn('Brevo SMTP initial verification warning', { error: (err as Error).message }),
+      )
   } else {
-    logger.warn('Email BREVO_API_KEY not set — using local preview fallback')
+    logger.warn('No production email credentials configured — falling back to local preview')
   }
 }
 
@@ -125,34 +160,53 @@ export const sendEmail = async (options: MailOptions): Promise<void> => {
     return
   }
 
-  if (env.BREVO_API_KEY) {
+  const hasRestKey = Boolean(env.BREVO_API_KEY && !env.BREVO_API_KEY.startsWith('xsmtpsib'))
+  const hasSmtpCreds = Boolean(env.EMAIL_USER && (env.EMAIL_PASS || env.BREVO_API_KEY))
+
+  let lastError: Error | null = null
+
+  // Tier 1: Brevo REST API (only if a valid non-SMTP Brevo API key is configured)
+  if (hasRestKey) {
     try {
       const { name, email } = parseFrom(env.EMAIL_FROM || env.EMAIL_USER || 'noreply@cartiva.com')
       await sendViaBrevoAPI({ ...options, from: email, fromName: name })
       logger.info(`Email delivered via Brevo API  to="${options.to}"  subject="${options.subject}"`)
       return
     } catch (apiErr) {
+      lastError = apiErr as Error
       logger.warn('Brevo REST API attempt failed, trying Brevo SMTP fallback...', {
         error: (apiErr as Error).message,
       })
-
-      if (env.EMAIL_USER && env.EMAIL_PASS) {
-        try {
-          await sendViaBrevoSMTP(options)
-          logger.info(
-            `Email delivered via Brevo SMTP relay  to="${options.to}"  subject="${options.subject}"`,
-          )
-          return
-        } catch (smtpErr) {
-          logger.warn('Brevo SMTP relay failed, attempting Ethereal preview fallback...', {
-            error: (smtpErr as Error).message,
-          })
-        }
-      }
     }
   }
 
-  // Fallback to local Ethereal preview if external networks block live delivery
+  // Tier 2: Brevo / Standard SMTP Relay (direct or fallback)
+  if (hasSmtpCreds) {
+    try {
+      await sendViaBrevoSMTP(options)
+      logger.info(
+        `Email delivered via SMTP relay  to="${options.to}"  subject="${options.subject}"`,
+      )
+      return
+    } catch (smtpErr) {
+      lastError = smtpErr as Error
+      logger.warn('SMTP relay delivery failed', {
+        error: (smtpErr as Error).message,
+      })
+    }
+  }
+
+  // Tier 3: In production, do NOT pretend success with Ethereal — throw error so caller knows
+  if (env.isProd()) {
+    logger.error('All production email delivery methods failed', {
+      to: options.to,
+      subject: options.subject,
+      lastError: lastError?.message,
+    })
+    throw new AppError('Failed to send verification email. Please try again.', 500)
+  }
+
+  // Tier 3: Local Dev Preview fallback
   await sendViaEthereal(options)
 }
 

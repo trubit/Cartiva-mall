@@ -50,10 +50,16 @@ export const env = {
   AUTH_SERVICE_URL: process.env.AUTH_SERVICE_URL ?? 'http://localhost:5000',
   FINANCE_SERVICE_URL: process.env.FINANCE_SERVICE_URL ?? 'http://localhost:5000',
   LOGISTICS_SERVICE_URL: process.env.LOGISTICS_SERVICE_URL ?? 'http://localhost:5000',
-  EMAIL_HOST: process.env.EMAIL_HOST ?? 'smtp.gmail.com',
+  EMAIL_HOST:
+    process.env.EMAIL_HOST ??
+    (process.env.EMAIL_USER?.includes('brevo') || process.env.BREVO_API_KEY
+      ? 'smtp-relay.brevo.com'
+      : 'smtp.gmail.com'),
   EMAIL_PORT: parseInt(process.env.EMAIL_PORT ?? '587', 10),
   EMAIL_USER: process.env.EMAIL_USER ?? '',
-  EMAIL_PASS: process.env.EMAIL_PASS ?? '',
+  EMAIL_PASS:
+    process.env.EMAIL_PASS ??
+    (process.env.BREVO_API_KEY?.startsWith('xsmtpsib') ? process.env.BREVO_API_KEY : ''),
   EMAIL_FROM: process.env.EMAIL_FROM ?? 'Cartiva <noreply@cartiva.com>',
   BREVO_API_KEY: process.env.BREVO_API_KEY ?? '',
   CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME ?? '',
