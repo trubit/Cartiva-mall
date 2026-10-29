@@ -56,11 +56,13 @@ export const env = {
       ? 'smtp-relay.brevo.com'
       : 'smtp.gmail.com'),
   EMAIL_PORT: parseInt(process.env.EMAIL_PORT ?? '587', 10),
-  EMAIL_USER: process.env.EMAIL_USER ?? '',
+  EMAIL_USER:
+    process.env.EMAIL_USER ??
+    (process.env.BREVO_API_KEY?.startsWith('xsmtpsib') ? 'a63f88001@smtp-brevo.com' : ''),
   EMAIL_PASS:
     process.env.EMAIL_PASS ??
     (process.env.BREVO_API_KEY?.startsWith('xsmtpsib') ? process.env.BREVO_API_KEY : ''),
-  EMAIL_FROM: process.env.EMAIL_FROM ?? 'Cartiva <noreply@cartiva.com>',
+  EMAIL_FROM: process.env.EMAIL_FROM ?? 'Cartiva <trustezika831@gmail.com>',
   BREVO_API_KEY: process.env.BREVO_API_KEY ?? '',
   CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME ?? '',
   CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY ?? '',

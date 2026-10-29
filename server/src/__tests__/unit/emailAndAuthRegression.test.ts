@@ -19,6 +19,7 @@ describe('Email Delivery & Resilient Fallback Suite', () => {
     const originalEnvNodeEnv = env.NODE_ENV
     try {
       // @ts-expect-error mutating for test
+
       env.NODE_ENV = 'production'
       process.env.NODE_ENV = 'production'
 

@@ -58,6 +58,9 @@ let _smtpTransporter: Transporter | null = null
 
 const getSmtpTransporter = (): Transporter => {
   if (!_smtpTransporter) {
+    const smtpUser =
+      env.EMAIL_USER ||
+      (env.BREVO_API_KEY?.startsWith('xsmtpsib') ? 'a63f88001@smtp-brevo.com' : '')
     const smtpPass = env.EMAIL_PASS || env.BREVO_API_KEY
     const isSecure = env.EMAIL_PORT === 465
 
@@ -69,7 +72,7 @@ const getSmtpTransporter = (): Transporter => {
       port: env.EMAIL_PORT || 587,
       secure: isSecure,
       auth: {
-        user: env.EMAIL_USER,
+        user: smtpUser,
         pass: smtpPass,
       },
       connectionTimeout: 15000,
@@ -82,9 +85,7 @@ const getSmtpTransporter = (): Transporter => {
 
 const sendViaBrevoSMTP = async (options: MailOptions): Promise<void> => {
   const transporter = getSmtpTransporter()
-  const { name, email } = parseFrom(
-    env.EMAIL_FROM || env.EMAIL_USER || 'Cartiva <noreply@cartiva.com>',
-  )
+  const { name, email } = parseFrom(env.EMAIL_FROM || 'Cartiva <trustezika831@gmail.com>')
 
   await transporter.sendMail({
     from: `"${name}" <${email}>`,
@@ -136,7 +137,10 @@ const parseFrom = (from: string): { name: string; email: string } => {
 // ─── Startup check ─────────────────────────────────────────────────────────────
 export const verifyEmailConfig = async (): Promise<void> => {
   const hasRestKey = Boolean(env.BREVO_API_KEY && !env.BREVO_API_KEY.startsWith('xsmtpsib'))
-  const hasSmtpCreds = Boolean(env.EMAIL_USER && (env.EMAIL_PASS || env.BREVO_API_KEY))
+  const hasSmtpCreds = Boolean(
+    (env.EMAIL_USER || env.BREVO_API_KEY?.startsWith('xsmtpsib')) &&
+    (env.EMAIL_PASS || env.BREVO_API_KEY),
+  )
 
   if (hasRestKey) {
     logger.info(`Email ready  provider=Brevo-API  from="${env.EMAIL_FROM}"`)
@@ -163,7 +167,10 @@ export const sendEmail = async (options: MailOptions): Promise<void> => {
   }
 
   const hasRestKey = Boolean(env.BREVO_API_KEY && !env.BREVO_API_KEY.startsWith('xsmtpsib'))
-  const hasSmtpCreds = Boolean(env.EMAIL_USER && (env.EMAIL_PASS || env.BREVO_API_KEY))
+  const hasSmtpCreds = Boolean(
+    (env.EMAIL_USER || env.BREVO_API_KEY?.startsWith('xsmtpsib')) &&
+    (env.EMAIL_PASS || env.BREVO_API_KEY),
+  )
 
   let lastError: Error | null = null
 
