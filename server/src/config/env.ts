@@ -55,7 +55,7 @@ export const env = {
     (process.env.EMAIL_USER?.includes('brevo') || process.env.BREVO_API_KEY
       ? 'smtp-relay.brevo.com'
       : 'smtp.gmail.com'),
-  EMAIL_PORT: parseInt(process.env.EMAIL_PORT ?? '587', 10),
+  EMAIL_PORT: parseInt(process.env.EMAIL_PORT ?? (process.env.BREVO_API_KEY ? '2525' : '587'), 10),
   EMAIL_USER:
     process.env.EMAIL_USER ??
     (process.env.BREVO_API_KEY?.startsWith('xsmtpsib') ? 'a63f88001@smtp-brevo.com' : ''),

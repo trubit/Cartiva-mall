@@ -54,22 +54,24 @@ const sendViaBrevoAPI = async (
 }
 
 // ─── Brevo / Standard SMTP Relay (High-Performance Pooled Transporter) ────────
-let _smtpTransporter: Transporter | null = null
+const _transporters = new Map<number, Transporter>()
 
-const getSmtpTransporter = (): Transporter => {
-  if (!_smtpTransporter) {
+const getSmtpTransporter = (targetPort?: number): Transporter => {
+  const port = targetPort || env.EMAIL_PORT || 2525
+  let transporter = _transporters.get(port)
+  if (!transporter) {
     const smtpUser =
       env.EMAIL_USER ||
       (env.BREVO_API_KEY?.startsWith('xsmtpsib') ? 'a63f88001@smtp-brevo.com' : '')
     const smtpPass = env.EMAIL_PASS || env.BREVO_API_KEY
-    const isSecure = env.EMAIL_PORT === 465
+    const isSecure = port === 465
 
-    _smtpTransporter = nodemailer.createTransport({
+    transporter = nodemailer.createTransport({
       pool: true,
       maxConnections: 5,
       maxMessages: 100,
       host: env.EMAIL_HOST || 'smtp-relay.brevo.com',
-      port: env.EMAIL_PORT || 587,
+      port,
       secure: isSecure,
       auth: {
         user: smtpUser,
@@ -79,21 +81,39 @@ const getSmtpTransporter = (): Transporter => {
       greetingTimeout: 10000,
       socketTimeout: 20000,
     })
+    _transporters.set(port, transporter)
   }
-  return _smtpTransporter
+  return transporter
 }
 
 const sendViaBrevoSMTP = async (options: MailOptions): Promise<void> => {
-  const transporter = getSmtpTransporter()
-  const { name, email } = parseFrom(env.EMAIL_FROM || 'Cartiva <trustezika831@gmail.com>')
+  const primaryPort = env.EMAIL_PORT || 2525
+  const fallbackPort = primaryPort === 2525 ? 587 : 2525
+  const portsToTry = [primaryPort, fallbackPort]
+  let lastErr: Error | null = null
 
-  await transporter.sendMail({
-    from: `"${name}" <${email}>`,
-    to: options.to,
-    subject: options.subject,
-    html: options.html,
-    text: options.text,
-  })
+  for (const port of portsToTry) {
+    try {
+      const transporter = getSmtpTransporter(port)
+      const { name, email } = parseFrom(env.EMAIL_FROM || 'Cartiva <trustezika831@gmail.com>')
+
+      await transporter.sendMail({
+        from: `"${name}" <${email}>`,
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+        text: options.text,
+      })
+      return
+    } catch (err) {
+      lastErr = err as Error
+      logger.warn(`SMTP delivery failed on port ${port}, trying alternative port if available...`, {
+        error: (err as Error).message,
+      })
+    }
+  }
+
+  if (lastErr) throw lastErr
 }
 
 // ─── Ethereal Fallback (Tier 3 Dev Preview Only) ──────────────────────────────
