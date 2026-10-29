@@ -180,10 +180,21 @@ export const resetPasswordWithOtp = async (
 export const loginUser = async (email: string, password: string) => {
   const cleanEmail = email.toLowerCase().trim()
   const user = await User.findOne({ email: cleanEmail }).select(
-    '+password +refreshTokens role isActive emailVerified firstName lastName',
+    '+password +refreshTokens role isActive emailVerified firstName lastName authProvider',
   )
 
-  if (!user || !(await user.comparePassword(password))) {
+  if (!user) {
+    throw new AppError('Invalid email or password', 401)
+  }
+
+  if (!user.password && user.authProvider === 'google') {
+    throw new AppError(
+      'This account was created with Google. Please click "Continue with Google" to sign in.',
+      400,
+    )
+  }
+
+  if (!(await user.comparePassword(password))) {
     throw new AppError('Invalid email or password', 401)
   }
 
@@ -207,14 +218,18 @@ export const loginUser = async (email: string, password: string) => {
 
   // Upgrade bcrypt cost factor if needed
   if (user.password) {
-    const currentRounds = bcrypt.getRounds(user.password)
-    if (currentRounds < 12) {
-      bcrypt
-        .hash(password, 12)
-        .then((upgraded) => User.updateOne({ _id: user._id }, { $set: { password: upgraded } }))
-        .catch((err: unknown) =>
-          logger.warn('bcrypt cost-factor upgrade failed', { userId: user._id, err }),
-        )
+    try {
+      const currentRounds = bcrypt.getRounds(user.password)
+      if (currentRounds < 12) {
+        bcrypt
+          .hash(password, 12)
+          .then((upgraded) => User.updateOne({ _id: user._id }, { $set: { password: upgraded } }))
+          .catch((err: unknown) =>
+            logger.warn('bcrypt cost-factor upgrade failed', { userId: user._id, err }),
+          )
+      }
+    } catch {
+      // Safe fallback if rounds extraction fails
     }
   }
 

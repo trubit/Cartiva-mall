@@ -55,4 +55,17 @@ describe('Email Delivery & Resilient Fallback Suite', () => {
       process.env.NODE_ENV = originalNodeEnv
     }
   })
+
+  it('safely handles comparePassword when user has no password set (e.g. Google OAuth)', async () => {
+    const { User } = await import('../../modules/user/user.model.js')
+    const userInstance = new User({
+      email: 'oauth_user@example.com',
+      authProvider: 'google',
+      googleId: '123456789',
+      // password intentionally omitted
+    })
+
+    // Should return false and NEVER throw an uncaught error
+    await expect(userInstance.comparePassword('anyPassword')).resolves.toBe(false)
+  })
 })
