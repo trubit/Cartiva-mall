@@ -33,7 +33,13 @@ let refreshPromise: Promise<string | null> | null = null
 
 // Endpoints that must NEVER trigger automatic token refresh
 // (avoids infinite refresh→401→refresh loops)
-const AUTH_BYPASS_PATHS = ['/auth/refresh', '/auth/login', '/auth/register', '/auth/logout']
+const AUTH_BYPASS_PATHS = [
+  '/auth/refresh',
+  '/auth/login',
+  '/auth/register',
+  '/auth/logout',
+  '/auth/google',
+]
 
 function isAuthBypassPath(url?: string): boolean {
   if (!url) return false

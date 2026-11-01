@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { FiShield, FiLock, FiEye, FiEyeOff } from 'react-icons/fi'
 import { useChangePassword } from '../../../hooks/useDashboard.js'
+import { useAuthStore } from '../../../store/authStore.js'
 
 type PasswordForm = {
   currentPassword: string
@@ -69,6 +70,11 @@ function PasswordInput({
 
 export default function SecurityPage() {
   const changePassword = useChangePassword()
+  const user = useAuthStore((s) => s.user)
+  const updateUser = useAuthStore((s) => s.updateUser)
+
+  const hasExistingPassword =
+    user?.hasPassword !== false && (user?.authProvider !== 'google' || Boolean(user?.hasPassword))
 
   const [form, setForm] = useState<PasswordForm>({
     currentPassword: '',
@@ -97,6 +103,11 @@ export default function SecurityPage() {
     e.preventDefault()
     setError(null)
 
+    if (hasExistingPassword && !form.currentPassword) {
+      setError('Current password is required')
+      return
+    }
+
     if (form.newPassword !== form.confirmPassword) {
       setError('New passwords do not match')
       return
@@ -105,17 +116,28 @@ export default function SecurityPage() {
       setError('New password must be at least 8 characters')
       return
     }
-    if (form.newPassword === form.currentPassword) {
+    if (hasExistingPassword && form.newPassword === form.currentPassword) {
       setError('New password must be different from current password')
       return
     }
 
     try {
-      await changePassword.mutateAsync(form)
+      await changePassword.mutateAsync({
+        currentPassword: hasExistingPassword ? form.currentPassword : '',
+        newPassword: form.newPassword,
+        confirmPassword: form.confirmPassword,
+      })
       setSuccess(true)
+      updateUser({ hasPassword: true })
       setForm({ currentPassword: '', newPassword: '', confirmPassword: '' })
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to change password')
+      setError(
+        err instanceof Error
+          ? err.message
+          : hasExistingPassword
+            ? 'Failed to change password'
+            : 'Failed to set password',
+      )
     }
   }
 
@@ -137,31 +159,40 @@ export default function SecurityPage() {
           <FiLock />
         </div>
         <div className="dashboard-security-card__content">
-          <h2 className="dashboard-security-card__title">Change Password</h2>
+          <h2 className="dashboard-security-card__title">
+            {hasExistingPassword ? 'Change Password' : 'Set Account Password'}
+          </h2>
           <p className="dashboard-security-card__text">
-            Use a strong password that you don't use on other websites. At least 8 characters.
+            {hasExistingPassword
+              ? "Use a strong password that you don't use on other websites. At least 8 characters."
+              : 'You currently sign in using Google. Establishing a password allows you to sign in using both Google and email/password.'}
           </p>
 
           {success && (
             <div className="dashboard-alert dashboard-alert--success">
-              ✓ Password changed successfully. You may need to log in again on other devices.
+              ✓{' '}
+              {hasExistingPassword
+                ? 'Password changed successfully. You may need to log in again on other devices.'
+                : 'Password set successfully! You can now log in using your email and password.'}
             </div>
           )}
           {error && <div className="dashboard-alert dashboard-alert--error">{error}</div>}
 
           <form onSubmit={handleSubmit} className="dashboard-form">
-            <PasswordInput
-              id="currentPassword"
-              label="Current Password"
-              showKey="current"
-              form={form}
-              show={show}
-              onFormChange={handleChange}
-              onToggleShow={handleToggleShow}
-            />
+            {hasExistingPassword && (
+              <PasswordInput
+                id="currentPassword"
+                label="Current Password"
+                showKey="current"
+                form={form}
+                show={show}
+                onFormChange={handleChange}
+                onToggleShow={handleToggleShow}
+              />
+            )}
             <PasswordInput
               id="newPassword"
-              label="New Password"
+              label={hasExistingPassword ? 'New Password' : 'Password'}
               showKey="new"
               form={form}
               show={show}
@@ -170,7 +201,7 @@ export default function SecurityPage() {
             />
             <PasswordInput
               id="confirmPassword"
-              label="Confirm New Password"
+              label={hasExistingPassword ? 'Confirm New Password' : 'Confirm Password'}
               showKey="confirm"
               form={form}
               show={show}
@@ -184,7 +215,13 @@ export default function SecurityPage() {
                 disabled={changePassword.isPending}
               >
                 <FiLock />
-                {changePassword.isPending ? 'Updating...' : 'Update Password'}
+                {changePassword.isPending
+                  ? hasExistingPassword
+                    ? 'Updating...'
+                    : 'Setting...'
+                  : hasExistingPassword
+                    ? 'Update Password'
+                    : 'Set Password'}
               </button>
             </div>
           </form>

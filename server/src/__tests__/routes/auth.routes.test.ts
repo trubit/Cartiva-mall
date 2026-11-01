@@ -42,6 +42,7 @@ vi.mock('google-auth-library', () => {
             given_name: 'Google',
             family_name: 'User',
             picture: 'https://example.com/pic.jpg',
+            email_verified: true,
           }),
         }
       }
@@ -342,9 +343,10 @@ describe('POST /auth/logout', () => {
 })
 
 describe('POST /auth/google (Google OAuth)', () => {
-  it('returns 400 when neither credential nor code is provided', async () => {
+  it('returns 400 when neither token, credential nor code is provided', async () => {
     const res = await request(app).post(`${AUTH}/google`).send({})
     expect(res.status).toBe(400)
+    expect(res.body.success).toBe(false)
   })
 
   it('returns 401 when invalid token/code is provided', async () => {
@@ -352,5 +354,34 @@ describe('POST /auth/google (Google OAuth)', () => {
       .post(`${AUTH}/google`)
       .send({ credential: 'invalid_google_jwt_token' })
     expect(res.status).toBe(401)
+    expect(res.body.success).toBe(false)
+  })
+
+  it('successfully creates new user and returns tokens on valid Google credential', async () => {
+    const res = await request(app)
+      .post(`${AUTH}/google`)
+      .send({ credential: 'valid_google_jwt_token' })
+    expect(res.status).toBe(200)
+    expect(res.body.success).toBe(true)
+    expect(res.body.data.user).toBeDefined()
+    expect(res.body.data.user.email).toBe('googleuser@example.com')
+    expect(res.body.data.user.authProvider).toBe('google')
+    expect(res.body.data.accessToken).toBeDefined()
+    expect(res.headers['set-cookie']).toBeDefined()
+  })
+
+  it('authenticates existing user on repeat Google sign-in without creating duplicates', async () => {
+    const res = await request(app).post(`${AUTH}/google`).send({ token: 'valid_google_jwt_token' })
+    expect(res.status).toBe(200)
+    expect(res.body.success).toBe(true)
+    expect(res.body.data.user.email).toBe('googleuser@example.com')
+  })
+
+  it('respects seller role when signing up with Google', async () => {
+    const res = await request(app)
+      .post(`${AUTH}/google`)
+      .send({ credential: 'valid_google_jwt_token', role: 'seller' })
+    expect(res.status).toBe(200)
+    expect(res.body.success).toBe(true)
   })
 })

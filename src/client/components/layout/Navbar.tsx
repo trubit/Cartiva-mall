@@ -45,11 +45,12 @@ function UserAvatar({ src, name, size = 28 }: { src?: string; name?: string; siz
   const [imgErr, setImgErr] = useState(false)
   const initials = name
     ? name
-        .split(' ')
-        .map((n) => n[0])
+        .trim()
+        .split(/\s+/)
+        .map((n) => n[0] || '')
         .join('')
         .slice(0, 2)
-        .toUpperCase()
+        .toUpperCase() || '?'
     : '?'
 
   if (src && !imgErr) {

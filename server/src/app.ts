@@ -125,13 +125,29 @@ app.post(
 )
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
-if (!env.CLIENT_URL) throw new Error('CLIENT_URL env var is required')
+const configuredClientUrl = env.CLIENT_URL ? env.CLIENT_URL.replace(/\/$/, '') : ''
+const localDevOrigins = ['http://localhost:5170', 'http://localhost:5173', 'http://localhost:3000']
+
 app.use(
   cors({
-    origin: env.CLIENT_URL || false,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, or server-to-server)
+      if (!origin) return callback(null, true)
+
+      const cleanOrigin = origin.replace(/\/$/, '')
+      const isConfiguredClient = configuredClientUrl && cleanOrigin === configuredClientUrl
+      const isLocal = localDevOrigins.includes(cleanOrigin)
+      const isVercel = cleanOrigin.endsWith('.vercel.app')
+
+      if (isConfiguredClient || isLocal || isVercel) {
+        return callback(null, true)
+      }
+
+      callback(new Error(`CORS blocked for origin: ${origin}`))
+    },
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-session-id'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-session-id', 'x-refresh-token'],
   }),
 )
 app.use(globalLimiter)

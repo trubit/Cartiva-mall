@@ -224,7 +224,20 @@ export const useGoogleAuth = () => {
           }
         }
 
-        if (res.data.user.role === 'seller') {
+        // Restore intended page if user was redirected from protected flow
+        let targetUrl: string | null = null
+        if (typeof window !== 'undefined') {
+          try {
+            targetUrl = window.sessionStorage.getItem('cv_oauth_return_url')
+            window.sessionStorage.removeItem('cv_oauth_return_url')
+          } catch {
+            // ignore
+          }
+        }
+
+        if (targetUrl && targetUrl !== '/login' && targetUrl !== '/register') {
+          navigate(targetUrl, { replace: true })
+        } else if (res.data.user.role === 'seller') {
           navigate('/seller', { replace: true })
         } else {
           navigate('/', { replace: true })

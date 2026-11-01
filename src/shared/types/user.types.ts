@@ -36,6 +36,10 @@ export interface IUser {
   role: UserRole
   emailVerified: boolean
   isActive: boolean
+  authProvider?: string
+  authProviders?: string[]
+  hasPassword?: boolean
+  googleId?: string
   createdAt: string
   updatedAt: string
 }

@@ -84,6 +84,20 @@ function AuthSync() {
         return
       }
 
+      // If we already have a valid access token in memory (e.g. freshly authenticated via Google or login),
+      // do not immediately trigger an unnecessary refresh that could race and wipe session on mobile network latency.
+      const currentToken = useAuthStore.getState().accessToken
+      if (currentToken) {
+        try {
+          const { exp } = JSON.parse(atob(currentToken.split('.')[1])) as { exp?: unknown }
+          if (typeof exp === 'number' && exp * 1000 > Date.now() + 15_000) {
+            return
+          }
+        } catch {
+          // token parse failed — proceed with refresh
+        }
+      }
+
       authService
         .refresh()
         .then((res) => {

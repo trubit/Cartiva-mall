@@ -72,5 +72,6 @@ router.get('/refresh', authLimiter, authController.refresh)
 // Protected / Authenticated routes
 router.post('/logout', optionalAuthenticate, authController.logout)
 router.get('/me', authenticate, authController.getMe)
+router.post('/set-password', authenticate, authController.setPassword)
 
 export default router

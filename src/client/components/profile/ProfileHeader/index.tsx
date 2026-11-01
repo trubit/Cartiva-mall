@@ -13,7 +13,8 @@ const ROLE_LABEL: Record<string, string> = { user: 'Buyer', seller: 'Seller', ad
 export default function ProfileHeader({ user }: Props) {
   const logoutMutation = useLogout()
 
-  const initials = `${user.firstName[0] ?? ''}${user.lastName[0] ?? ''}`.toUpperCase()
+  const initials =
+    `${(user?.firstName || '')[0] ?? ''}${(user?.lastName || '')[0] ?? ''}`.toUpperCase() || '?'
 
   return (
     <aside className="profile-sidebar">

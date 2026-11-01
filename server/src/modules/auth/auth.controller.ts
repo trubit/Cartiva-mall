@@ -5,10 +5,11 @@ import { sendSuccess, sendCreated } from '../../utils/response.js'
 import { AppError } from '../../middlewares/error.middleware.js'
 import { env } from '../../config/env.js'
 
+const isProd = env.NODE_ENV === 'production'
 const REFRESH_COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: env.NODE_ENV !== 'development', // always secure except local dev
-  sameSite: 'lax' as const,
+  secure: isProd, // Must be true when sameSite is 'none'
+  sameSite: isProd ? ('none' as const) : ('lax' as const),
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   path: '/',
 }
@@ -92,7 +93,7 @@ export const resetPasswordWithOtp = async (req: Request, res: Response, next: Ne
   try {
     const { email, otp, password } = req.body
     await authService.resetPasswordWithOtp(email, otp, password)
-    res.clearCookie('refresh_token', { httpOnly: true, path: '/' })
+    res.clearCookie('refresh_token', REFRESH_COOKIE_OPTIONS)
     sendSuccess(res, null, 'Password reset successfully. Please log in with your new password.')
   } catch (err) {
     next(err)
@@ -143,9 +144,9 @@ export const logout = async (req: Request, res: Response, next: NextFunction) =>
       await authService.logoutUser(userId, refreshToken).catch(() => {})
     }
 
-    res.clearCookie('refresh_token', { httpOnly: true, path: '/' })
-    res.clearCookie('refreshToken', { httpOnly: true, path: '/' })
-    res.clearCookie('access_token', { httpOnly: true, path: '/' })
+    res.clearCookie('refresh_token', REFRESH_COOKIE_OPTIONS)
+    res.clearCookie('refreshToken', REFRESH_COOKIE_OPTIONS)
+    res.clearCookie('access_token', REFRESH_COOKIE_OPTIONS)
     sendSuccess(res, null, 'Logged out successfully')
   } catch (err) {
     next(err)
@@ -246,7 +247,29 @@ export const googleAuth = async (req: Request, res: Response, next: NextFunction
       role,
     )
     res.cookie('refresh_token', refreshToken, REFRESH_COOKIE_OPTIONS)
-    sendSuccess(res, { user, accessToken }, 'Google authentication successful')
+    sendSuccess(
+      res,
+      { user, accessToken, emailVerified: user.emailVerified },
+      'Google authentication successful',
+    )
+  } catch (err) {
+    next(err)
+  }
+}
+
+// POST /api/v1/auth/set-password
+export const setPassword = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { password } = req.body
+    if (!password || typeof password !== 'string' || password.length < 8) {
+      return next(new AppError('Password must be at least 8 characters long', 400))
+    }
+    await authService.setPassword(req.user!.userId, password)
+    sendSuccess(
+      res,
+      null,
+      'Password established successfully. You can now log in using email and password.',
+    )
   } catch (err) {
     next(err)
   }

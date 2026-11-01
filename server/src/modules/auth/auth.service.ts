@@ -10,8 +10,18 @@ import * as otpService from './otp.service.js'
 import type { IUserDocument } from '../user/user.model.js'
 import type { RegisterCredentials } from '../../../../src/shared/types/auth.types.js'
 import { ROLES } from '../../../../src/shared/constants/index.js'
+import { env } from '../../config/env.js'
 
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
+export const DEFAULT_GOOGLE_CLIENT_ID =
+  '734121952137-gr7nf99dj0hg3jrsraj994olqame0ckn.apps.googleusercontent.com'
+
+const effectiveGoogleClientId =
+  env.GOOGLE_CLIENT_ID ||
+  process.env.GOOGLE_CLIENT_ID ||
+  process.env.VITE_GOOGLE_CLIENT_ID ||
+  DEFAULT_GOOGLE_CLIENT_ID
+
+const googleClient = new OAuth2Client(effectiveGoogleClientId)
 
 // ─── Register ──────────────────────────────────────────────────────────────────
 export const registerUser = async (data: RegisterCredentials): Promise<IUserDocument> => {
@@ -179,17 +189,15 @@ export const resetPasswordWithOtp = async (
 // ─── Login ────────────────────────────────────────────────────────────────────
 export const loginUser = async (email: string, password: string) => {
   const cleanEmail = email.toLowerCase().trim()
-  const user = await User.findOne({ email: cleanEmail }).select(
-    '+password +refreshTokens role isActive emailVerified firstName lastName authProvider',
-  )
+  const user = await User.findOne({ email: cleanEmail }).select('+password +refreshTokens')
 
   if (!user) {
     throw new AppError('Invalid email or password', 401)
   }
 
-  if (!user.password && user.authProvider === 'google') {
+  if (!user.password) {
     throw new AppError(
-      'This account was created with Google. Please click "Continue with Google" to sign in.',
+      'This account was created with Google and does not have a password set yet. Please click "Continue with Google" to sign in, or use "Forgot Password" to establish a password.',
       400,
     )
   }
@@ -355,16 +363,24 @@ export const authenticateGoogleUser = async (
     emailVerified: boolean
   } | null = null
 
-  const clientId = process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID
+  const clientId = effectiveGoogleClientId
+  const validAudiences: string[] = Array.from(
+    new Set(
+      [
+        clientId,
+        env.GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_CLIENT_ID,
+        process.env.VITE_GOOGLE_CLIENT_ID,
+        DEFAULT_GOOGLE_CLIENT_ID,
+      ].filter((item): item is string => Boolean(item)),
+    ),
+  )
 
   // Strategy 1: Verify as ID Token (Google Identity Services GIS JWT credential)
   try {
     const ticket = await googleClient.verifyIdToken({
       idToken: credentialOrCode,
-      audience: [
-        process.env.GOOGLE_CLIENT_ID || '',
-        process.env.VITE_GOOGLE_CLIENT_ID || '',
-      ].filter(Boolean),
+      audience: validAudiences,
     })
     const payload = ticket.getPayload()
     if (payload && payload.email) {
@@ -443,19 +459,59 @@ export const authenticateGoogleUser = async (
     throw new AppError('Google authentication failed: invalid token or authorization code', 401)
   }
 
-  // Find existing user by googleId or email
-  let user = await User.findOne({
-    $or: [{ googleId: googleUser.googleId }, { email: googleUser.email }],
-  })
+  // Security Check 1: Google email must be verified by Google to permit linking/auth
+  if (!googleUser.emailVerified) {
+    throw new AppError(
+      'Google account email is not verified by Google. Linking rejected for security.',
+      403,
+    )
+  }
+
+  // Security Check 2: Protect against account takeover.
+  // Check if this googleId is already linked to a different Cartival Mall email.
+  const existingGoogleUser = await User.findOne({ googleId: googleUser.googleId }).select(
+    '+password +refreshTokens',
+  )
+  if (existingGoogleUser && existingGoogleUser.email !== googleUser.email) {
+    throw new AppError(
+      'This Google account is already linked to another Cartival Mall account.',
+      409,
+    )
+  }
+
+  // Find user by normalized email
+  let user = await User.findOne({ email: googleUser.email }).select('+password +refreshTokens')
+
+  if (!user && existingGoogleUser) {
+    user = existingGoogleUser
+  }
 
   if (user) {
+    // Security Check 3: If this account has a different googleId already linked, reject conflict
+    if (user.googleId && user.googleId !== googleUser.googleId) {
+      throw new AppError('A different Google account is already linked to this email address.', 409)
+    }
+
     let modified = false
     if (!user.googleId) {
       user.googleId = googleUser.googleId
-      user.authProvider = 'google'
       modified = true
     }
-    if (!user.emailVerified && googleUser.emailVerified) {
+
+    // Unify authentication providers without overwriting existing password or roles
+    const currentProviders = new Set(user.authProviders || [user.authProvider || 'local'])
+    currentProviders.add('google')
+    if (user.password || user.hasPassword) {
+      currentProviders.add('local')
+    }
+    const updatedProviders = Array.from(currentProviders)
+    if (JSON.stringify(user.authProviders) !== JSON.stringify(updatedProviders)) {
+      user.authProviders = updatedProviders
+      modified = true
+    }
+
+    // Google confirmed email is verified; activate account if unverified
+    if (!user.emailVerified) {
       user.emailVerified = true
       modified = true
     }
@@ -482,19 +538,39 @@ export const authenticateGoogleUser = async (
     }
 
     const selectedRole = role === 'seller' ? ROLES.SELLER : ROLES.USER
+    const safeLastName = (googleUser.lastName || '').trim() || 'User'
 
     user = new User({
       firstName: googleUser.firstName,
-      lastName: googleUser.lastName || ' ',
+      lastName: safeLastName,
       username,
       email: googleUser.email,
       googleId: googleUser.googleId,
       authProvider: 'google',
+      authProviders: ['google'],
+      hasPassword: false,
       profileImage: googleUser.picture || '',
       role: selectedRole,
       emailVerified: true, // Google emails are pre-verified
     })
-    await user.save({ validateBeforeSave: false })
+
+    try {
+      await user.save()
+    } catch (saveErr: any) {
+      if (saveErr?.code === 11000) {
+        // Concurrent registration resolved safely
+        const existing = await User.findOne({ email: googleUser.email }).select(
+          '+password +refreshTokens',
+        )
+        if (existing) {
+          user = existing
+        } else {
+          throw saveErr
+        }
+      } else {
+        throw saveErr
+      }
+    }
   }
 
   if (!user.isActive) {
@@ -512,4 +588,19 @@ export const authenticateGoogleUser = async (
   await user.save({ validateBeforeSave: false })
 
   return { user, accessToken, refreshToken }
+}
+
+// ─── Set Password (For OAuth Users Establishing Email/Password Login) ─────────
+export const setPassword = async (userId: string, newPassword: string): Promise<void> => {
+  const user = await User.findById(userId).select('+password +refreshTokens')
+  if (!user) throw new AppError('User not found', 404)
+
+  user.password = newPassword
+  user.hasPassword = true
+  const providers = new Set(user.authProviders || [user.authProvider || 'google'])
+  providers.add('local')
+  user.authProviders = Array.from(providers)
+
+  await user.save()
+  logger.info('PASSWORD_ESTABLISHED_FOR_USER', { userId: user._id, email: user.email })
 }

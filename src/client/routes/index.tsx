@@ -6,6 +6,7 @@ import { useSellerKycStatus } from '../hooks/useSellerKyc.js'
 import MainLayout from '../layouts/MainLayout.js'
 import NavbarLayout from '../layouts/NavbarLayout.js'
 import LoadingSpinner from '../components/ui/LoadingSpinner.js'
+import RouteErrorBoundary from '../components/RouteErrorBoundary.js'
 
 // Auth pages
 const LoginPage = lazy(() => import('../pages/auth/Login/index.js'))
@@ -527,7 +528,9 @@ export default function AppRouter() {
           path="/login"
           element={
             <GuestRoute>
-              <LoginPage />
+              <RouteErrorBoundary fallbackTitle="Sign-in service interrupted">
+                <LoginPage />
+              </RouteErrorBoundary>
             </GuestRoute>
           }
         />
@@ -535,7 +538,9 @@ export default function AppRouter() {
           path="/register"
           element={
             <GuestRoute>
-              <RegisterPage />
+              <RouteErrorBoundary fallbackTitle="Registration service interrupted">
+                <RegisterPage />
+              </RouteErrorBoundary>
             </GuestRoute>
           }
         />
@@ -543,12 +548,28 @@ export default function AppRouter() {
           path="/forgot-password"
           element={
             <GuestRoute>
-              <ForgotPasswordPage />
+              <RouteErrorBoundary fallbackTitle="Password assistance interrupted">
+                <ForgotPasswordPage />
+              </RouteErrorBoundary>
             </GuestRoute>
           }
         />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/verify-email" element={<VerifyEmailPage />} />
+        <Route
+          path="/reset-password"
+          element={
+            <RouteErrorBoundary fallbackTitle="Password reset interrupted">
+              <ResetPasswordPage />
+            </RouteErrorBoundary>
+          }
+        />
+        <Route
+          path="/verify-email"
+          element={
+            <RouteErrorBoundary fallbackTitle="Verification service interrupted">
+              <VerifyEmailPage />
+            </RouteErrorBoundary>
+          }
+        />
 
         <Route path="*" element={<NotFoundPage />} />
       </Routes>

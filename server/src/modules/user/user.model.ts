@@ -28,6 +28,8 @@ export interface IUserDocument extends Document {
   password?: string
   googleId?: string
   authProvider?: 'local' | 'google' | 'facebook'
+  authProviders?: string[]
+  hasPassword?: boolean
   phoneNumber?: string
   bio?: string
   gender?: 'male' | 'female' | 'other' | 'prefer_not_to_say'
@@ -92,8 +94,10 @@ const userSchema = new mongoose.Schema<IUserDocument>(
     },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, select: false, minlength: 8 },
-    googleId: { type: String, sparse: true, index: true },
+    googleId: { type: String, sparse: true, unique: true, index: true },
     authProvider: { type: String, enum: ['local', 'google', 'facebook'], default: 'local' },
+    authProviders: { type: [String], default: ['local'] },
+    hasPassword: { type: Boolean, default: false },
     phoneNumber: { type: String, trim: true },
     bio: { type: String, trim: true, maxlength: 500 },
     gender: { type: String, enum: ['male', 'female', 'other', 'prefer_not_to_say'] },
@@ -124,7 +128,17 @@ const userSchema = new mongoose.Schema<IUserDocument>(
   {
     timestamps: true,
     toJSON: {
-      transform: (_doc, ret: Record<string, unknown>) => {
+      transform: (doc, ret: Record<string, unknown>) => {
+        ret.hasPassword = Boolean(
+          doc.password ||
+          doc.hasPassword ||
+          (doc.authProviders && doc.authProviders.includes('local')) ||
+          doc.authProvider === 'local',
+        )
+        ret.authProviders =
+          doc.authProviders && doc.authProviders.length > 0
+            ? doc.authProviders
+            : [doc.authProvider || 'local']
         delete ret.password
         delete ret.emailVerificationToken
         delete ret.emailVerificationExpires
@@ -151,8 +165,23 @@ userSchema.index({ email: 'text', username: 'text', firstName: 'text', lastName:
 // Still requires ~2^10 = 1024 iterations — more than sufficient against offline attacks.
 // Native bcrypt offloads to the libuv thread pool so the event loop stays free.
 userSchema.pre('save', async function () {
-  if (!this.password || !this.isModified('password')) return
-  this.password = await bcrypt.hash(this.password, 10)
+  if (this.password && this.isModified('password')) {
+    this.password = await bcrypt.hash(this.password, 10)
+    this.hasPassword = true
+    if (!this.authProviders) this.authProviders = []
+    if (!this.authProviders.includes('local')) {
+      this.authProviders.push('local')
+    }
+  } else if (!this.password && this.hasPassword === undefined) {
+    this.hasPassword = false
+  }
+
+  if (this.googleId) {
+    if (!this.authProviders) this.authProviders = []
+    if (!this.authProviders.includes('google')) {
+      this.authProviders.push('google')
+    }
+  }
 })
 
 userSchema.methods.comparePassword = async function (candidate: string): Promise<boolean> {

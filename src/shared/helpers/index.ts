@@ -67,14 +67,20 @@ export {
   DEFAULT_BASE_CURRENCY,
 }
 
-export const formatDate = (date: string | Date, options?: Intl.DateTimeFormatOptions): string => {
+export const formatDate = (
+  date: string | Date | undefined | null,
+  options?: Intl.DateTimeFormatOptions,
+): string => {
+  if (!date) return '—'
+  const d = new Date(date)
+  if (isNaN(d.getTime())) return '—'
   const hasComponents =
     options &&
     Object.keys(options).some((k) =>
       ['year', 'month', 'day', 'hour', 'minute', 'second', 'weekday', 'era'].includes(k),
     )
   const fmt = hasComponents ? options : { dateStyle: 'medium' as const, ...options }
-  return new Intl.DateTimeFormat('en-US', fmt).format(new Date(date))
+  return new Intl.DateTimeFormat('en-US', fmt).format(d)
 }
 
 export const slugify = (text: string): string =>

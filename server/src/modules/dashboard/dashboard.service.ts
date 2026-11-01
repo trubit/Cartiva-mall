@@ -341,22 +341,35 @@ export const changePassword = async (userId: string, input: ChangePasswordInput)
   const user = await User.findById(userId).select('+password')
   if (!user) throw new AppError('User not found', 404)
 
-  const valid = await user.comparePassword(input.currentPassword)
-  if (!valid) throw new AppError('Current password is incorrect', 401)
+  const hadPassword = Boolean(user.password)
 
-  if (input.newPassword === input.currentPassword) {
-    throw new AppError('New password must be different from current password', 400)
+  if (hadPassword) {
+    if (!input.currentPassword) {
+      throw new AppError('Current password is required to change password', 400)
+    }
+    const valid = await user.comparePassword(input.currentPassword)
+    if (!valid) throw new AppError('Current password is incorrect', 401)
+
+    if (input.newPassword === input.currentPassword) {
+      throw new AppError('New password must be different from current password', 400)
+    }
   }
 
   user.password = input.newPassword
+  user.hasPassword = true
+  const providers = new Set(user.authProviders || [user.authProvider || 'google'])
+  providers.add('local')
+  user.authProviders = Array.from(providers)
+
   await user.save()
 
   const notif = await createNotification({
     userId: userId,
     type: 'security',
-    title: 'Password changed',
-    message:
-      'Your account password was changed successfully. If this was not you, contact support immediately.',
+    title: hadPassword ? 'Password changed' : 'Password set',
+    message: hadPassword
+      ? 'Your account password was changed successfully. If this was not you, contact support immediately.'
+      : 'A password was successfully established for your Cartival Mall account. You can now sign in using email and password.',
     link: '/dashboard/security',
   }).catch(() => null)
 
