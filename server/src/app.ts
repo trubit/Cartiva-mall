@@ -256,10 +256,25 @@ app.use(`${API_PREFIX}/currencies`, currencyRoutes)
 app.use(`${API_PREFIX}/fees`, feeRoutes)
 
 // ─── Static Client Serving & SPA Routing ──────────────────────────────────────
-const clientDistPath = path.resolve(process.cwd(), 'dist')
+const getClientDistPath = (): string => {
+  const candidates = [
+    path.resolve(process.cwd(), 'dist'),
+    path.resolve(process.cwd(), '../dist'),
+    path.resolve(process.cwd(), '../../dist'),
+  ]
+  for (const candidate of candidates) {
+    if (fs.existsSync(path.join(candidate, 'index.html'))) {
+      return candidate
+    }
+  }
+  return path.resolve(process.cwd(), 'dist')
+}
 
 // Serve static assets (JS, CSS, images, PWA manifests)
-app.use(express.static(clientDistPath, { index: false }))
+app.use((req, res, next) => {
+  const distDir = getClientDistPath()
+  express.static(distDir, { index: false })(req, res, next)
+})
 
 // Serve SPA index.html for all non-API GET / HEAD requests, or fallback root JSON
 app.use((req, res, next) => {
@@ -276,7 +291,8 @@ app.use((req, res, next) => {
     return next()
   }
 
-  const indexPath = path.join(clientDistPath, 'index.html')
+  const distDir = getClientDistPath()
+  const indexPath = path.join(distDir, 'index.html')
   if (fs.existsSync(indexPath)) {
     return res.sendFile(indexPath)
   }

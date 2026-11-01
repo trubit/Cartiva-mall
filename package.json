@@ -12,7 +12,7 @@
     "kill:ports": "node scripts/kill-ports.mjs",
     "build": "npm run build:client && tsc -b tsconfig.server.json --force",
     "build:client": "vite build",
-    "build:server": "tsc -b tsconfig.server.json --force",
+    "build:server": "vite build && tsc -b tsconfig.server.json --force",
     "start": "node dist/server/server/src/index.js",
     "start:server": "node dist/server/server/src/index.js",
     "lint": "eslint .",
@@ -102,7 +102,9 @@
     "@types/streamifier": "^0.1.2",
     "@types/uuid": "^10.0.0",
     "@types/ws": "^8.18.1",
-    "typescript": "~6.0.2"
+    "typescript": "~6.0.2",
+    "vite": "^8.0.12",
+    "@vitejs/plugin-react": "^6.0.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -111,7 +113,6 @@
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
     "@types/supertest": "^7.2.0",
-    "@vitejs/plugin-react": "^6.0.1",
     "@vitest/coverage-v8": "^4.1.9",
     "@vitest/ui": "^4.1.9",
     "concurrently": "^10.0.3",
@@ -130,7 +131,6 @@
     "ts-node": "^10.9.2",
     "tsx": "^4.22.4",
     "typescript-eslint": "^8.59.2",
-    "vite": "^8.0.12",
     "vitest": "^4.1.9",
     "wait-on": "^9.0.10"
   },
