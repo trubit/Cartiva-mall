@@ -72,7 +72,6 @@ vi.mock('../../middlewares/rateLimiter.middleware.js', () => {
 // ── App + models imported after mocks ─────────────────────────────────────────
 import app from '../../app.js'
 import { User as UserModel } from '../../modules/user/user.model.js'
-import { Otp as OtpModel } from '../../modules/auth/otp.model.js'
 import * as emailUtils from '../../utils/email.js'
 import { API_PREFIX } from '../../../../src/shared/constants/index.js'
 
@@ -212,10 +211,7 @@ describe('POST /auth/forgot-password & /auth/reset-password-otp', () => {
 
     expect(verifyCheckRes.status).toBe(200)
 
-    // Simulate cooldown / reset OTP record active for password submission
-    await OtpModel.updateMany({ email: user.email }, { $set: { usedAt: null } })
-
-    // 3. Reset password with OTP
+    // 3. Reset password with OTP (consumes the verified OTP atomically)
     const resetRes = await request(app).post(`${AUTH}/reset-password-otp`).send({
       email: user.email,
       otp: resetOtp,

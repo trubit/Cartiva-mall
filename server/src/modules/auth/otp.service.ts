@@ -131,6 +131,7 @@ interface VerifyOtpParams {
  */
 export const verifyOtp = async (
   params: VerifyOtpParams,
+  consume: boolean = true,
 ): Promise<{ success: boolean; otpRecord: IOtpDocument }> => {
   const email = params.email.toLowerCase().trim()
   const cleanOtp = params.otp.trim()
@@ -207,13 +208,16 @@ export const verifyOtp = async (
     )
   }
 
-  // 4. Mark OTP as used atomically (cannot be replayed)
-  otpRecord.usedAt = new Date()
-  await otpRecord.save()
+  // 4. Mark OTP as used atomically if consume is true (single-use enforcement)
+  if (consume) {
+    otpRecord.usedAt = new Date()
+    await otpRecord.save()
+  }
 
   logger.info('OTP_VERIFICATION_SUCCESS', {
     email,
     purpose: params.purpose,
+    consumed: consume,
   })
 
   return { success: true, otpRecord }

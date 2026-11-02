@@ -103,6 +103,13 @@ export const useResendOtp = () =>
     mutationFn: (data: ResendOtpInput) => authService.resendOtp(data),
   })
 
+// ─── Verify Password Reset OTP ────────────────────────────────────────────────
+export const useVerifyResetOtp = () =>
+  useMutation({
+    mutationFn: ({ email, otp }: { email: string; otp: string }) =>
+      authService.verifyResetOtp(email, otp),
+  })
+
 // ─── Reset Password with OTP ──────────────────────────────────────────────────
 export const useResetPasswordWithOtp = () => {
   const navigate = useNavigate()

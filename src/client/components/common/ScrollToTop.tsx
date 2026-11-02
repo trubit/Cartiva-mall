@@ -10,10 +10,22 @@ export default function ScrollToTop() {
 
   useEffect(() => {
     if (hash) {
-      const element = document.querySelector(hash)
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth' })
-        return
+      // Guard against OAuth response parameters (e.g. #state=...&access_token=..., #id_token=..., #error=...)
+      // or invalid CSS selectors passed into querySelector.
+      // Standard HTML element IDs start with a letter and contain only alphanumeric, hyphens, or underscores.
+      const rawId = hash.startsWith('#') ? hash.slice(1) : hash
+      const isValidElementId = /^[a-zA-Z][\w-]*$/.test(rawId)
+
+      if (isValidElementId) {
+        try {
+          const element = document.getElementById(rawId)
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth' })
+            return
+          }
+        } catch {
+          // Defensively ignore any DOM element retrieval exceptions
+        }
       }
     }
 

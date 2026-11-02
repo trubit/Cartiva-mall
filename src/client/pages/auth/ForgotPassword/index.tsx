@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { FiMail, FiArrowLeft, FiLock, FiCheckCircle, FiXCircle } from 'react-icons/fi'
 import { motion } from 'framer-motion'
 import AuthFormCard from '../../../../client/components/auth/AuthFormCard/index.js'
@@ -17,6 +17,7 @@ import {
 } from '../../../../shared/validators/auth.validators.js'
 
 export default function ForgotPasswordPage() {
+  const navigate = useNavigate()
   const [step, setStep] = useState<'email' | 'otp'>('email')
   const [emailSubmitted, setEmailSubmitted] = useState('')
   const [otpValue, setOtpValue] = useState('')
@@ -92,6 +93,7 @@ export default function ForgotPasswordPage() {
         setStep('otp')
         setResendCooldown(60)
         setCanResend(false)
+        navigate(`/reset-password?email=${encodeURIComponent(cleanEmail)}`)
       },
     })
   }

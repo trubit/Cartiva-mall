@@ -103,17 +103,22 @@ export default function SocialLogin({ role = 'user' }: SocialLoginProps) {
       let targetRole = role
       if (stateParam) {
         try {
-          const parsed = JSON.parse(decodeURIComponent(stateParam))
+          const parsed = JSON.parse(
+            stateParam.startsWith('%') ? decodeURIComponent(stateParam) : stateParam,
+          )
           if (parsed.role) targetRole = parsed.role
 
           // Anti-CSRF verification of state nonce
           const storedNonce = window.sessionStorage.getItem('cv_oauth_state')
           if (storedNonce && parsed.nonce && storedNonce !== parsed.nonce) {
             authProcessedRef.current = true
+            window.sessionStorage.removeItem('cv_oauth_state')
             window.history.replaceState(null, '', window.location.pathname + window.location.search)
             setErrorMsg('Security state verification failed. Please try signing in again.')
             return
           }
+          // Consume state nonce to prevent replay
+          window.sessionStorage.removeItem('cv_oauth_state')
         } catch {
           // ignore parsing error
         }

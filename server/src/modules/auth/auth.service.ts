@@ -149,11 +149,14 @@ export const forgotPassword = async (email: string): Promise<void> => {
 // ─── Verify Password Reset OTP ────────────────────────────────────────────────
 export const verifyPasswordResetOtp = async (email: string, otp: string) => {
   const cleanEmail = email.toLowerCase().trim()
-  return await otpService.verifyOtp({
-    email: cleanEmail,
-    otp,
-    purpose: 'PASSWORD_RESET',
-  })
+  return await otpService.verifyOtp(
+    {
+      email: cleanEmail,
+      otp,
+      purpose: 'PASSWORD_RESET',
+    },
+    false, // Validated for verification check; consumed on actual password submission
+  )
 }
 
 // ─── Reset Password with OTP ──────────────────────────────────────────────────

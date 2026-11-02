@@ -73,11 +73,16 @@ export const OtpInput: FC<OtpInputProps> = ({
 
   return (
     <div
+      className="cartiva-otp-container"
+      data-testid="cartiva-otp-container"
       style={{
         display: 'flex',
-        gap: '10px',
+        gap: 'clamp(4px, 2vw, 10px)',
         justifyContent: 'center',
-        margin: '16px 0',
+        alignItems: 'center',
+        margin: '16px auto',
+        maxWidth: '100%',
+        width: '100%',
       }}
     >
       {digits.map((digit, idx) => (
@@ -86,6 +91,9 @@ export const OtpInput: FC<OtpInputProps> = ({
           ref={(el) => {
             inputRefs.current[idx] = el
           }}
+          id={`otp-input-${idx}`}
+          data-testid={`otp-input-${idx}`}
+          aria-label={`Digit ${idx + 1} of 6`}
           type="text"
           inputMode="numeric"
           pattern="[0-9]*"
@@ -97,10 +105,10 @@ export const OtpInput: FC<OtpInputProps> = ({
           onKeyDown={(e) => handleKeyDown(e, idx)}
           onPaste={handlePaste}
           style={{
-            width: '46px',
-            height: '54px',
+            width: 'clamp(38px, 12vw, 48px)',
+            height: 'clamp(46px, 14vw, 54px)',
             textAlign: 'center',
-            fontSize: '24px',
+            fontSize: 'clamp(20px, 5vw, 24px)',
             fontWeight: 800,
             borderRadius: '10px',
             border: error
@@ -114,6 +122,8 @@ export const OtpInput: FC<OtpInputProps> = ({
             transition: 'all 0.15s ease',
             fontFamily: 'monospace',
             boxShadow: digit ? '0 0 0 1px rgba(255, 153, 0, 0.2)' : 'none',
+            touchAction: 'manipulation',
+            boxSizing: 'border-box',
           }}
         />
       ))}
