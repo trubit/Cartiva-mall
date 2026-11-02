@@ -7,6 +7,7 @@ import cookieParser from 'cookie-parser'
 import mongoose from 'mongoose'
 import { redis } from './database/redis.js'
 import { env } from './config/env.js'
+import { corsOptions } from './config/cors.js'
 import { globalLimiter, rateLimiterStatus } from './middlewares/rateLimiter.middleware.js'
 import { notFound, errorHandler } from './middlewares/error.middleware.js'
 import { API_PREFIX } from '../../src/shared/constants/index.js'
@@ -59,6 +60,9 @@ const app = express()
 // Required for express-rate-limit to use the real client IP from X-Forwarded-For
 // instead of the proxy's IP, which would collapse all clients into one bucket.
 app.set('trust proxy', 1)
+
+// ─── CORS (Must execute before Helmet, webhooks, rate limiters, and routes) ─
+app.use(cors(corsOptions))
 
 // ─── Security headers ─────────────────────────────────────────────────────────
 app.use(
@@ -124,32 +128,6 @@ app.post(
   paymentController.stripeWebhook,
 )
 
-// ─── CORS ─────────────────────────────────────────────────────────────────────
-const configuredClientUrl = env.CLIENT_URL ? env.CLIENT_URL.replace(/\/$/, '') : ''
-const localDevOrigins = ['http://localhost:5170', 'http://localhost:5173', 'http://localhost:3000']
-
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, curl, or server-to-server)
-      if (!origin) return callback(null, true)
-
-      const cleanOrigin = origin.replace(/\/$/, '')
-      const isConfiguredClient = configuredClientUrl && cleanOrigin === configuredClientUrl
-      const isLocal = localDevOrigins.includes(cleanOrigin)
-      const isVercel = cleanOrigin.endsWith('.vercel.app')
-
-      if (isConfiguredClient || isLocal || isVercel) {
-        return callback(null, true)
-      }
-
-      callback(new Error(`CORS blocked for origin: ${origin}`))
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-session-id', 'x-refresh-token'],
-  }),
-)
 app.use(globalLimiter)
 
 // ─── Compression ──────────────────────────────────────────────────────────────

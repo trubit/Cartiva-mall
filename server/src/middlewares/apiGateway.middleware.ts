@@ -36,16 +36,19 @@ export const apiGatewayMiddleware = async (
     delete req.headers[header]
   }
 
-  // 2. Request ID & Correlation ID
+  // 2. Request ID & Correlation ID (strictly validated to prevent CRLF & log injection)
+  const isValidId = (id?: string): boolean =>
+    typeof id === 'string' && /^[a-zA-Z0-9_\-.]{1,128}$/.test(id)
+
   const existingRequestId = req.headers['x-request-id'] as string | undefined
-  const requestId =
-    existingRequestId && existingRequestId.length <= 128 ? existingRequestId : uuidv4()
+  const requestId = isValidId(existingRequestId) ? (existingRequestId as string) : uuidv4()
   req.headers['x-request-id'] = requestId
   res.setHeader('X-Request-ID', requestId)
 
   const existingCorrelationId = req.headers['x-correlation-id'] as string | undefined
-  const correlationId =
-    existingCorrelationId && existingCorrelationId.length <= 128 ? existingCorrelationId : uuidv4()
+  const correlationId = isValidId(existingCorrelationId)
+    ? (existingCorrelationId as string)
+    : uuidv4()
   req.headers['x-correlation-id'] = correlationId
   res.setHeader('X-Correlation-ID', correlationId)
 

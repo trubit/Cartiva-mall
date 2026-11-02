@@ -3,7 +3,7 @@ import { Server as SocketServer } from 'socket.io'
 import { createAdapter } from '@socket.io/redis-adapter'
 import { redis, redisSub } from '../database/redis.js'
 import { verifyAccessToken } from '../utils/jwt.js'
-import { env } from '../config/env.js'
+import { isAllowedOrigin } from '../config/cors.js'
 import { logger } from '../utils/logger.js'
 
 import { initEventMonitorSocket } from './eventMonitor.socket.js'
@@ -18,7 +18,13 @@ export const getSocketIO = (): SocketServer => {
 export const initSockets = (httpServer: HttpServer): SocketServer => {
   io = new SocketServer(httpServer, {
     cors: {
-      origin: env.CLIENT_URL,
+      origin: (origin, callback) => {
+        if (isAllowedOrigin(origin)) {
+          callback(null, true)
+        } else {
+          callback(new Error(`Socket CORS blocked for origin: ${origin}`))
+        }
+      },
       methods: ['GET', 'POST'],
       credentials: true,
     },

@@ -28,6 +28,11 @@ export const env = {
   NODE_ENV: (process.env.NODE_ENV ?? 'development') as 'development' | 'production' | 'test',
   PORT: parseInt(process.env.PORT ?? '5000', 10),
   CLIENT_URL: process.env.CLIENT_URL ?? 'http://localhost:5170',
+  ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',')
+        .map((o) => o.trim().replace(/\/$/, ''))
+        .filter(Boolean)
+    : [],
   MONGODB_URI: required('MONGODB_URI'),
   REDIS_URL: process.env.REDIS_URL ?? '',
   REDIS_HOST: process.env.REDIS_HOST ?? parsedRedis?.host ?? '127.0.0.1',
